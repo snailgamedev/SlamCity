@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#0a0a0d" />
-<title>SLAM CITY · v2.18 · WATCH + FRANCHISE</title>
+<title>SLAM CITY · v2.19 · BALANCED</title>
 <!-- retro arcade type: Press Start 2P for marquee, Oxanium for readable UI · safe fallback stack -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -725,7 +725,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v2.18 · build 2026-05-23·1941 · WATCH MODE (CPU v CPU spectate) + FRANCHISE (8-match season) · 8 modes · creator · LOOPING · for AARON</div>
+  <div class="splash-foot">v2.19 · build 2026-05-23·1946 · BALANCED (fair across 5 difficulties · close + winnable · never merciless/merciful · balance-probed) · 8 modes · LOOPING · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -983,7 +983,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v2.18</div>
+    <div class="load-skip">tap to skip · v2.19</div>
   </div>
 </div>
 
@@ -1666,7 +1666,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '2.18';
+const GAME_VERSION = '2.19';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -1888,11 +1888,12 @@ let controlsBound = false;
 // 5 difficulty tiers — scale AI speed, reaction cadence, block frequency, and the
 // opponent's damage + toughness. Persisted in save.difficulty (default 2 = PRO).
 const DIFFICULTIES = [
-  { key:'rookie',  name:'ROOKIE',  blurb:'learning the ropes', speed:0.80, react:1.70, block:0.20, oDmg:0.80, oTough:0.85 },
-  { key:'amateur', name:'AMATEUR', blurb:'a real test',        speed:0.90, react:1.30, block:0.35, oDmg:0.90, oTough:0.92 },
+  // Tuned for FAIR: Rookie still competes (not a pushover), Legend is winnable with skill (not merciless).
+  { key:'rookie',  name:'ROOKIE',  blurb:'learning the ropes', speed:0.84, react:1.55, block:0.28, oDmg:0.86, oTough:0.88 },
+  { key:'amateur', name:'AMATEUR', blurb:'a real test',        speed:0.92, react:1.28, block:0.38, oDmg:0.92, oTough:0.93 },
   { key:'pro',     name:'PRO',     blurb:'balanced fight',      speed:1.00, react:1.00, block:0.50, oDmg:1.00, oTough:1.00 },
-  { key:'veteran', name:'VETERAN', blurb:'they hit back hard',  speed:1.12, react:0.80, block:0.68, oDmg:1.12, oTough:1.08 },
-  { key:'legend',  name:'LEGEND',  blurb:'for the brave',       speed:1.25, react:0.60, block:0.85, oDmg:1.28, oTough:1.15 }
+  { key:'veteran', name:'VETERAN', blurb:'they hit back hard',  speed:1.10, react:0.82, block:0.64, oDmg:1.10, oTough:1.06 },
+  { key:'legend',  name:'LEGEND',  blurb:'for the brave',       speed:1.22, react:0.64, block:0.78, oDmg:1.20, oTough:1.10 }
 ];
 function curDiff() { return DIFFICULTIES[Math.max(0, Math.min(4, save.difficulty ?? 2))]; }
 
