@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#0a0a0d" />
-<title>SLAM CITY · v2.0 · REAL-TIME</title>
+<title>SLAM CITY · v2.1 · LIVING RATINGS</title>
 <style>
   :root {
     --bg-0: #0a0a0d;
@@ -389,6 +389,16 @@
   /* fighters become absolutely-positioned so JS drives translateX(posPx).  */
   /* These rules sit last so they override the earlier flex layout + lunges. */
   /* ====================================================================== */
+  /* mobile-first game framed as a centered column on desktop (stops the stretched/sparse wide look) */
+  .screen { max-width: 540px; margin-inline: auto; }
+  /* labeled HP + Stamina bars so it's clear what each is */
+  .bar-line { display: flex; align-items: center; gap: 5px; margin-top: 4px; }
+  .bar-line .hp-bar-outer, .bar-line .st-bar-outer { flex: 1; margin-top: 0; }
+  .bar-tag { flex: 0 0 auto; font-size: 8px; font-weight: 800; letter-spacing: 0.5px; width: 46px; text-align: right; white-space: nowrap; }
+  .bar-tag.hp { color: var(--soft); }
+  .bar-tag.st { color: var(--muted); }
+  .fighter-slot.right-align .bar-line { flex-direction: row-reverse; }
+
   .ring { justify-content: flex-start; touch-action: none; }
   .ring-fighter { position: absolute; bottom: 8px; left: 0; width: 50%; max-width: 208px; will-change: transform; transition: none; }
 
@@ -455,6 +465,23 @@
   @media (min-height: 720px) {
     .joystick { width: 134px; height: 134px; flex: 0 0 134px; }
   }
+
+  /* tutorial / how-to-fight */
+  .tut-help { position: absolute; top: 8px; right: 10px; z-index: 20; width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--bg-3); background: rgba(20,20,26,0.82); color: var(--soft); font-weight: 900; font-size: 14px; cursor: pointer; line-height: 1; }
+  .tut-help:active { transform: scale(0.92); }
+  .tutorial { position: fixed; inset: 0; z-index: 200; display: none; align-items: center; justify-content: center; padding: 18px; background: rgba(5,5,8,0.9); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+  .tutorial.on { display: flex; }
+  .tut-card { width: 100%; max-width: 460px; background: linear-gradient(180deg, var(--bg-2), var(--bg-1)); border: 1px solid var(--bg-3); border-top: 3px solid var(--gold); border-radius: 10px; padding: 20px 18px; box-shadow: 0 18px 50px rgba(0,0,0,0.7); max-height: 92vh; overflow-y: auto; }
+  .tut-title { font-size: 18px; font-weight: 900; letter-spacing: 3px; color: var(--gold); text-align: center; margin-bottom: 16px; }
+  .tut-grid { display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; }
+  .tut-row { display: flex; gap: 11px; align-items: flex-start; font-size: 12.5px; line-height: 1.5; color: var(--soft); text-align: left; }
+  .tut-row b { color: var(--cream); }
+  .tut-ic { flex: 0 0 26px; font-size: 19px; text-align: center; }
+  .tut-bars { flex: 0 0 26px; display: flex; flex-direction: column; gap: 3px; justify-content: center; padding-top: 4px; }
+  .tut-bars i { display: block; border-radius: 2px; }
+  .tut-bars .hp { height: 8px; background: linear-gradient(90deg, #4ad06a, var(--gold) 60%, var(--red)); }
+  .tut-bars .st { height: 4px; background: linear-gradient(90deg, #6aa0ff, #3a6acc); }
+  .tut-card .btn { width: 100%; }
 </style>
 </head>
 <body>
@@ -472,7 +499,7 @@
 
   <button class="btn" onclick="goto('roster')">ENTER THE RING</button>
   <button class="btn btn-secondary" id="quick-play-btn" onclick="quickPlay()" style="display:none">QUICK PLAY</button>
-  <div class="splash-foot">v2.0 · build 2026-05-23·1708 · REAL-TIME COMBAT · joystick+buttons · move·strike·block·dodge · 11 brothers · for AARON</div>
+  <div class="splash-foot">v2.1 · build 2026-05-23·1731 · LIVING RATINGS · 7 abilities·weight class·position · tutorial · died-stay-dead FIXED · 11 brothers · for AARON</div>
 </div>
 
 <!-- ========== ROSTER ========== -->
@@ -517,19 +544,27 @@
   <div class="fighter-row">
     <div class="fighter-slot">
       <div class="fs-name" id="left-name">—</div>
-      <div class="hp-bar-outer">
-        <div class="hp-bar-fill" id="left-hp" style="width:100%"></div>
-        <div class="hp-num left" id="left-hp-num">100</div>
+      <div class="bar-line"><span class="bar-tag hp">HP</span>
+        <div class="hp-bar-outer">
+          <div class="hp-bar-fill" id="left-hp" style="width:100%"></div>
+          <div class="hp-num left" id="left-hp-num">100</div>
+        </div>
       </div>
-      <div class="st-bar-outer"><div class="st-bar-fill" id="left-st" style="width:100%"></div></div>
+      <div class="bar-line"><span class="bar-tag st">STAMINA</span>
+        <div class="st-bar-outer"><div class="st-bar-fill" id="left-st" style="width:100%"></div></div>
+      </div>
     </div>
     <div class="fighter-slot">
       <div class="fs-name right" id="right-name">—</div>
-      <div class="hp-bar-outer">
-        <div class="hp-bar-fill right" id="right-hp" style="width:100%"></div>
-        <div class="hp-num right" id="right-hp-num">100</div>
+      <div class="bar-line"><span class="bar-tag hp">HP</span>
+        <div class="hp-bar-outer">
+          <div class="hp-bar-fill right" id="right-hp" style="width:100%"></div>
+          <div class="hp-num right" id="right-hp-num">100</div>
+        </div>
       </div>
-      <div class="st-bar-outer"><div class="st-bar-fill right" id="right-st" style="width:100%"></div></div>
+      <div class="bar-line"><span class="bar-tag st">STAMINA</span>
+        <div class="st-bar-outer"><div class="st-bar-fill right" id="right-st" style="width:100%"></div></div>
+      </div>
     </div>
   </div>
 
@@ -582,6 +617,23 @@
       <div class="fr-strike-label">SCRIPTURE STRIKE</div>
       <div class="fr-verse" id="fr-verse"></div>
       <div class="fr-ref" id="fr-ref"></div>
+    </div>
+  </div>
+
+  <button class="tut-help" id="tut-help" type="button" onclick="showTutorial()" aria-label="how to play">?</button>
+
+  <div class="tutorial" id="tutorial" aria-hidden="true">
+    <div class="tut-card">
+      <div class="tut-title">HOW TO FIGHT</div>
+      <div class="tut-grid">
+        <div class="tut-row"><span class="tut-ic">🕹️</span><div><b>MOVE</b> — left stick. It's real-time: walk in to land hits, back off to breathe.</div></div>
+        <div class="tut-row"><span class="tut-ic">👊</span><div><b>JAB</b> fast &amp; cheap · <b>POWER</b> heavy &amp; slow · <b>✝ FINISH</b> unlocks when they're low.</div></div>
+        <div class="tut-row"><span class="tut-ic">🛡️</span><div><b>BLOCK</b> (hold) soaks damage · <b>DODGE</b> (tap) i-frames you through a shot.</div></div>
+        <div class="tut-row"><span class="tut-ic">🎯</span><div>Hits land by <b>distance + timing</b>, not luck — out of reach = a whiff.</div></div>
+        <div class="tut-row"><span class="tut-bars"><i class="hp"></i><i class="st"></i></span><div><b>HP</b> = health (top bar) · <b>STAMINA</b> = powers your attacks, drains when you block, refills over time.</div></div>
+        <div class="tut-row"><span class="tut-ic">📈</span><div>Every fighter has living ratings — <b>Striking · Power · Finisher · Blocking · Stamina · Speed · Heart</b> — that rise &amp; fall by how you fight. Weight class &amp; style matter.</div></div>
+      </div>
+      <button class="btn" type="button" onclick="hideTutorial()">GOT IT — LET'S GO</button>
     </div>
   </div>
 </div>
@@ -888,31 +940,95 @@ function loadSave() {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (!parsed.ovrDelta) parsed.ovrDelta = {};
+      if (!parsed.abilDelta) parsed.abilDelta = {};   // living per-ability deltas
       return parsed;
     }
   } catch(e) {}
-  return { wins:0, losses:0, kos:0, finishers:0, scriptureStrikes:0, picks:{}, ovrDelta:{} };
+  return { wins:0, losses:0, kos:0, finishers:0, scriptureStrikes:0, picks:{}, ovrDelta:{}, abilDelta:{} };
 }
 function persistSave() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch(e) {}
 }
 
-/* OVR DYNAMIC SYSTEM · ratings respond to match results · floor 60 · ceiling 99 */
+/* ====================================================================== */
+/* LIVING ABILITY RATINGS · per-fighter combat ratings, each 1-99, that     */
+/* rise/fall with match performance. OVR = the average of them. Weight class */
+/* + position(archetype) tilt the base values AND the combat math.          */
+/* ====================================================================== */
+const ABILITY_KEYS = ['striking','power','finisher','blocking','stamina','speed','heart'];
+const ABILITY_LABELS = { striking:'Striking', power:'Power', finisher:'Finisher', blocking:'Blocking', stamina:'Stamina', speed:'Speed', heart:'Heart' };
+
+// Weight class — derived from position/archetype. Heavier = more power + tougher, but slower.
+const WEIGHT_CLASSES = {
+  LIGHT:  { name:'Lightweight',  abbr:'LW', mods:{ speed:10, finisher:3, power:-8, blocking:-3, stamina:2 }, tough:1.06, knock:0.82, regen:1.12 },
+  WELTER: { name:'Welterweight', abbr:'WW', mods:{ speed:5, striking:3, power:-2 },                          tough:1.0,  knock:0.94, regen:1.05 },
+  MIDDLE: { name:'Middleweight', abbr:'MW', mods:{ power:3, striking:2 },                                     tough:0.97, knock:1.05, regen:1.0  },
+  HEAVY:  { name:'Heavyweight',  abbr:'HW', mods:{ power:12, blocking:5, finisher:4, speed:-10, stamina:-2 }, tough:0.88, knock:1.20, regen:0.9  }
+};
+const ARCH_WEIGHT = { POWERHOUSE:'HEAVY', WRESTLER:'HEAVY', BRAWLER:'MIDDLE', MMA:'MIDDLE', BOXER:'WELTER', STRIKER:'WELTER', KICKBOXER:'WELTER', HIGHFLYER:'LIGHT' };
+function weightClassOf(f) { return ARCH_WEIGHT[f.arch] || 'MIDDLE'; }
+
+// Position(archetype) tilt — what a style is naturally strong at.
+const ARCH_MODS = {
+  BRAWLER:   { power:6, striking:4, blocking:2, speed:-2 },
+  BOXER:     { striking:8, speed:4, blocking:4, power:-2 },
+  HIGHFLYER: { speed:10, finisher:5, power:-6, blocking:-2 },
+  POWERHOUSE:{ power:12, finisher:6, speed:-8, blocking:4 },
+  STRIKER:   { striking:8, speed:5, power:1 },
+  KICKBOXER: { striking:6, speed:6, finisher:3, blocking:1 },
+  WRESTLER:  { power:8, blocking:6, finisher:4, speed:-6, stamina:3 },
+  MMA:       { striking:3, power:3, blocking:3, finisher:3, speed:2, stamina:2 }
+};
+
+function clampAbil(v){ return Math.max(1, Math.min(99, Math.round(v))); }
+
+// Base ability (before living deltas) — derived from existing stats + position + weight class.
+function baseAbility(f, key) {
+  const s = f.stats; let v;
+  switch (key) {
+    case 'striking': v = s.striking; break;
+    case 'stamina':  v = s.stamina; break;
+    case 'heart':    v = s.heart; break;
+    case 'power':    v = s.grappling*0.55 + s.striking*0.45; break;
+    case 'finisher': v = s.striking*0.45 + s.heart*0.30 + s.grappling*0.25; break;
+    case 'blocking': v = s.grappling*0.45 + s.stamina*0.30 + s.heart*0.25; break;
+    case 'speed':    v = (100 - s.grappling)*0.45 + s.stamina*0.40 + s.charisma*0.15; break;
+    default: v = 80;
+  }
+  v += (ARCH_MODS[f.arch] || {})[key] || 0;
+  v += (WEIGHT_CLASSES[weightClassOf(f)].mods[key] || 0);
+  return clampAbil(v);
+}
+function getAbility(f, key) {
+  const d = (save.abilDelta[f.id] && save.abilDelta[f.id][key]) || 0;
+  return clampAbil(baseAbility(f, key) + d);
+}
+function getAbilities(f) { const o = {}; ABILITY_KEYS.forEach(k => o[k] = getAbility(f, k)); return o; }
+function getAbilityDelta(f, key) { return (save.abilDelta[f.id] && save.abilDelta[f.id][key]) || 0; }
+function adjustAbility(id, key, change) {
+  const f = FIGHTERS.find(x => x.id === id); if (!f) return 0;
+  if (!save.abilDelta[id]) save.abilDelta[id] = {};
+  const curDelta = save.abilDelta[id][key] || 0;
+  const cur = clampAbil(baseAbility(f, key) + curDelta);
+  const target = Math.max(1, Math.min(99, cur + change));
+  const actual = target - cur;
+  save.abilDelta[id][key] = curDelta + actual;
+  return actual;
+}
+
+// OVR is the average of the live abilities (floor 1, ceiling 99).
+function baseOVR(f) { const sum = ABILITY_KEYS.reduce((a,k)=>a+baseAbility(f,k),0); return clampAbil(sum / ABILITY_KEYS.length); }
 function getCurrentOVR(id) {
   const f = FIGHTERS.find(x => x.id === id);
   if (!f) return 0;
-  const delta = save.ovrDelta[id] || 0;
-  return Math.max(60, Math.min(99, f.ovr + delta));
+  const ab = getAbilities(f);
+  const sum = ABILITY_KEYS.reduce((a,k)=>a+ab[k],0);
+  return clampAbil(sum / ABILITY_KEYS.length);
 }
 function getOVRDelta(id) {
-  return save.ovrDelta[id] || 0;
-}
-function adjustOVR(id, change) {
-  const cur = getCurrentOVR(id);
-  const target = Math.max(60, Math.min(99, cur + change));
-  const actualChange = target - cur;
-  save.ovrDelta[id] = (save.ovrDelta[id] || 0) + actualChange;
-  return actualChange;
+  const f = FIGHTERS.find(x => x.id === id);
+  if (!f) return 0;
+  return getCurrentOVR(id) - baseOVR(f);
 }
 
 /* ========== SCREEN ROUTING ========== */
@@ -984,16 +1100,13 @@ function openDetail(id) {
   const cur = getCurrentOVR(f.id);
   const delta = getOVRDelta(f.id);
   const deltaTxt = delta === 0 ? '' : `<span style="font-size:12px; color:${delta > 0 ? '#4ad06a' : 'var(--red-bright)'}; letter-spacing:1px; margin-left:6px;">${delta > 0 ? '▲' : '▼'}${Math.abs(delta)}</span>`;
+  const wc = WEIGHT_CLASSES[weightClassOf(f)];
   sc.innerHTML = `
     <div class="stats-head">
-      <div><div class="slot">SLOT ${f.slot} · ${f.arch} · BASE ${f.ovr}</div></div>
-      <div><div class="ovr">${cur}${deltaTxt}</div><div class="ovr-label">OVR</div></div>
+      <div><div class="slot">SLOT ${f.slot} · ${f.arch} · ${wc.name.toUpperCase()}</div></div>
+      <div><div class="ovr">${cur}${deltaTxt}</div><div class="ovr-label">OVR · BASE ${baseOVR(f)}</div></div>
     </div>
-    ${statRow('Striking',f.stats.striking)}
-    ${statRow('Grappling',f.stats.grappling)}
-    ${statRow('Stamina',f.stats.stamina)}
-    ${statRow('Heart',f.stats.heart)}
-    ${statRow('Charisma',f.stats.charisma)}
+    ${ABILITY_KEYS.map(k => statRow(ABILITY_LABELS[k], getAbility(f, k), getAbilityDelta(f, k))).join('')}
     <div class="finishers">
       <div class="fin-label">SIGNATURE FINISHERS</div>
       <div class="fin-list">
@@ -1009,8 +1122,9 @@ function openDetail(id) {
   `;
   goto('detail');
 }
-function statRow(label, val) {
-  return `<div class="stat-row"><span class="stat-label">${label}</span><div class="stat-bar"><div class="stat-fill" style="width:${val}%"></div></div><span class="stat-num">${val}</span></div>`;
+function statRow(label, val, delta = 0) {
+  const d = delta ? `<span style="font-size:9px; margin-left:4px; color:${delta > 0 ? '#4ad06a' : 'var(--red-bright)'}">${delta > 0 ? '▲' : '▼'}${Math.abs(delta)}</span>` : '';
+  return `<div class="stat-row"><span class="stat-label">${label}</span><div class="stat-bar"><div class="stat-fill" style="width:${val}%"></div></div><span class="stat-num">${val}${d}</span></div>`;
 }
 
 /* ========== COMBAT ENGINE ========== */
@@ -1046,9 +1160,16 @@ function startMatchWith(playerId) {
     pCool: 0, oCool: 0,
     pLockMove: 0,
     joy: 0,
+    paused: false,
     killFin: false,
     ai: { decision: 0, blockCD: 0 },
-    lastT: 0
+    lastT: 0,
+    // live ability ratings drive the combat math (computed once per match)
+    pAb: getAbilities(player), oAb: getAbilities(opponent),
+    pWC: weightClassOf(player), oWC: weightClassOf(opponent),
+    // per-match performance tally — feeds the end-of-match rating movement
+    tally: { strikesLanded:0, strikesWhiff:0, heavyLanded:0, blocked:0, dodgedClean:0,
+             finisherLanded:false, dmgDealt:0, dmgTaken:0, gassed:false }
   };
   save.picks[playerId] = (save.picks[playerId] || 0) + 1;
   persistSave();
@@ -1084,6 +1205,13 @@ function initFightVisuals() {
   document.getElementById('fight-round').textContent = match.round;
   document.getElementById('ring-left-svg').innerHTML = renderFighter(player.art);
   document.getElementById('ring-right-svg').innerHTML = renderFighter(opponent.art);
+  // Clear any transient combat classes left over from the PREVIOUS match — otherwise a
+  // KO'd fighter (the 'ko' class) stays collapsed/dead into the next fight ("die and stay dead").
+  ['ring-left', 'ring-right'].forEach(id => {
+    document.getElementById(id).classList.remove('ko', 'hit', 'hit-heavy', 'dodging',
+      'attack-jab', 'attack-cross', 'attack-power', 'attack-finisher');
+  });
+  document.getElementById('ring').classList.remove('shake', 'shake-heavy');
   document.getElementById('left-guard').classList.remove('on', 'pulse');
   document.getElementById('right-guard').classList.remove('on', 'pulse');
   setStatus('FIGHT!', 'var(--gold)', 1100);
@@ -1101,6 +1229,7 @@ function initFightVisuals() {
     cancelAnimationFrame(rafId);
     rafId = requestAnimationFrame(gameLoop);
   });
+  if (!save.tutorialSeen) showTutorial();   // first-time players get the how-to-fight card
 }
 
 function applyPositions() {
@@ -1152,6 +1281,7 @@ function updateButtons() {
 
 function gameLoop(t) {
   if (!match || match.over) return;
+  if (match.paused) { match.lastT = t; rafId = requestAnimationFrame(gameLoop); return; } // frozen for tutorial
   let dt = (t - match.lastT) / 1000;
   match.lastT = t;
   if (dt > 0.05) dt = 0.05;                 // clamp tab-switch / first-frame spikes
@@ -1173,11 +1303,13 @@ function gameLoop(t) {
   match.ai.blockCD = Math.max(0, match.ai.blockCD - dtms);
 
   if (match.pStun <= 0 && match.pLockMove <= 0 && Math.abs(match.joy) > 0.08) {
-    match.pX += match.joy * RT.moveSpeed * (match.pBlock ? 0.4 : 1) * dt;
+    match.pX += match.joy * RT.moveSpeed * (match.pAb.speed / 80) * (match.pBlock ? 0.4 : 1) * dt; // SPEED drives movement
   }
 
-  match.pST = Math.min(100, match.pST + RT.stRegen * dt);
-  match.oST = Math.min(100, match.oST + RT.stRegen * dt);
+  // STAMINA + weight class drive regen
+  match.pST = Math.min(100, match.pST + RT.stRegen * (match.pAb.stamina / 80) * WEIGHT_CLASSES[match.pWC].regen * dt);
+  match.oST = Math.min(100, match.oST + RT.stRegen * (match.oAb.stamina / 80) * WEIGHT_CLASSES[match.oWC].regen * dt);
+  if (match.pST < 1) match.tally.gassed = true;
   if (match.pBlock) {
     match.pST = Math.max(0, match.pST - RT.blockDrain * dt);
     if (match.pST <= 0) setBlock(false);
@@ -1237,9 +1369,9 @@ function playerDodge() {
   if (match.pStun > 0 || match.pAtk || match.pCool > 0) return;
   if (match.pST < 12) return;
   match.pST -= 12;
-  match.pInvuln = 270;
+  match.pInvuln = 230 + match.pAb.speed * 0.6;          // SPEED = longer i-frames
   match.pCool = 360;
-  match.pX = Math.max(0, match.pX - RT.backStep);
+  match.pX = Math.max(0, match.pX - RT.backStep * (match.pAb.speed / 80)); // SPEED = bigger evade hop
   const el = document.getElementById('ring-left');
   el.classList.remove('dodging'); void el.offsetWidth; el.classList.add('dodging');
   setTimeout(() => el.classList.remove('dodging'), 300);
@@ -1301,30 +1433,56 @@ function resolveAttack(atk) {
   const defSide = isPlayer ? 'right' : 'left';
 
   if (gap > reachPx) {
+    if (isPlayer) match.tally.strikesWhiff++;
     setStatus(isPlayer ? 'WHIFF — get closer' : (match.opponent.name + ' whiffs'), 'var(--muted)', 600);
     playMissSound();
     return;
   }
   const defInvuln = isPlayer ? match.oInvuln > 0 : match.pInvuln > 0;
   if (defInvuln) {
+    if (isPlayer) match.tally.strikesWhiff++; else match.tally.dodgedClean++;
     setStatus(isPlayer ? 'DODGED!' : 'you dodged it!', '#7fd0ff', 700);
     playMissSound();
     return;
   }
-  const defBlock = isPlayer ? match.oBlock : match.pBlock;
-  let dmg = Math.round((move.dmg[0] + move.dmg[1]) / 2 * (0.9 + Math.random() * 0.2));
+
+  // Ability-driven damage — attacker ratings push it up/down around an 80 baseline.
+  const atkAb = isPlayer ? match.pAb : match.oAb;
+  const defAb = isPlayer ? match.oAb : match.pAb;
+  const atkWC = isPlayer ? match.pWC : match.oWC;
+  const defWC = isPlayer ? match.oWC : match.pWC;
+  const atkHP = isPlayer ? match.pHP : match.oHP;
+  let dmg = (move.dmg[0] + move.dmg[1]) / 2 * (0.9 + Math.random() * 0.2);
+  dmg *= atkAb.striking / 80;
+  if (move.type === 'power') dmg *= 0.5 + atkAb.power / 160;          // POWER weights the heavy hit
+  if (move.fin)              dmg *= atkAb.finisher / 80;              // FINISHER scales the kill blow
+  if (atkHP < 30)            dmg *= 1 + (atkAb.heart / 100) * 0.22;   // HEART = clutch when hurt
+  dmg *= WEIGHT_CLASSES[defWC].tough;                                // weight class = toughness
   let blocked = false;
-  if (defBlock) { dmg = Math.max(2, Math.round(dmg * 0.22)); blocked = true; }
+  const defBlock = isPlayer ? match.oBlock : match.pBlock;
+  if (defBlock) { dmg *= Math.max(0.08, Math.min(0.34, 0.34 - defAb.blocking * 0.0022)); blocked = true; } // BLOCKING = absorb%
+  dmg = Math.max(2, Math.round(dmg));
 
   if (isPlayer) match.oHP = Math.max(0, match.oHP - dmg);
   else          match.pHP = Math.max(0, match.pHP - dmg);
 
   const heavy = atk.cfg.heavy && !blocked;
-  applyKnockback(isPlayer, blocked ? atk.cfg.knock * 0.3 : atk.cfg.knock);
+  const knock = atk.cfg.knock * (atkAb.power / 80) * WEIGHT_CLASSES[atkWC].knock; // POWER + weight drive knockback
+  applyKnockback(isPlayer, blocked ? knock * 0.3 : knock);
   flash(defSide, heavy);
   burst(defSide, dmg);
   shakeRing(heavy);
   triggerHitReact(defSide, heavy);
+
+  // tally what happened — feeds the end-of-match rating movement
+  if (isPlayer) {
+    match.tally.strikesLanded++; match.tally.dmgDealt += dmg;
+    if (heavy) match.tally.heavyLanded++;
+    if (move.fin && !blocked) match.tally.finisherLanded = true;
+  } else {
+    match.tally.dmgTaken += dmg;
+    if (blocked) match.tally.blocked++;
+  }
 
   if (blocked) {
     playBlockSound();
@@ -1370,9 +1528,9 @@ function updateAI(dt, dtms, fW, maxX) {
   match.ai.decision = Math.max(0, match.ai.decision - dtms);
 
   if (gap > reachPx * 0.92) {
-    match.oX -= RT.aiSpeed * dt;                                // close the distance
+    match.oX -= RT.aiSpeed * (match.oAb.speed / 80) * dt;                 // SPEED-driven approach
   } else if (match.oST < 18) {
-    match.oX = Math.min(maxX, match.oX + RT.aiSpeed * 0.7 * dt);// gassed → create space
+    match.oX = Math.min(maxX, match.oX + RT.aiSpeed * (match.oAb.speed / 80) * 0.7 * dt); // gassed → create space
   } else if (match.oCool <= 0 && match.ai.decision <= 0) {
     aiAttack();
     match.ai.decision = 240 + Math.random() * 360 * (2 - aggro);
@@ -1459,6 +1617,18 @@ function bindBtn(id, fn) {
   el.addEventListener('pointerdown', e => { e.preventDefault(); fn(); });
 }
 
+function showTutorial() {
+  const el = document.getElementById('tutorial'); if (!el) return;
+  el.classList.add('on'); el.setAttribute('aria-hidden', 'false');
+  if (match) match.paused = true;            // freeze the fight while the card is up
+}
+function hideTutorial() {
+  const el = document.getElementById('tutorial'); if (!el) return;
+  el.classList.remove('on'); el.setAttribute('aria-hidden', 'true');
+  save.tutorialSeen = true; persistSave();
+  if (match && !match.over) { match.paused = false; match.lastT = performance.now(); }
+}
+
 function flash(side, heavy) {
   const el = document.getElementById(side + '-flash');
   el.classList.remove('fire', 'fire-heavy');
@@ -1495,6 +1665,47 @@ function showFinisherReverence(cb) {
   el.classList.add('on');
   setTimeout(() => { el.classList.remove('on'); setTimeout(cb, 480); }, 2000);
 }
+// End-of-match rating movement — abilities rise/fall by how the PLAYER performed.
+// Opponent drifts the opposite way (gentler) so the whole roster stays alive.
+function applyProgression(result) {
+  const t = match.tally;
+  const pid = match.player.id, oid = match.opponent.id;
+  const lowHPwin = (result === 'win' && match.pHP < 25);
+  const pBefore = getCurrentOVR(pid), oBefore = getCurrentOVR(oid);
+  const pCh = {}, oCh = {};
+  const pNudge = (k, a) => { if (a) { const x = adjustAbility(pid, k, a); if (x) pCh[k] = (pCh[k] || 0) + x; } };
+  const oNudge = (k, a) => { if (a) { const x = adjustAbility(oid, k, a); if (x) oCh[k] = (oCh[k] || 0) + x; } };
+
+  if (t.strikesLanded >= 8 && t.strikesWhiff <= t.strikesLanded * 0.5) pNudge('striking', +1);
+  else if (t.strikesWhiff >= 5 && t.strikesWhiff > t.strikesLanded)    pNudge('striking', -1);
+  if (t.heavyLanded >= 4)        pNudge('power', +1);
+  if (t.finisherLanded)          pNudge('finisher', +2);
+  if (t.blocked >= 4)            pNudge('blocking', +1);
+  else if (t.dmgTaken >= 80 && t.blocked <= 1) pNudge('blocking', -1);
+  pNudge('stamina', t.gassed ? -1 : +1);
+  if (t.dodgedClean >= 3)        pNudge('speed', +1);
+  if (result === 'win') {
+    pNudge('heart', lowHPwin ? +2 : +1);
+    if (Object.keys(pCh).length === 0) pNudge('striking', +1);   // a win always teaches something
+  } else {
+    pNudge('heart', -1);
+  }
+
+  if (result === 'win') { oNudge('heart', -1); oNudge(ABILITY_KEYS[Math.floor(Math.random() * ABILITY_KEYS.length)], -1); }
+  else { oNudge('striking', +1); oNudge('heart', +1); }
+
+  persistSave();
+  return { pCh, oCh, pBefore, pAfter: getCurrentOVR(pid), oBefore, oAfter: getCurrentOVR(oid), lowHPwin };
+}
+function fmtChanges(ch) {
+  const keys = Object.keys(ch).filter(k => ch[k] !== 0);
+  if (!keys.length) return '<span style="color:var(--muted)">ratings held steady</span>';
+  return keys.map(k => {
+    const up = ch[k] > 0;
+    return `<span style="color:${up ? '#4ad06a' : 'var(--red-bright)'}">${ABILITY_LABELS[k]} ${up ? '▲' : '▼'}${Math.abs(ch[k])}</span>`;
+  }).join(' · ');
+}
+
 function finishMatch(result) {
   const lossSide = result === 'win' ? 'right' : 'left';
   document.getElementById('ring-' + lossSide).classList.add('ko');
@@ -1502,24 +1713,11 @@ function finishMatch(result) {
   if (result === 'win') { save.wins++; save.kos++; }
   else save.losses++;
 
-  // Dynamic OVR adjustment · win = +2 (+1 extra if finisher) · loss = -2 (-1 extra if KO'd)
-  const playerId = match.player.id;
-  const oppId = match.opponent.id;
-  const playerBefore = getCurrentOVR(playerId);
-  const oppBefore = getCurrentOVR(oppId);
-  let playerChange, oppChange;
-  if (result === 'win') {
-    playerChange = adjustOVR(playerId, 2);
-    oppChange = adjustOVR(oppId, -2);
-    // Underdog bonus · beating someone higher-OVR gives more
-    if (oppBefore > playerBefore + 3) playerChange += adjustOVR(playerId, 1);
-  } else {
-    playerChange = adjustOVR(playerId, -2);
-    oppChange = adjustOVR(oppId, 2);
-  }
-  const playerAfter = getCurrentOVR(playerId);
-  const oppAfter = getCurrentOVR(oppId);
-  persistSave();
+  // Living ability progression — abilities move by how the player performed; OVR = their average.
+  const prog = applyProgression(result);
+  const playerBefore = prog.pBefore, playerAfter = prog.pAfter;
+  const oppBefore = prog.oBefore, oppAfter = prog.oAfter;
+  const playerChange = playerAfter - playerBefore, oppChange = oppAfter - oppBefore;
 
   setTimeout(() => {
     const banner = document.getElementById('result-banner');
@@ -1527,8 +1725,8 @@ function finishMatch(result) {
     banner.classList.toggle('loss', result === 'loss');
     const arrowP = playerChange > 0 ? '▲' : (playerChange < 0 ? '▼' : '·');
     const arrowO = oppChange > 0 ? '▲' : (oppChange < 0 ? '▼' : '·');
-    const colorP = playerChange > 0 ? '#4ad06a' : 'var(--red-bright)';
-    const colorO = oppChange > 0 ? '#4ad06a' : 'var(--red-bright)';
+    const colorP = playerChange > 0 ? '#4ad06a' : (playerChange < 0 ? 'var(--red-bright)' : 'var(--muted)');
+    const colorO = oppChange > 0 ? '#4ad06a' : (oppChange < 0 ? 'var(--red-bright)' : 'var(--muted)');
     document.getElementById('result-detail').innerHTML =
       (result === 'win'
         ? `${match.player.name} stands tall.<br>${match.opponent.name} could not answer the bell.`
@@ -1536,6 +1734,7 @@ function finishMatch(result) {
       + `<div style="margin-top:14px; font-size:12px; letter-spacing:1px;">`
       + `<div>${match.player.name} OVR: ${playerBefore} → <strong style="color:${colorP}">${playerAfter} ${arrowP}${Math.abs(playerChange)}</strong></div>`
       + `<div>${match.opponent.name} OVR: ${oppBefore} → <strong style="color:${colorO}">${oppAfter} ${arrowO}${Math.abs(oppChange)}</strong></div>`
+      + `<div style="margin-top:8px; font-size:11px; line-height:1.7;">${fmtChanges(prog.pCh)}</div>`
       + `</div>`;
 
     const sf = result === 'win' ? match.player.art.scriptureFinisher : null;
