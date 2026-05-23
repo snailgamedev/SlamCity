@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#0a0a0d" />
-<title>SLAM CITY · v2.17 · CREATOR</title>
+<title>SLAM CITY · v2.18 · WATCH + FRANCHISE</title>
 <!-- retro arcade type: Press Start 2P for marquee, Oxanium for readable UI · safe fallback stack -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -702,6 +702,12 @@
   .cr-sw.on { border-color: var(--gold); box-shadow: 0 0 8px rgba(200,160,96,0.6); }
   .cr-chip { padding: 7px 12px; border-radius: 13px; border: 1px solid var(--bg-3); background: var(--bg-1); color: var(--soft); font-family: inherit; font-weight: 700; font-size: 10px; letter-spacing: 0.5px; cursor: pointer; text-transform: capitalize; }
   .cr-chip.on { background: linear-gradient(180deg, #3a1a1e, #260f12); border-color: var(--red); color: #ffd0d0; }
+
+  /* watch-mode badge */
+  .watch-badge { display: none; align-items: center; justify-content: space-between; gap: 10px; margin: 6px 8px; padding: 8px 14px; border-radius: 12px; border: 1px solid var(--gold); background: rgba(40,28,12,0.85); }
+  .watch-badge.on { display: flex; }
+  .watch-badge span { font-size: 11px; letter-spacing: 1px; color: var(--gold); font-weight: 800; }
+  .watch-badge button { padding: 6px 14px; border-radius: 8px; border: 1px solid var(--bg-3); background: var(--bg-1); color: var(--cream); font-family: inherit; font-weight: 800; font-size: 11px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -719,7 +725,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v2.17 · build 2026-05-23·1935 · CHARACTER CREATOR (name·look·discipline·stats·finisher · live preview · saved + pickable) · 17+ roster · LOOPING · for AARON</div>
+  <div class="splash-foot">v2.18 · build 2026-05-23·1941 · WATCH MODE (CPU v CPU spectate) + FRANCHISE (8-match season) · 8 modes · creator · LOOPING · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -756,6 +762,8 @@
     <button class="mode-card" onclick="startMode('survival')"><span class="mode-ic">💀</span><span class="mode-txt"><b>SURVIVAL</b><i>endless · how far can you go</i></span></button>
     <button class="mode-card" onclick="startMode('versus')"><span class="mode-ic">⚔️</span><span class="mode-txt"><b>VERSUS</b><i>pick both fighters</i></span></button>
     <button class="mode-card" onclick="startMode('training')"><span class="mode-ic">🥊</span><span class="mode-txt"><b>TRAINING</b><i>no-stakes practice</i></span></button>
+    <button class="mode-card" onclick="startMode('franchise')"><span class="mode-ic">📅</span><span class="mode-txt"><b>FRANCHISE</b><i>8-match season · track your record</i></span></button>
+    <button class="mode-card" onclick="startMode('watch')"><span class="mode-ic">👁</span><span class="mode-txt"><b>WATCH</b><i>CPU vs CPU · spectate</i></span></button>
   </div>
   <button class="btn btn-secondary" type="button" onclick="goto('create')" style="margin-top:12px">＋ CREATE A FIGHTER</button>
 </div>
@@ -886,6 +894,7 @@
   </div>
 
   <div class="captions" id="captions" aria-live="polite" aria-atomic="true"></div>
+  <div class="watch-badge" id="watch-badge"><span>👁 WATCHING · CPU vs CPU</span><button type="button" onclick="goto('hub')">EXIT</button></div>
 
   <div class="combat-controls" id="combat-controls">
     <div class="joystick" id="joystick" aria-label="move">
@@ -974,7 +983,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v2.17</div>
+    <div class="load-skip">tap to skip · v2.18</div>
   </div>
 </div>
 
@@ -1523,12 +1532,18 @@ function renderHub() {
 }
 
 let gameMode = 'quick';
-const MODE_LABEL = { quick:'QUICK FIGHT', career:'CAREER', gauntlet:'GAUNTLET', survival:'SURVIVAL', versus:'VERSUS', training:'TRAINING' };
-const modeCtx = { queue: [], idx: 0, streak: 0, playerId: null, pickingOpponent: false };
+const MODE_LABEL = { quick:'QUICK FIGHT', career:'CAREER', gauntlet:'GAUNTLET', survival:'SURVIVAL', versus:'VERSUS', training:'TRAINING', franchise:'FRANCHISE', watch:'WATCH' };
+const modeCtx = { queue: [], idx: 0, streak: 0, playerId: null, pickingOpponent: false, season: null };
+function shuffled(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
 function startMode(m) {
   gameMode = m;
-  modeCtx.queue = []; modeCtx.idx = 0; modeCtx.streak = 0; modeCtx.playerId = null; modeCtx.pickingOpponent = false;
+  modeCtx.queue = []; modeCtx.idx = 0; modeCtx.streak = 0; modeCtx.playerId = null; modeCtx.pickingOpponent = false; modeCtx.season = null;
+  if (m === 'watch') {                                   // CPU vs CPU — no pick, two random fighters
+    const ids = shuffled(FIGHTERS.map(f => f.id));
+    launchFight(ids[0], ids[1]);
+    return;
+  }
   setRosterLabel(false);
   goto('roster');
 }
@@ -1552,11 +1567,15 @@ function beginMode(playerId) {
   } else if (gameMode === 'survival') {
     modeCtx.streak = 0;
     launchFight(playerId);
+  } else if (gameMode === 'franchise') {
+    modeCtx.season = { idx: 0, total: 8, wins: 0, losses: 0 };
+    modeCtx.queue = shuffled(FIGHTERS.filter(f => f.id !== playerId).map(f => f.id)).slice(0, 8);
+    launchFight(playerId, modeCtx.queue[0]);
   } else {
     launchFight(playerId);                                      // quick / career / training
   }
 }
-// Continue a chain after a WIN (called from the result screen).
+// Continue (called from the result screen). Chain modes advance; franchise advances win OR loss.
 function nextInMode() {
   if (gameMode === 'gauntlet') {
     modeCtx.idx++;
@@ -1566,6 +1585,12 @@ function nextInMode() {
     modeCtx.streak++;
     if (modeCtx.streak % 2 === 0 && save.difficulty < 4) { save.difficulty++; persistSave(); }  // escalate
     launchFight(modeCtx.playerId);
+  } else if (gameMode === 'franchise') {
+    modeCtx.season.idx++;
+    if (modeCtx.season.idx >= modeCtx.season.total) { goto('hub'); return; }   // season complete
+    launchFight(modeCtx.playerId, modeCtx.queue[modeCtx.season.idx % modeCtx.queue.length]);
+  } else if (gameMode === 'watch') {
+    startMode('watch');                                         // watch another
   } else {
     launchFight(modeCtx.playerId);                              // training: keep going
   }
@@ -1641,7 +1666,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '2.17';
+const GAME_VERSION = '2.18';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -1893,6 +1918,8 @@ function startMatchWith(playerId, oppId) {
     started: false,
     mode: gameMode,
     training: gameMode === 'training',
+    pAI: gameMode === 'watch',
+    watchT: 0,
     killFin: false,
     ai: { decision: 0, blockCD: 0, mood: 'neutral', moodT: 0, burst: 0, feintCD: 0, jukeDir: 0 },
     lastT: 0,
@@ -1947,6 +1974,9 @@ function initFightVisuals() {
   document.getElementById('right-guard').classList.remove('on', 'pulse');
   setStatus('FIGHT!', 'var(--gold)', 1100);
   bindControls();
+  // WATCH mode: hide the control deck, show a WATCHING badge (player is a spectator)
+  document.getElementById('combat-controls').style.display = match.pAI ? 'none' : '';
+  document.getElementById('watch-badge').classList.toggle('on', !!match.pAI);
   syncBars();
   updateButtons();
   // Position fighters once the ring has a real width, then start the loop.
@@ -2059,6 +2089,8 @@ function gameLoop(t) {
   if (match.oDowned <= 0) setDowned('right', false);
 
   const frozen = match.pinning || match.subbing;   // a pin/submission sequence owns the moment
+
+  if (match.pAI && !frozen) updateWatchAI(dt, dtms, fW);   // WATCH mode: AI drives the left fighter too
 
   if (!frozen && match.pStun <= 0 && match.pLockMove <= 0 && match.pDowned <= 0 && Math.abs(match.joy) > 0.08) {
     match.pX += match.joy * RT.moveSpeed * (match.pAb.speed / 80) * (match.pBlock ? 0.4 : 1) * dt; // SPEED drives movement
@@ -2384,6 +2416,23 @@ function aiTaunt() {
   caption(match.opponent.name + ': ' + t, 'enemy');
 }
 
+// WATCH mode: drive the LEFT fighter with the same player verbs (reuses playerAttack/playerPin).
+function updateWatchAI(dt, dtms, fW) {
+  if (match.pStun > 0 || match.pAtk || match.pinning || match.subbing || match.pDowned > 0) { match.joy = 0; return; }
+  const gap = match.oX - match.pX;
+  match.watchT = (match.watchT || 0) - dtms;
+  if (match.oDowned > 0 && gap <= fW * 1.15) { match.joy = 0; if (match.pCool <= 0) playerPin(); return; }
+  if (gap > fW * 0.95) { match.joy = 1; return; }     // close in on the opponent
+  match.joy = 0;
+  if (match.pCool <= 0 && match.watchT <= 0) {
+    const r = Math.random();
+    if (match.oHP <= FIN_UNLOCK && r < 0.4) playerAttack('finisher');
+    else if (r < 0.15) playerAttack('strike');
+    else playerAttack('grapple');
+    match.watchT = 380 + Math.random() * 520;
+  }
+}
+
 function updateAI(dt, dtms, fW, maxX) {
   if (!match || match.over) return;
   // Mood keeps evolving every frame — even mid-grapple — so the AI stays unpredictable.
@@ -2629,7 +2678,7 @@ function showFinisherReverence(cb) {
 // Opponent drifts the opposite way (gentler) so the whole roster stays alive.
 function applyProgression(result) {
   const pid0 = match.player.id, oid0 = match.opponent.id;
-  if (match.training) {   // TRAINING is no-stakes — ratings don't move
+  if (match.training || match.pAI) {   // TRAINING + WATCH are no-stakes — ratings don't move
     const a = getCurrentOVR(pid0), b = getCurrentOVR(oid0);
     return { pCh: {}, oCh: {}, pBefore: a, pAfter: a, oBefore: b, oAfter: b, lowHPwin: false };
   }
@@ -2697,9 +2746,12 @@ function finishMatch(result) {
   document.getElementById('ring-' + lossSide).classList.add('ko');
   playKOSound();
   caption((result === 'win' ? match.player.name : match.opponent.name) + ' WINS BY KO!', 'big');
-  if (!match.training) {                              // TRAINING doesn't touch your record
+  if (!match.training && !match.pAI) {                // TRAINING + WATCH don't touch your record
     if (result === 'win') { save.wins++; save.kos++; }
     else save.losses++;
+  }
+  if (match.mode === 'franchise' && modeCtx.season) {  // season record
+    if (result === 'win') modeCtx.season.wins++; else modeCtx.season.losses++;
   }
 
   // Living ability progression — abilities move by how the player performed; OVR = their average.
@@ -2753,7 +2805,15 @@ function setResultButtons(result) {
   const m = match.mode;
   const won = result === 'win';
   const chainWin = (m === 'gauntlet' || m === 'survival') && won;
-  if (m === 'training') {
+  if (m === 'watch') {
+    prim.textContent = 'WATCH ANOTHER'; prim.onclick = () => startMode('watch');
+    sec.textContent = 'HOME / MODES'; sec.onclick = () => goto('hub');
+  } else if (m === 'franchise' && modeCtx.season) {
+    const s = modeCtx.season, last = s.idx + 1 >= s.total;
+    prim.textContent = last ? `SEASON DONE · ${s.wins}-${s.losses}` : `NEXT MATCH (${s.idx + 2}/${s.total}) · ${s.wins}-${s.losses}`;
+    prim.onclick = last ? () => goto('hub') : nextInMode;
+    sec.textContent = 'END SEASON'; sec.onclick = () => goto('hub');
+  } else if (m === 'training') {
     prim.textContent = 'KEEP TRAINING'; prim.onclick = nextInMode;
     sec.textContent = 'HOME / MODES'; sec.onclick = () => goto('hub');
   } else if (chainWin) {
