@@ -10,7 +10,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#0a0a0d" />
-<title>SLAM CITY · v2.2 · DIFFICULTY + WALK-IN</title>
+<title>SLAM CITY · v2.3 · RETRO + LIVE AI</title>
+<!-- retro arcade type: Press Start 2P for marquee, Oxanium for readable UI · safe fallback stack -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Oxanium:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg-0: #0a0a0d;
@@ -25,6 +29,8 @@
     --muted: #888;
     --soft: #aaa;
     --warn: #f4a05a;
+    --font-ui: 'Oxanium', 'Trebuchet MS', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-arcade: 'Press Start 2P', 'Oxanium', 'Courier New', monospace;
     --safe-top: env(safe-area-inset-top, 0);
     --safe-bottom: env(safe-area-inset-bottom, 0);
     --safe-l: env(safe-area-inset-left, 0);
@@ -35,7 +41,7 @@
   html, body {
     background: var(--bg-0);
     color: var(--cream);
-    font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+    font-family: var(--font-ui);
     min-height: 100dvh;
     overscroll-behavior: none;
     user-select: none;
@@ -502,6 +508,26 @@
   .pf-count.go { color: var(--gold); text-shadow: 0 0 30px var(--gold), 0 0 10px #fff; animation: pf-fight 0.5s cubic-bezier(0.16,1,0.3,1); }
   @keyframes pf-count-in { 0% { opacity: 0.2; transform: scale(1.6); } 100% { opacity: 1; transform: scale(1); } }
   @keyframes pf-fight { 0% { opacity: 0; transform: scale(0.5) rotate(-6deg); } 55% { transform: scale(1.18) rotate(2deg); } 100% { opacity: 1; transform: scale(1) rotate(0); } }
+
+  /* retro arcade type on the marquee moments (Press Start 2P) — short, high-impact text only */
+  .splash-title { font-family: var(--font-arcade); font-size: clamp(26px, 8.5vw, 50px); line-height: 1.4; letter-spacing: 0; }
+  .result-banner { font-family: var(--font-arcade); font-size: clamp(22px, 7vw, 38px); line-height: 1.35; }
+  .pf-vs { font-family: var(--font-arcade); }
+  .pf-count { font-family: var(--font-arcade); font-size: clamp(38px, 13vw, 64px); }
+  .pf-count.go { font-size: clamp(26px, 9vw, 46px); }
+  .tut-title { font-family: var(--font-arcade); font-size: 13px; letter-spacing: 1px; }
+  .ovr { font-family: var(--font-arcade); font-size: 24px; }
+  .splash-sub, .splash-foot, .round-label, .bar-tag, .pf-diff-tag, .ovr-label, .slot { letter-spacing: 1px; }
+
+  /* subtitles / captions — narrates the action (accessibility + clarity) */
+  .captions { min-height: 20px; margin: 2px 6px 0; text-align: center; pointer-events: none; }
+  .captions .cap-line { display: inline-block; font-size: 11px; letter-spacing: 0.5px; color: var(--soft); background: rgba(8,8,12,0.66); border: 1px solid var(--bg-3); border-radius: 10px; padding: 3px 12px; }
+  .captions .cap-line.player { color: var(--cream); }
+  .captions .cap-line.enemy { color: #ffc4c4; }
+  .captions .cap-line.big { color: var(--gold); font-weight: 800; }
+  .captions .cap-line.scripture { color: var(--gold); font-style: italic; }
+  .captions { opacity: 0; transition: opacity 0.15s; }
+  .captions.show { opacity: 1; }
 </style>
 </head>
 <body>
@@ -519,7 +545,7 @@
 
   <button class="btn" onclick="goto('roster')">ENTER THE RING</button>
   <button class="btn btn-secondary" id="quick-play-btn" onclick="quickPlay()" style="display:none">QUICK PLAY</button>
-  <div class="splash-foot">v2.2 · build 2026-05-23·1749 · 5 DIFFICULTIES · pre-fight VS+countdown · living ratings · 11 brothers · for AARON</div>
+  <div class="splash-foot">v2.3 · build 2026-05-23·1800 · RETRO FONT · UNPREDICTABLE AI (moods·feints·taunts) · CAPTIONS · 5 difficulties · pre-fight VS · 11 brothers · for AARON</div>
 </div>
 
 <!-- ========== ROSTER ========== -->
@@ -608,6 +634,8 @@
       <div class="impact-burst" id="right-burst"></div>
     </div>
   </div>
+
+  <div class="captions" id="captions" aria-live="polite" aria-atomic="true"></div>
 
   <div class="combat-controls" id="combat-controls">
     <div class="joystick" id="joystick" aria-label="move">
@@ -977,11 +1005,12 @@ function loadSave() {
       if (typeof parsed.difficulty !== 'number') parsed.difficulty = 2;  // Pro
       if (typeof parsed.sfxOn !== 'boolean') parsed.sfxOn = true;
       if (typeof parsed.vol !== 'number') parsed.vol = 0.9;
+      if (typeof parsed.captionsOn !== 'boolean') parsed.captionsOn = true;
       return parsed;
     }
   } catch(e) {}
   return { wins:0, losses:0, kos:0, finishers:0, scriptureStrikes:0, picks:{}, ovrDelta:{}, abilDelta:{},
-           difficulty:2, sfxOn:true, vol:0.9, platform:null, reducedMotion:false, tutorialSeen:false };
+           difficulty:2, sfxOn:true, vol:0.9, captionsOn:true, platform:null, reducedMotion:false, tutorialSeen:false };
 }
 function persistSave() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch(e) {}
@@ -1211,7 +1240,7 @@ function startMatchWith(playerId) {
     paused: false,
     started: false,
     killFin: false,
-    ai: { decision: 0, blockCD: 0 },
+    ai: { decision: 0, blockCD: 0, mood: 'neutral', moodT: 0, burst: 0, feintCD: 0, jukeDir: 0 },
     lastT: 0,
     // live ability ratings drive the combat math (computed once per match)
     pAb: getAbilities(player), oAb: getAbilities(opponent),
@@ -1309,6 +1338,17 @@ function setStatus(text, color, ttl) {
   if (ttl) statusTimer = setTimeout(() => {
     if (match && !match.over) { el.textContent = 'FIGHT!'; el.style.color = 'var(--cream)'; }
   }, ttl);
+}
+
+// Subtitles / captions — narrates key events for clarity + accessibility. Toggle: save.captionsOn.
+let capTimer = null;
+function caption(text, cls) {
+  if (!save.captionsOn) return;
+  const el = document.getElementById('captions'); if (!el) return;
+  el.innerHTML = '<span class="cap-line ' + (cls || '') + '">' + text + '</span>';
+  el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+  if (capTimer) clearTimeout(capTimer);
+  capTimer = setTimeout(() => el.classList.remove('show'), 2200);
 }
 
 function moveOf(fighter, kind) {
@@ -1493,6 +1533,7 @@ function resolveAttack(atk) {
   if (defInvuln) {
     if (isPlayer) match.tally.strikesWhiff++; else match.tally.dodgedClean++;
     setStatus(isPlayer ? 'DODGED!' : 'you dodged it!', '#7fd0ff', 700);
+    caption((isPlayer ? match.opponent.name : match.player.name) + ' dodges!', isPlayer ? 'enemy' : 'player');
     playMissSound();
     return;
   }
@@ -1537,13 +1578,18 @@ function resolveAttack(atk) {
     if (blocked) match.tally.blocked++;
   }
 
+  const atkName = isPlayer ? match.player.name : match.opponent.name;
+  const defName = isPlayer ? match.opponent.name : match.player.name;
   if (blocked) {
     playBlockSound();
     pulseGuard(defSide);
     setStatus(isPlayer ? (match.opponent.name + ' blocked') : 'BLOCKED!', '#7fd0ff', 600);
+    caption(defName + ' blocks ' + atkName + "'s " + move.name, isPlayer ? 'enemy' : 'player');
   } else {
     playHitSound(move.type);
-    if (heavy) setStatus(isPlayer ? 'BIG HIT!' : 'you got rocked!', isPlayer ? 'var(--gold)' : 'var(--red-bright)', 600);
+    if (heavy) { setStatus(isPlayer ? 'BIG HIT!' : 'you got rocked!', isPlayer ? 'var(--gold)' : 'var(--red-bright)', 600); caption(atkName + ' ROCKS ' + defName + '! −' + dmg, 'big'); }
+    else caption(atkName + ' lands ' + move.name + ' · −' + dmg, isPlayer ? 'player' : 'enemy');
+    if (move.fin) caption('✝ SCRIPTURE STRIKE', 'scripture');
   }
 
   if (isPlayer) match.oStun = blocked ? 110 : (heavy ? 430 : 220);
@@ -1556,49 +1602,117 @@ function resolveAttack(atk) {
   }
 }
 
+// Personality from the fighter's stats + live ratings — biases how it behaves.
+function aiPersona() {
+  const s = match.opponent.stats;
+  return { aggr: (s.striking + s.heart) / 200, def: match.oAb.blocking / 99, dart: match.oAb.speed / 99 };
+}
+// Pick a fresh mood — this is what makes it unpredictable fight-to-fight and moment-to-moment.
+function pickMood() {
+  const p = aiPersona(), d = curDiff();
+  const lowHP = match.oHP < 35, winning = match.oHP > match.pHP + 20;
+  const w = {
+    neutral: 1.0,
+    rush:    0.8 * p.aggr + (winning ? 0.5 : 0) + (lowHP ? 0.5 : 0),
+    bait:    0.6 + 0.5 * p.dart,
+    turtle:  0.5 * p.def + (lowHP ? 0.7 : 0),
+    juke:    0.7 * p.dart
+  };
+  w.rush *= (0.7 + d.speed); w.bait *= (0.8 + (1 - d.react));      // harder = presses + feints more
+  let total = 0; for (const k in w) total += w[k];
+  let r = Math.random() * total, pick = 'neutral';
+  for (const k in w) { r -= w[k]; if (r <= 0) { pick = k; break; } }
+  match.ai.mood = pick;
+  match.ai.moodT = 900 + Math.random() * 1700;                    // hold 0.9–2.6s
+  match.ai.jukeDir = Math.random() < 0.5 ? -1 : 1;
+}
+function aiFeint() {
+  triggerLunge('right', 'jab');                                   // fake a strike, no real hit
+  match.oCool = 320;
+  match.ai.feintCD = 650 + Math.random() * 700;
+  match.ai.decision = 200 * curDiff().react;
+  const ring = document.getElementById('ring'); const fW = document.getElementById('ring-left').offsetWidth || 160;
+  match.oX = Math.min(Math.max(0, ring.clientWidth - fW), match.oX + 26); // slip back to bait the whiff
+  caption(match.opponent.name + ' feints', 'enemy');
+}
+function aiTaunt() {
+  const taunts = ['YEEE!', "C'MON!", 'TOO EASY', 'IS THAT IT?', "LET'S GO!", 'CATCH THESE', 'WAKE UP'];
+  const t = taunts[Math.floor(Math.random() * taunts.length)];
+  setStatus(match.opponent.name + ': ' + t, 'var(--warn)', 850);
+  caption(match.opponent.name + ': ' + t, 'enemy');
+}
+
 function updateAI(dt, dtms, fW, maxX) {
   if (!match || match.over) return;
-  const opp = match.opponent;
   const gap = match.oX - match.pX;
   const reachPx = fW * 1.0;
   const busy = match.oStun > 0 || (match.oAtk && !match.oAtk.resolved);
   if (busy) return;
 
-  const aggro = (opp.stats.striking + opp.stats.heart) / 200;   // ~0.85–1.0
+  const p = aiPersona(), d = curDiff();
+  match.ai.moodT -= dtms;
+  if (match.ai.moodT <= 0) pickMood();
+  match.ai.feintCD = Math.max(0, match.ai.feintCD - dtms);
+  const mood = match.ai.mood;
 
-  // Defensive read — sometimes raise guard while the player is winding up in range.
-  if (!match.oAtk && match.ai.blockCD <= 0 && match.pAtk && !match.pAtk.resolved && gap <= reachPx * 1.25) {
-    if (Math.random() < curDiff().block * (0.6 + 0.4 * aggro)) {
+  // Defensive read — guard the player's wind-up (heavier in turtle/bait, lighter in rush).
+  if (!match.oAtk && match.ai.blockCD <= 0 && match.pAtk && !match.pAtk.resolved && gap <= reachPx * 1.3) {
+    const gc = d.block * (0.5 + 0.5 * p.aggr) * (mood === 'turtle' ? 1.5 : mood === 'bait' ? 1.2 : mood === 'rush' ? 0.5 : 1);
+    if (Math.random() < gc) {
       match.oBlock = true;
       document.getElementById('right-guard').classList.add('on');
-      match.ai.blockCD = 900;
-      setTimeout(() => { match.oBlock = false; const g = document.getElementById('right-guard'); if (g) g.classList.remove('on'); }, 360);
+      match.ai.blockCD = 700 + Math.random() * 500;
+      setTimeout(() => { match.oBlock = false; const g = document.getElementById('right-guard'); if (g) g.classList.remove('on'); }, 320 + Math.random() * 220);
       return;
     }
   }
   if (match.oBlock) return;
 
   match.ai.decision = Math.max(0, match.ai.decision - dtms);
+  const spd = RT.aiSpeed * (match.oAb.speed / 80) * d.speed;
 
-  if (gap > reachPx * 0.92) {
-    match.oX -= RT.aiSpeed * (match.oAb.speed / 80) * curDiff().speed * dt;                 // SPEED + difficulty approach
-  } else if (match.oST < 18) {
-    match.oX = Math.min(maxX, match.oX + RT.aiSpeed * (match.oAb.speed / 80) * curDiff().speed * 0.7 * dt); // gassed → create space
+  if (match.oST < 16) { match.oX = Math.min(maxX, match.oX + spd * 0.7 * dt); return; }   // gassed → breathe
+
+  if (mood === 'juke') {                                          // dance in/out, dart a jab
+    if (Math.random() < 0.02) match.ai.jukeDir = -match.ai.jukeDir;
+    match.oX += match.ai.jukeDir * spd * 0.85 * dt;
+    if (gap <= reachPx && match.oCool <= 0 && match.ai.decision <= 0 && Math.random() < 0.4) {
+      aiAttack(); match.ai.decision = (200 + Math.random() * 320) * d.react;
+    }
+    return;
+  }
+
+  let engage = reachPx * 0.92;
+  if (mood === 'bait') engage = reachPx * 1.05;
+  else if (mood === 'turtle') engage = reachPx * 1.15;
+  else if (mood === 'rush') engage = reachPx * 0.8;
+
+  if (gap > engage) {
+    match.oX -= spd * dt;                                         // approach
+  } else if (mood === 'turtle' && gap < reachPx * 0.85) {
+    match.oX = Math.min(maxX, match.oX + spd * 0.6 * dt);         // too close → back up
   } else if (match.oCool <= 0 && match.ai.decision <= 0) {
-    aiAttack();
-    match.ai.decision = (240 + Math.random() * 360 * (2 - aggro)) * curDiff().react;
+    if (mood === 'bait' && match.ai.feintCD <= 0 && Math.random() < 0.4) {
+      aiFeint();
+    } else {
+      aiAttack();
+      if (mood === 'rush' && match.ai.burst <= 0 && Math.random() < 0.6) match.ai.burst = 1 + Math.floor(Math.random() * 2);
+      const delay = match.ai.burst > 0 ? (140 + Math.random() * 120) : (240 + Math.random() * 360 * (2 - p.aggr));
+      if (match.ai.burst > 0) match.ai.burst--;
+      match.ai.decision = delay * d.react;
+    }
   }
 }
 
 function aiAttack() {
-  const opp = match.opponent;
+  const opp = match.opponent, mood = match.ai.mood, r = Math.random();
   let kind = 'jab';
-  const r = Math.random();
   const finMove = moveOf(opp, 'finisher');
-  if (match.pHP <= FIN_UNLOCK + 5 && opp.moves.some(m => m.fin) && match.oST >= finMove.cost && r < 0.5) {
+  if (match.pHP <= FIN_UNLOCK + 5 && opp.moves.some(m => m.fin) && match.oST >= finMove.cost && r < (mood === 'rush' ? 0.65 : 0.45)) {
     kind = 'finisher';
-  } else if (r < 0.42 && match.oST >= moveOf(opp, 'power').cost) {
-    kind = 'power';
+  } else {
+    const powerChance = mood === 'rush' ? 0.3 : mood === 'bait' ? 0.55 : 0.42;  // bait punishes with power
+    if (r < powerChance && match.oST >= moveOf(opp, 'power').cost) kind = 'power';
   }
   let move = moveOf(opp, kind);
   if (match.oST < move.cost) { kind = 'jab'; move = moveOf(opp, 'jab'); }
@@ -1607,7 +1721,9 @@ function aiAttack() {
   const cfg = ATK[kind];
   triggerLunge('right', move.type);
   match.oCool = cfg.cool;
-  match.oAtk = { kind, move, side: 'opponent', cfg, hitAt: performance.now() + cfg.windup, resolved: false };
+  const jitter = Math.random() * 90 - 30;                         // unreadable timing
+  match.oAtk = { kind, move, side: 'opponent', cfg, hitAt: performance.now() + cfg.windup + jitter, resolved: false };
+  if (mood === 'rush' && Math.random() < 0.16) aiTaunt();
 }
 
 function isFightActive() {
@@ -1796,6 +1912,7 @@ function finishMatch(result) {
   const lossSide = result === 'win' ? 'right' : 'left';
   document.getElementById('ring-' + lossSide).classList.add('ko');
   playKOSound();
+  caption((result === 'win' ? match.player.name : match.opponent.name) + ' WINS BY KO!', 'big');
   if (result === 'win') { save.wins++; save.kos++; }
   else save.losses++;
 
