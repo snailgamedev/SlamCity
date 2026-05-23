@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#0a0a0d" />
-<title>SLAM CITY · v2.14 · RESPONSIVE</title>
+<title>SLAM CITY · v2.15 · 12 STATS</title>
 <!-- retro arcade type: Press Start 2P for marquee, Oxanium for readable UI · safe fallback stack -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -690,7 +690,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v2.14 · build 2026-05-23·1918 · TRUE RESPONSIVE (measured viewport · portrait+landscape · fits any device) · real looks · 3D · 90/10 wrestling · LOOPING · for AARON</div>
+  <div class="splash-foot">v2.15 · build 2026-05-23·1922 · 12 LIVING STATS (grappling·submission·pin-power·chin·conditioning + more) wired into wrestling math · OVR 1-99 · responsive · 90/10 wrestling · LOOPING · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -920,7 +920,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v2.14</div>
+    <div class="load-skip">tap to skip · v2.15</div>
   </div>
 </div>
 
@@ -1292,8 +1292,8 @@ function persistSave() {
 /* rise/fall with match performance. OVR = the average of them. Weight class */
 /* + position(archetype) tilt the base values AND the combat math.          */
 /* ====================================================================== */
-const ABILITY_KEYS = ['striking','power','finisher','blocking','stamina','speed','heart'];
-const ABILITY_LABELS = { striking:'Striking', power:'Power', finisher:'Finisher', blocking:'Blocking', stamina:'Stamina', speed:'Speed', heart:'Heart' };
+const ABILITY_KEYS = ['grappling','submission','pinPower','striking','power','finisher','blocking','chin','stamina','conditioning','speed','heart'];
+const ABILITY_LABELS = { grappling:'Grappling', submission:'Submission', pinPower:'Pin Power', striking:'Striking', power:'Power', finisher:'Finisher', blocking:'Blocking', chin:'Chin', stamina:'Stamina', conditioning:'Conditioning', speed:'Speed', heart:'Heart' };
 
 // Weight class — derived from position/archetype. Heavier = more power + tougher, but slower.
 const WEIGHT_CLASSES = {
@@ -1330,6 +1330,11 @@ function baseAbility(f, key) {
     case 'finisher': v = s.striking*0.45 + s.heart*0.30 + s.grappling*0.25; break;
     case 'blocking': v = s.grappling*0.45 + s.stamina*0.30 + s.heart*0.25; break;
     case 'speed':    v = (100 - s.grappling)*0.45 + s.stamina*0.40 + s.charisma*0.15; break;
+    case 'grappling':    v = s.grappling; break;                                  // mat control / slam power
+    case 'submission':   v = s.grappling*0.6 + s.heart*0.4; break;                // locking in holds
+    case 'pinPower':     v = s.grappling*0.5 + s.striking*0.3 + s.stamina*0.2; break; // holding a pin down
+    case 'chin':         v = s.heart*0.5 + s.stamina*0.3 + s.grappling*0.2; break; // KO/damage resistance
+    case 'conditioning': v = s.stamina*0.7 + s.heart*0.3; break;                  // gas-tank depth
     default: v = 80;
   }
   v += (ARCH_MODS[f.arch] || {})[key] || 0;
@@ -1550,7 +1555,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '2.14';
+const GAME_VERSION = '2.15';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -1886,9 +1891,9 @@ function gameLoop(t) {
     match.pX += match.joy * RT.moveSpeed * (match.pAb.speed / 80) * (match.pBlock ? 0.4 : 1) * dt; // SPEED drives movement
   }
 
-  // STAMINA + weight class drive regen
-  match.pST = Math.min(100, match.pST + RT.stRegen * (match.pAb.stamina / 80) * WEIGHT_CLASSES[match.pWC].regen * dt);
-  match.oST = Math.min(100, match.oST + RT.stRegen * (match.oAb.stamina / 80) * WEIGHT_CLASSES[match.oWC].regen * dt);
+  // STAMINA + CONDITIONING + weight class drive regen (conditioning = deeper gas tank)
+  match.pST = Math.min(100, match.pST + RT.stRegen * (match.pAb.stamina / 80) * (0.7 + match.pAb.conditioning / 260) * WEIGHT_CLASSES[match.pWC].regen * dt);
+  match.oST = Math.min(100, match.oST + RT.stRegen * (match.oAb.stamina / 80) * (0.7 + match.oAb.conditioning / 260) * WEIGHT_CLASSES[match.oWC].regen * dt);
   if (match.pST < 1) match.tally.gassed = true;
   if (match.pBlock) {
     match.pST = Math.max(0, match.pST - RT.blockDrain * dt);
@@ -2028,7 +2033,9 @@ function doPin(byPlayer) {
   match.pinning = true;
   const downedHP = byPlayer ? match.oHP : match.pHP;
   const defHeart = byPlayer ? match.oAb.heart : match.pAb.heart;
-  const kicksOut = Math.random() < Math.min(0.92, (downedHP / 100) * 0.85 + (defHeart / 99) * 0.2);  // low HP + low heart = pinned
+  const pinPow = byPlayer ? match.pAb.pinPower : match.oAb.pinPower;     // PIN POWER holds them down
+  // low HP + heart help the kickout; the pinner's pin-power suppresses it
+  const kicksOut = Math.random() < Math.min(0.92, Math.max(0.04, (downedHP / 100) * 0.85 + (defHeart / 99) * 0.2 - (pinPow - 80) * 0.006));
   let n = 0;
   const tick = () => {
     if (!match || match.over) { match.pinning = false; return; }
@@ -2093,11 +2100,13 @@ function resolveAttack(atk) {
   const defWC = isPlayer ? match.oWC : match.pWC;
   const atkHP = isPlayer ? match.pHP : match.oHP;
   let dmg = (move.dmg[0] + move.dmg[1]) / 2 * (0.9 + Math.random() * 0.2);
-  dmg *= atkAb.striking / 80;
+  if (atk.cfg.slam) dmg *= 0.55 + atkAb.grappling / 140;             // GRAPPLING drives slam damage (the 90%)
+  else              dmg *= atkAb.striking / 80;                      // STRIKING drives the light 10%
   if (move.type === 'power') dmg *= 0.5 + atkAb.power / 160;          // POWER weights the heavy hit
   if (move.fin)              dmg *= atkAb.finisher / 80;              // FINISHER scales the kill blow
   if (atkHP < 30)            dmg *= 1 + (atkAb.heart / 100) * 0.22;   // HEART = clutch when hurt
   dmg *= WEIGHT_CLASSES[defWC].tough;                                // weight class = toughness
+  dmg *= Math.max(0.7, Math.min(1.25, 80 / defAb.chin));             // CHIN = damage/KO resistance
   if (isPlayer) dmg /= curDiff().oTough;                             // harder = opponent tankier
   else          dmg *= curDiff().oDmg;                               // harder = opponent hits harder
   let blocked = false;
