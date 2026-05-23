@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#0a0a0d" />
-<title>SLAM CITY · v2.19 · BALANCED</title>
+<title>SLAM CITY · v2.20 · POLISHED</title>
 <!-- retro arcade type: Press Start 2P for marquee, Oxanium for readable UI · safe fallback stack -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -303,39 +303,6 @@
   .impact-burst.dmg-huge { font-size: 46px; color: #ff5a5a; text-shadow: 0 2px 0 #000, 0 0 18px var(--gold), 0 0 8px #fff; }
   @keyframes burst { 0% { opacity: 0; transform: translate(-50%,-50%) scale(0.5); } 30% { opacity: 1; transform: translate(-50%,-80%) scale(1.4); } 100% { opacity: 0; transform: translate(-50%,-120%) scale(1.2); } }
 
-  /* Moves panel */
-  .moves-panel { padding-top: 8px; }
-  .moves-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .move-btn {
-    background: linear-gradient(180deg, var(--bg-2) 0%, var(--bg-1) 100%);
-    border: 1px solid var(--bg-3); color: var(--cream);
-    padding: 14px 8px; font-size: 11px; font-weight: 900; letter-spacing: 1.5px;
-    text-transform: uppercase; border-radius: 4px; cursor: pointer;
-    min-height: 56px; position: relative;
-    transition: transform 0.1s, border-color 0.1s;
-  }
-  .move-btn:active { transform: scale(0.97); border-color: var(--red); }
-  .move-btn.signature { border-color: var(--red); }
-  .move-btn.finisher { border-color: var(--gold); color: var(--gold); background: linear-gradient(180deg, #3a2a18 0%, #2a1810 100%); }
-  .move-btn.finisher.locked { opacity: 0.4; pointer-events: none; }
-  .move-btn .move-name { display: block; }
-  .move-btn .move-cost { display: block; font-size: 8px; color: var(--muted); margin-top: 3px; font-weight: 600; }
-  .move-btn.signature .move-cost { color: var(--red); }
-  .move-btn.finisher .move-cost { color: var(--gold); }
-
-  /* Combat log */
-  .combat-log {
-    margin-top: 8px; max-height: 70px; overflow-y: auto;
-    font-size: 11px; color: var(--soft); padding: 6px 10px;
-    background: rgba(0,0,0,0.3); border-radius: 4px; border: 1px solid var(--bg-3);
-    line-height: 1.5;
-  }
-  .combat-log .log-line { margin-bottom: 2px; }
-  .combat-log .log-line.player { color: var(--cream); }
-  .combat-log .log-line.enemy { color: var(--soft); }
-  .combat-log .log-line.crit { color: var(--gold); font-weight: 700; }
-  .combat-log .log-line.scripture { color: var(--gold); font-style: italic; }
-
   /* ===== RESULT ===== */
   #result { justify-content: center; align-items: center; text-align: center; gap: 24px; }
   .result-banner { font-size: clamp(40px, 12vw, 80px); font-weight: 900; letter-spacing: 3px; color: var(--cream); text-shadow: 0 4px 0 #000, 0 6px 16px var(--red); animation: result-pop 0.6s ease-out; }
@@ -386,8 +353,6 @@
   /* Mobile tweaks */
   @media (max-width: 380px) {
     .roster-grid { grid-template-columns: repeat(2, 1fr); }
-    .moves-grid { gap: 6px; }
-    .move-btn { padding: 10px 4px; font-size: 10px; min-height: 50px; }
   }
 
   /* ====================================================================== */
@@ -725,7 +690,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v2.19 · build 2026-05-23·1946 · BALANCED (fair across 5 difficulties · close + winnable · never merciless/merciful · balance-probed) · 8 modes · LOOPING · for AARON</div>
+  <div class="splash-foot">v2.20 · build 2026-05-23·1953 · POLISH SWEEP (every setting verified · dead code cleaned · 14 test suites green) · 8 modes · 90/10 wrestling · BOARD CLEAR · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -983,7 +948,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v2.19</div>
+    <div class="load-skip">tap to skip · v2.20</div>
   </div>
 </div>
 
@@ -1666,7 +1631,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '2.19';
+const GAME_VERSION = '2.20';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
