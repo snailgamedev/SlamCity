@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#0a0a0d" />
-<title>SLAM CITY · v2.4 · HUB + SETTINGS</title>
+<title>SLAM CITY · v2.5 · 6 MODES</title>
 <!-- retro arcade type: Press Start 2P for marquee, Oxanium for readable UI · safe fallback stack -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -597,7 +597,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v2.4 · build 2026-05-23·1806 · PLATFORM PICK · MODE HUB + PROFILE · FULL SETTINGS · 6 modes · retro+AI+captions · 11 brothers · for AARON</div>
+  <div class="splash-foot">v2.5 · build 2026-05-23·1818 · 6 MODES WIRED (Quick·Career·Gauntlet·Survival·Versus·Training) · hub+settings+platform · 11 brothers · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -650,8 +650,8 @@
 <!-- ========== ROSTER ========== -->
 <div id="roster" class="screen">
   <div class="roster-head">
-    <button class="back" onclick="goto('splash')">‹ Back</button>
-    <div class="head-title">Pick Your Fighter</div>
+    <button class="back" onclick="goto('hub')">‹ Hub</button>
+    <div class="head-title" id="roster-mode-label">PICK YOUR FIGHTER</div>
     <div style="width:60px"></div>
   </div>
   <div class="roster-grid" id="roster-grid"></div>
@@ -675,7 +675,7 @@
 
   <div class="action-row">
     <button class="btn btn-secondary" onclick="goto('roster')">PICK ANOTHER</button>
-    <button class="btn" onclick="startMatchWith(currentDetail)">FIGHT WITH THIS ONE</button>
+    <button class="btn" onclick="beginMode(currentDetail)">FIGHT WITH THIS ONE</button>
   </div>
 </div>
 
@@ -810,8 +810,8 @@
   <div class="stat-strip" id="career-strip"></div>
 
   <div class="action-row" style="flex-direction:column; max-width:280px">
-    <button class="btn" onclick="goto('hub')">HOME / MODES</button>
-    <button class="btn btn-secondary" onclick="goto('roster')">PICK A FIGHTER</button>
+    <button class="btn" id="result-primary" onclick="goto('hub')">HOME / MODES</button>
+    <button class="btn btn-secondary" id="result-secondary" onclick="goto('hub')">HOME / MODES</button>
   </div>
 </div>
 
@@ -1255,10 +1255,52 @@ function renderHub() {
 }
 
 let gameMode = 'quick';
+const MODE_LABEL = { quick:'QUICK FIGHT', career:'CAREER', gauntlet:'GAUNTLET', survival:'SURVIVAL', versus:'VERSUS', training:'TRAINING' };
+const modeCtx = { queue: [], idx: 0, streak: 0, playerId: null, pickingOpponent: false };
+
 function startMode(m) {
   gameMode = m;
-  // Versus picks BOTH fighters; the rest pick yours then face a mode-chosen opponent (rules in the engine).
+  modeCtx.queue = []; modeCtx.idx = 0; modeCtx.streak = 0; modeCtx.playerId = null; modeCtx.pickingOpponent = false;
+  setRosterLabel(false);
   goto('roster');
+}
+function setRosterLabel(pickingOpp) {
+  modeCtx.pickingOpponent = pickingOpp;
+  const el = document.getElementById('roster-mode-label');
+  if (el) el.textContent = MODE_LABEL[gameMode] + ' · ' + (pickingOpp ? 'PICK OPPONENT' : 'PICK YOUR FIGHTER');
+}
+// Entry from the roster/detail FIGHT button — sets up the matchup per mode.
+function beginMode(playerId) {
+  if (gameMode === 'versus' && !modeCtx.pickingOpponent) {     // versus = pick both: yours first…
+    modeCtx.playerId = playerId; setRosterLabel(true); goto('roster'); return;
+  }
+  if (gameMode === 'versus') { startMatchWith(modeCtx.playerId, playerId); return; }  // …then opponent
+  modeCtx.playerId = playerId;
+  if (gameMode === 'gauntlet') {
+    modeCtx.queue = FIGHTERS.filter(f => f.id !== playerId)
+      .sort((a, b) => getCurrentOVR(a.id) - getCurrentOVR(b.id)).map(f => f.id);  // easiest → hardest
+    modeCtx.idx = 0;
+    startMatchWith(playerId, modeCtx.queue[0]);
+  } else if (gameMode === 'survival') {
+    modeCtx.streak = 0;
+    startMatchWith(playerId);
+  } else {
+    startMatchWith(playerId);                                   // quick / career / training
+  }
+}
+// Continue a chain after a WIN (called from the result screen).
+function nextInMode() {
+  if (gameMode === 'gauntlet') {
+    modeCtx.idx++;
+    if (modeCtx.idx >= modeCtx.queue.length) { goto('hub'); return; }   // cleared the crew
+    startMatchWith(modeCtx.playerId, modeCtx.queue[modeCtx.idx]);
+  } else if (gameMode === 'survival') {
+    modeCtx.streak++;
+    if (modeCtx.streak % 2 === 0 && save.difficulty < 4) { save.difficulty++; persistSave(); }  // escalate
+    startMatchWith(modeCtx.playerId);
+  } else {
+    startMatchWith(modeCtx.playerId);                           // training: keep going
+  }
 }
 
 /* ========== SETTINGS (all controls wired to real behavior) ========== */
@@ -1401,10 +1443,10 @@ const DIFFICULTIES = [
 ];
 function curDiff() { return DIFFICULTIES[Math.max(0, Math.min(4, save.difficulty ?? 2))]; }
 
-function startMatchWith(playerId) {
+function startMatchWith(playerId, oppId) {
   const player = FIGHTERS.find(f => f.id === playerId);
   const pool = FIGHTERS.filter(f => f.id !== playerId);
-  const opponent = pool[Math.floor(Math.random()*pool.length)];
+  const opponent = (oppId && FIGHTERS.find(f => f.id === oppId)) || pool[Math.floor(Math.random()*pool.length)];
   match = {
     player, opponent,
     pHP: 100, oHP: 100, pST: 100, oST: 100,
@@ -1419,6 +1461,8 @@ function startMatchWith(playerId) {
     joy: 0,
     paused: false,
     started: false,
+    mode: gameMode,
+    training: gameMode === 'training',
     killFin: false,
     ai: { decision: 0, blockCD: 0, mood: 'neutral', moodT: 0, burst: 0, feintCD: 0, jukeDir: 0 },
     lastT: 0,
@@ -1885,8 +1929,16 @@ function updateAI(dt, dtms, fW, maxX) {
 }
 
 function aiAttack() {
+  if (match.training && Math.random() < 0.55) return;            // TRAINING dummy is gentle — mostly lets you work
   const opp = match.opponent, mood = match.ai.mood, r = Math.random();
   let kind = 'jab';
+  if (match.training) {                                          // dummy only jabs, never finishes
+    const jab = moveOf(opp, 'jab');
+    if (match.oST < jab.cost) return;
+    match.oST -= jab.cost; const c = ATK.jab; triggerLunge('right', jab.type); match.oCool = c.cool;
+    match.oAtk = { kind: 'jab', move: jab, side: 'opponent', cfg: c, hitAt: performance.now() + c.windup + (Math.random() * 90 - 30), resolved: false };
+    return;
+  }
   const finMove = moveOf(opp, 'finisher');
   if (match.pHP <= FIN_UNLOCK + 5 && opp.moves.some(m => m.fin) && match.oST >= finMove.cost && r < (mood === 'rush' ? 0.65 : 0.45)) {
     kind = 'finisher';
@@ -2050,6 +2102,11 @@ function showFinisherReverence(cb) {
 // End-of-match rating movement — abilities rise/fall by how the PLAYER performed.
 // Opponent drifts the opposite way (gentler) so the whole roster stays alive.
 function applyProgression(result) {
+  const pid0 = match.player.id, oid0 = match.opponent.id;
+  if (match.training) {   // TRAINING is no-stakes — ratings don't move
+    const a = getCurrentOVR(pid0), b = getCurrentOVR(oid0);
+    return { pCh: {}, oCh: {}, pBefore: a, pAfter: a, oBefore: b, oAfter: b, lowHPwin: false };
+  }
   const t = match.tally;
   const pid = match.player.id, oid = match.opponent.id;
   const lowHPwin = (result === 'win' && match.pHP < 25);
@@ -2093,8 +2150,10 @@ function finishMatch(result) {
   document.getElementById('ring-' + lossSide).classList.add('ko');
   playKOSound();
   caption((result === 'win' ? match.player.name : match.opponent.name) + ' WINS BY KO!', 'big');
-  if (result === 'win') { save.wins++; save.kos++; }
-  else save.losses++;
+  if (!match.training) {                              // TRAINING doesn't touch your record
+    if (result === 'win') { save.wins++; save.kos++; }
+    else save.losses++;
+  }
 
   // Living ability progression — abilities move by how the player performed; OVR = their average.
   const prog = applyProgression(result);
@@ -2136,8 +2195,29 @@ function finishMatch(result) {
       <div><strong>${save.kos}</strong>KOs</div>
       <div><strong>${save.finishers}</strong>FINISHERS</div>
     `;
+    setResultButtons(result);
     goto('result');
   }, 1400);
+}
+
+// Result buttons adapt to the mode: chain modes continue on a win, training always continues.
+function setResultButtons(result) {
+  const prim = document.getElementById('result-primary');
+  const sec = document.getElementById('result-secondary');
+  const m = match.mode;
+  const won = result === 'win';
+  const chainWin = (m === 'gauntlet' || m === 'survival') && won;
+  if (m === 'training') {
+    prim.textContent = 'KEEP TRAINING'; prim.onclick = nextInMode;
+    sec.textContent = 'HOME / MODES'; sec.onclick = () => goto('hub');
+  } else if (chainWin) {
+    prim.textContent = m === 'gauntlet' ? 'NEXT OPPONENT (' + (modeCtx.idx + 2) + '/' + (modeCtx.queue.length) + ')' : 'NEXT FIGHT · STREAK ' + (modeCtx.streak + 1);
+    prim.onclick = nextInMode;
+    sec.textContent = 'HOME / MODES'; sec.onclick = () => goto('hub');
+  } else {
+    prim.textContent = 'HOME / MODES'; prim.onclick = () => goto('hub');
+    sec.textContent = 'REMATCH'; sec.onclick = () => startMode(m);
+  }
 }
 
 /* ========== WEBAUDIO SYNTH SOUNDS (no asset files · per WUD pattern) ========== */
