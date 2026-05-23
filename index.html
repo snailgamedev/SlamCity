@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#0a0a0d" />
-<title>SLAM CITY · v2.8 · RHYMES</title>
+<title>SLAM CITY · v2.9 · WRESTLING</title>
 <!-- retro arcade type: Press Start 2P for marquee, Oxanium for readable UI · safe fallback stack -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -594,6 +594,13 @@
   }
   .floor-grid::after { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 40%; background: linear-gradient(180deg, var(--bg-1), transparent); } /* fade into the back wall */
 
+  /* knocked DOWN (slammed) — fighter lies on the mat */
+  .ring-fighter.downed svg { animation: none !important; transform: rotate(-80deg) translateY(34px) !important; opacity: 0.9 !important; filter: brightness(0.75) !important; transition: transform 0.18s ease-out; }
+  .ring-fighter.right.downed svg { transform: scaleX(-1) rotate(-80deg) translateY(34px) !important; }
+  /* PIN/SUBMIT button glows when it's live */
+  .atk-btn.ready { border-color: var(--gold) !important; color: var(--gold) !important; animation: pin-glow 0.7s ease-in-out infinite; }
+  @keyframes pin-glow { 0%,100% { box-shadow: 0 0 0 rgba(200,160,96,0); } 50% { box-shadow: 0 0 16px rgba(200,160,96,0.75); } }
+
   /* ===== loading overlay ===== */
   .loading { position: fixed; inset: 0; z-index: 300; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 24px; background: radial-gradient(circle at 50% 42%, rgba(26,10,12,0.97), rgba(5,5,8,0.99)); cursor: pointer; }
   .loading.on { display: flex; }
@@ -621,7 +628,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v2.8 · build 2026-05-23·1839 · rhyming results · 3D ring · loading · 6 modes · hub·settings·retro·live-AI · BIG BATCH IN PROGRESS (wrestling pivot next) · 11 brothers · for AARON</div>
+  <div class="splash-foot">v2.9 · build 2026-05-23·1855 · 90/10 WRESTLING (grapple·slam·pin·submission) · win by KO/PINFALL/SUB · rhymes · 3D ring · 6 modes · BIG BATCH IN PROGRESS · 11 brothers · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -768,10 +775,10 @@
       <div class="joy-hint">MOVE</div>
     </div>
     <div class="atk-cluster">
-      <button class="atk-btn dodge" id="btn-dodge" type="button">DODGE</button>
-      <button class="atk-btn block" id="btn-block" type="button">BLOCK</button>
-      <button class="atk-btn jab" id="btn-jab" type="button">JAB</button>
-      <button class="atk-btn power" id="btn-power" type="button">POWER</button>
+      <button class="atk-btn dodge" id="btn-dodge" type="button">PIN</button>
+      <button class="atk-btn block" id="btn-block" type="button">REVERSE</button>
+      <button class="atk-btn jab" id="btn-jab" type="button">STRIKE</button>
+      <button class="atk-btn power" id="btn-power" type="button">GRAPPLE</button>
       <button class="atk-btn fin" id="btn-fin" type="button">✝ FINISH</button>
     </div>
   </div>
@@ -1494,11 +1501,17 @@ function statRow(label, val, delta = 0) {
 /* ====================================================================== */
 const FIN_UNLOCK = 40;          // finisher unlocks once the TARGET drops to/below this HP
 const RT = { moveSpeed: 240, aiSpeed: 205, stRegen: 17, blockDrain: 24, backStep: 48 };
+// ~90% WRESTLING / 10% boxing. GRAPPLE (slam) is the bread-and-butter; STRIKE is the light 10%.
+// A landed `slam` knocks the opponent DOWN → opens a PIN. Win by KO, PINFALL, or SUBMISSION.
 const ATK = {
+  strike:   { windup: 90,  cool: 300,  reach: 1.05, knock: 12, lockMove: 180, heavy: false },
+  grapple:  { windup: 300, cool: 820,  reach: 0.95, knock: 30, lockMove: 540, heavy: true,  slam: true },
+  finisher: { windup: 380, cool: 1300, reach: 1.00, knock: 50, lockMove: 680, heavy: true,  slam: true },
+  // legacy aliases (kept so any old reference still resolves)
   jab:      { windup: 95,  cool: 300,  reach: 1.08, knock: 14, lockMove: 200, heavy: false },
-  power:    { windup: 235, cool: 700,  reach: 1.02, knock: 44, lockMove: 440, heavy: true  },
-  finisher: { windup: 390, cool: 1250, reach: 1.10, knock: 62, lockMove: 660, heavy: true  }
+  power:    { windup: 300, cool: 820,  reach: 0.95, knock: 30, lockMove: 540, heavy: true,  slam: true }
 };
+const DOWN_MS = 1700;        // how long a slammed fighter stays down (pin window)
 let rafId = null;
 let controlsBound = false;
 
@@ -1526,6 +1539,8 @@ function startMatchWith(playerId, oppId) {
     pBlock: false, oBlock: false,
     pInvuln: 0, oInvuln: 0,
     pStun: 0, oStun: 0,
+    pDowned: 0, oDowned: 0,      // knockdown timers (pin window)
+    pinning: false, subbing: false,
     pCool: 0, oCool: 0,
     pLockMove: 0,
     joy: 0,
@@ -1648,7 +1663,9 @@ function caption(text, cls) {
 function moveOf(fighter, kind) {
   const ms = fighter.moves;
   if (kind === 'finisher') return ms.find(m => m.fin) || ms[ms.length - 1];
-  if (kind === 'power')    return ms.find(m => m.type === 'power') || ms.find(m => m.sig) || ms.find(m => m.type === 'cross') || ms[0];
+  // GRAPPLE / power → the fighter's signature slam (powerbomb/suplex/F5/spear…)
+  if (kind === 'grapple' || kind === 'power') return ms.find(m => m.type === 'power') || ms.find(m => m.sig) || ms.find(m => m.type === 'cross') || ms[0];
+  // STRIKE / jab → the light hit (the 10% boxing)
   return ms.find(m => m.type === 'jab') || ms[0];
 }
 
@@ -1659,9 +1676,14 @@ function updateButtons() {
   const finBtn = document.getElementById('btn-fin');
   finBtn.classList.toggle('locked', finLocked || match.pST < finMove.cost);
   finBtn.textContent = finLocked ? '✝ LOCK' : '✝ FINISH';
-  document.getElementById('btn-jab').classList.toggle('dim', match.pST < moveOf(match.player, 'jab').cost);
-  document.getElementById('btn-power').classList.toggle('dim', match.pST < moveOf(match.player, 'power').cost);
-  document.getElementById('btn-dodge').classList.toggle('dim', match.pST < 12);
+  document.getElementById('btn-jab').classList.toggle('dim', match.pST < moveOf(match.player, 'strike').cost);
+  document.getElementById('btn-power').classList.toggle('dim', match.pST < moveOf(match.player, 'grapple').cost);
+  // PIN lights up when the opponent is down (or gassed for a submission)
+  const pinReady = match.oDowned > 0 || match.oST < 18;
+  const pinBtn = document.getElementById('btn-dodge');
+  pinBtn.textContent = match.oDowned > 0 ? 'PIN!' : (match.oST < 18 ? 'SUBMIT' : 'PIN');
+  pinBtn.classList.toggle('dim', !pinReady);
+  pinBtn.classList.toggle('ready', pinReady);
 }
 
 function gameLoop(t) {
@@ -1686,8 +1708,14 @@ function gameLoop(t) {
   match.oCool = Math.max(0, match.oCool - dtms);
   match.pLockMove = Math.max(0, match.pLockMove - dtms);
   match.ai.blockCD = Math.max(0, match.ai.blockCD - dtms);
+  match.pDowned = Math.max(0, match.pDowned - dtms);
+  match.oDowned = Math.max(0, match.oDowned - dtms);
+  if (match.pDowned <= 0) setDowned('left', false);
+  if (match.oDowned <= 0) setDowned('right', false);
 
-  if (match.pStun <= 0 && match.pLockMove <= 0 && Math.abs(match.joy) > 0.08) {
+  const frozen = match.pinning || match.subbing;   // a pin/submission sequence owns the moment
+
+  if (!frozen && match.pStun <= 0 && match.pLockMove <= 0 && match.pDowned <= 0 && Math.abs(match.joy) > 0.08) {
     match.pX += match.joy * RT.moveSpeed * (match.pAb.speed / 80) * (match.pBlock ? 0.4 : 1) * dt; // SPEED drives movement
   }
 
@@ -1700,12 +1728,14 @@ function gameLoop(t) {
     if (match.pST <= 0) setBlock(false);
   }
 
-  updateAI(dt, dtms, fW, maxX);
+  if (!frozen) updateAI(dt, dtms, fW, maxX);
 
-  if (match.pAtk && !match.pAtk.resolved && t >= match.pAtk.hitAt) resolveAttack(match.pAtk);
-  if (match.pAtk && t >= match.pAtk.hitAt + 80) match.pAtk = null;
-  if (match.oAtk && !match.oAtk.resolved && t >= match.oAtk.hitAt) resolveAttack(match.oAtk);
-  if (match.oAtk && t >= match.oAtk.hitAt + 80) match.oAtk = null;
+  if (!frozen) {
+    if (match.pAtk && !match.pAtk.resolved && t >= match.pAtk.hitAt) resolveAttack(match.pAtk);
+    if (match.pAtk && t >= match.pAtk.hitAt + 80) match.pAtk = null;
+    if (match.oAtk && !match.oAtk.resolved && t >= match.oAtk.hitAt) resolveAttack(match.oAtk);
+    if (match.oAtk && t >= match.oAtk.hitAt + 80) match.oAtk = null;
+  }
 
   match.pX = Math.max(0, Math.min(maxX, match.pX));
   match.oX = Math.max(0, Math.min(maxX, match.oX));
@@ -1720,12 +1750,12 @@ function gameLoop(t) {
   updateButtons();
 
   if (match.oHP <= 0) {
-    match.over = true; cancelAnimationFrame(rafId); rafId = null; setBlock(false); match.joy = 0;
+    match.over = true; cancelAnimationFrame(rafId); rafId = null; setBlock(false); match.joy = 0; match.winBy = 'KNOCKOUT';
     if (match.killFin) return showFinisherReverence(() => finishMatch('win'));
     return finishMatch('win');
   }
   if (match.pHP <= 0) {
-    match.over = true; cancelAnimationFrame(rafId); rafId = null; setBlock(false); match.joy = 0;
+    match.over = true; cancelAnimationFrame(rafId); rafId = null; setBlock(false); match.joy = 0; match.winBy = 'KNOCKOUT';
     return finishMatch('loss');
   }
 
@@ -1735,6 +1765,7 @@ function gameLoop(t) {
 function playerAttack(kind) {
   if (!match || match.over) return;
   if (match.pAtk || match.pStun > 0 || match.pCool > 0 || match.pBlock) return;
+  if (match.pDowned > 0 || match.pinning || match.subbing) return;
   if (kind === 'finisher' && match.oHP > FIN_UNLOCK) return;
   const move = moveOf(match.player, kind);
   if (match.pST < move.cost) { setStatus('LOW STAMINA', 'var(--red-bright)', 600); return; }
@@ -1804,6 +1835,62 @@ function pulseGuard(side) {
     g.classList.remove('pulse');
     if (side === 'right' || !match.pBlock) g.classList.remove('on');
   }, 400);
+}
+
+/* ===== WRESTLING: knockdown · pin · submission · win-by-method ===== */
+function setDowned(side, on) {
+  const el = document.getElementById('ring-' + side);
+  if (el) el.classList.toggle('downed', !!on);
+}
+function endMatchBy(result, by) {
+  if (!match || match.over) return;
+  match.over = true; cancelAnimationFrame(rafId); rafId = null; setBlock(false); match.joy = 0; match.pinning = false; match.subbing = false;
+  match.winBy = by;
+  finishMatch(result);
+}
+// PIN the downed opponent (or, if they're gassed + caught, SUBMIT them).
+function playerPin() {
+  if (!match || match.over || match.pinning || match.subbing) return;
+  const fW = document.getElementById('ring-left').offsetWidth || 160;
+  const gap = match.oX - match.pX;
+  if (match.oDowned > 0 && gap <= fW * 1.15) { doPin(true); return; }
+  if (gap <= fW * 1.05 && match.oST < 18 && match.pStun <= 0) { doSubmission(true); return; }
+  setStatus('not in position', 'var(--muted)', 600);
+}
+function doPin(byPlayer) {
+  match.pinning = true;
+  const downedHP = byPlayer ? match.oHP : match.pHP;
+  const defHeart = byPlayer ? match.oAb.heart : match.pAb.heart;
+  const kicksOut = Math.random() < Math.min(0.92, (downedHP / 100) * 0.85 + (defHeart / 99) * 0.2);  // low HP + low heart = pinned
+  let n = 0;
+  const tick = () => {
+    if (!match || match.over) { match.pinning = false; return; }
+    n++;
+    setStatus('PIN · ' + n, 'var(--gold)', 1400);
+    caption('PIN COUNT … ' + n, 'big');
+    playCountSound(false);
+    if (n >= 2 && kicksOut) {
+      match.pinning = false;
+      if (byPlayer) { match.oDowned = 0; setDowned('right', false); } else { match.pDowned = 0; setDowned('left', false); }
+      setStatus('KICKOUT!', 'var(--red-bright)', 900);
+      caption((byPlayer ? match.opponent.name : match.player.name) + ' KICKS OUT!', byPlayer ? 'enemy' : 'player');
+      return;
+    }
+    if (n >= 3) { endMatchBy(byPlayer ? 'win' : 'loss', 'PINFALL'); return; }
+    setTimeout(tick, 720);
+  };
+  setTimeout(tick, 200);
+}
+function doSubmission(byPlayer) {
+  match.subbing = true;
+  setStatus('SUBMISSION LOCKED!', 'var(--gold)', 1200);
+  caption((byPlayer ? match.player.name : match.opponent.name) + ' sinks in the hold!', 'big');
+  setTimeout(() => {
+    if (!match || match.over) { match.subbing = false; return; }
+    match.subbing = false;
+    caption((byPlayer ? match.opponent.name : match.player.name) + ' TAPS OUT!', byPlayer ? 'enemy' : 'player');
+    endMatchBy(byPlayer ? 'win' : 'loss', 'SUBMISSION');
+  }, 1100);
 }
 
 // Hits land on PROXIMITY + timing — no accuracy RNG. Block softens, dodge i-frames negate.
@@ -1889,6 +1976,18 @@ function resolveAttack(atk) {
   if (isPlayer) match.oStun = blocked ? 110 : (heavy ? 430 : 220);
   else          match.pStun = blocked ? 110 : (heavy ? 430 : 220);
 
+  // WRESTLING: a landed SLAM puts the defender DOWN (opens a pin). A REVERSED slam downs the attacker instead.
+  if (atk.cfg.slam) {
+    if (blocked) {
+      if (isPlayer) { match.pDowned = DOWN_MS; setDowned('left', true); } else { match.oDowned = DOWN_MS; setDowned('right', true); }
+      caption((isPlayer ? match.player.name : match.opponent.name) + ' got REVERSED!', isPlayer ? 'enemy' : 'player');
+      playKOSound();
+    } else {
+      if (isPlayer) { match.oDowned = DOWN_MS; setDowned('right', true); } else { match.pDowned = DOWN_MS; setDowned('left', true); }
+      caption(defName + ' is DOWN — ' + (isPlayer ? 'go for the PIN!' : 'get up!'), isPlayer ? 'big' : 'enemy');
+    }
+  }
+
   if (move.fin && !blocked) {
     if (isPlayer) { save.finishers++; save.scriptureStrikes++; match.killFin = (match.oHP <= 0); }
     const sf = (isPlayer ? match.player : match.opponent).art.scriptureFinisher;
@@ -1938,15 +2037,23 @@ function aiTaunt() {
 
 function updateAI(dt, dtms, fW, maxX) {
   if (!match || match.over) return;
+  // Mood keeps evolving every frame — even mid-grapple — so the AI stays unpredictable.
+  match.ai.moodT -= dtms;
+  if (match.ai.moodT <= 0) pickMood();
+  match.ai.feintCD = Math.max(0, match.ai.feintCD - dtms);
   const gap = match.oX - match.pX;
   const reachPx = fW * 1.0;
+  if (match.oDowned > 0) return;                         // can't act while slammed down
+  // player is DOWN → close in and go for the PIN
+  if (match.pDowned > 0 && !match.pinning && !match.subbing) {
+    if (gap > fW * 0.9) match.oX -= RT.aiSpeed * (match.oAb.speed / 80) * curDiff().speed * dt;
+    else if (match.oCool <= 0) { match.oCool = 500; doPin(false); }
+    return;
+  }
   const busy = match.oStun > 0 || (match.oAtk && !match.oAtk.resolved);
   if (busy) return;
 
   const p = aiPersona(), d = curDiff();
-  match.ai.moodT -= dtms;
-  if (match.ai.moodT <= 0) pickMood();
-  match.ai.feintCD = Math.max(0, match.ai.feintCD - dtms);
   const mood = match.ai.mood;
 
   // Defensive read — guard the player's wind-up (heavier in turtle/bait, lighter in rush).
@@ -2010,14 +2117,14 @@ function aiAttack() {
     return;
   }
   const finMove = moveOf(opp, 'finisher');
-  if (match.pHP <= FIN_UNLOCK + 5 && opp.moves.some(m => m.fin) && match.oST >= finMove.cost && r < (mood === 'rush' ? 0.65 : 0.45)) {
-    kind = 'finisher';
-  } else {
-    const powerChance = mood === 'rush' ? 0.3 : mood === 'bait' ? 0.55 : 0.42;  // bait punishes with power
-    if (r < powerChance && match.oST >= moveOf(opp, 'power').cost) kind = 'power';
+  kind = 'grapple';                                                 // WRESTLING-FIRST: default is a slam
+  if (match.pHP <= FIN_UNLOCK + 5 && opp.moves.some(m => m.fin) && match.oST >= finMove.cost && r < 0.55) {
+    kind = 'finisher';                                              // go for the finishing slam when they're hurt
+  } else if (r < (mood === 'rush' ? 0.12 : 0.18)) {
+    kind = 'strike';                                                // the ~10% boxing minority
   }
   let move = moveOf(opp, kind);
-  if (match.oST < move.cost) { kind = 'jab'; move = moveOf(opp, 'jab'); }
+  if (match.oST < move.cost) { kind = 'strike'; move = moveOf(opp, 'strike'); }
   if (match.oST < move.cost) return;
   match.oST -= move.cost;
   const cfg = ATK[kind];
@@ -2053,25 +2160,25 @@ function bindControls() {
   joy.addEventListener('pointerup', joyEnd);
   joy.addEventListener('pointercancel', joyEnd);
 
-  bindBtn('btn-jab', () => playerAttack('jab'));
-  bindBtn('btn-power', () => playerAttack('power'));
-  bindBtn('btn-fin', () => playerAttack('finisher'));
-  bindBtn('btn-dodge', () => playerDodge());
+  bindBtn('btn-jab', () => playerAttack('strike'));      // STRIKE (light, 10%)
+  bindBtn('btn-power', () => playerAttack('grapple'));   // GRAPPLE → slam (primary)
+  bindBtn('btn-fin', () => playerAttack('finisher'));    // signature finisher slam
+  bindBtn('btn-dodge', () => playerPin());               // PIN / SUBMIT (contextual)
 
-  const blk = document.getElementById('btn-block');
+  const blk = document.getElementById('btn-block');      // REVERSE = guard that counters slams
   blk.addEventListener('pointerdown', e => { e.preventDefault(); setBlock(true); });
   ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => blk.addEventListener(ev, () => setBlock(false)));
 
-  // Keyboard (desktop + tests): A/D or arrows move · J jab · K power · L finisher · Shift dodge · Space block
+  // Keyboard: A/D move · J strike · K grapple · L finisher · P pin · Space reverse
   window.addEventListener('keydown', e => {
     if (!isFightActive() || !match || match.over) return;
     switch (e.key) {
       case 'ArrowLeft': case 'a': case 'A': match.joy = -1; break;
       case 'ArrowRight': case 'd': case 'D': match.joy = 1; break;
-      case 'j': case 'J': playerAttack('jab'); break;
-      case 'k': case 'K': playerAttack('power'); break;
+      case 'j': case 'J': playerAttack('strike'); break;
+      case 'k': case 'K': playerAttack('grapple'); break;
       case 'l': case 'L': playerAttack('finisher'); break;
-      case 'Shift': playerDodge(); break;
+      case 'p': case 'P': case 'Shift': playerPin(); break;
       case ' ': setBlock(true); e.preventDefault(); break;
     }
   });
@@ -2254,7 +2361,8 @@ function finishMatch(result) {
 
   setTimeout(() => {
     const banner = document.getElementById('result-banner');
-    banner.textContent = result === 'win' ? 'VICTORY' : 'KNOCKED OUT';
+    const by = match.winBy ? ' · ' + match.winBy : '';   // PINFALL / SUBMISSION / (blank = KO)
+    banner.textContent = (result === 'win' ? 'VICTORY' : 'DEFEAT') + by;
     banner.classList.toggle('loss', result === 'loss');
     const arrowP = playerChange > 0 ? '▲' : (playerChange < 0 ? '▼' : '·');
     const arrowO = oppChange > 0 ? '▲' : (oppChange < 0 ? '▼' : '·');
