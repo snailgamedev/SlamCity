@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#0a0a0d" />
-<title>SLAM CITY · v2.7 · 3D RING</title>
+<title>SLAM CITY · v2.8 · RHYMES</title>
 <!-- retro arcade type: Press Start 2P for marquee, Oxanium for readable UI · safe fallback stack -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -621,7 +621,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v2.7 · build 2026-05-23·1831 · 3D RING (perspective floor + billboard sprites) · loading · 6 modes · hub·settings·platform·retro·live-AI·captions · 11 brothers · for AARON</div>
+  <div class="splash-foot">v2.8 · build 2026-05-23·1839 · rhyming results · 3D ring · loading · 6 modes · hub·settings·retro·live-AI · BIG BATCH IN PROGRESS (wrestling pivot next) · 11 brothers · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -2214,6 +2214,27 @@ function fmtChanges(ch) {
     return `<span style="color:${up ? '#4ad06a' : 'var(--red-bright)'}">${ABILITY_LABELS[k]} ${up ? '▲' : '▼'}${Math.abs(ch[k])}</span>`;
   }).join(' · ');
 }
+// Rhyming result copy — {P}=winner-side player name, {O}=opponent. Couplets rhyme on the line-ends.
+const RHYME_WIN = [
+  '{P} stood the test and reigned supreme —<br>{O} folded like a broken dream.',
+  '{P} brought the thunder, brought the pain —<br>{O} won\'t be getting up again.',
+  'Hands raised high, {P} won the day —<br>{O} got dragged and swept away.',
+  '{P} took the crown with iron will —<br>{O} hit the mat and laid there still.',
+  '{P} ran the ring and ran it clean —<br>{O}\'s the wreckage in between.'
+];
+const RHYME_LOSS = [
+  '{O} stood tall as the final bell tolled —<br>{P} comes back twice as bold.',
+  '{O} took this round, true and tough —<br>{P} ain\'t near done — that\'s a bluff.',
+  '{P} hit the canvas, crowd gone still —<br>but champions rise, and {P} will.',
+  '{O} got the W, fair and square —<br>{P} reloads, beware, beware.',
+  'The mat met {P}, the lights went low —<br>but {P} returns for one more go.'
+];
+function rhymeResult(result, player, opponent) {
+  // WIN pool reads from the player's victory; LOSS pool from the opponent's. {P}=player, {O}=opponent.
+  const pool = result === 'win' ? RHYME_WIN : RHYME_LOSS;
+  const line = pool[Math.floor(Math.random() * pool.length)];
+  return line.split('{P}').join(player).split('{O}').join(opponent);
+}
 
 function finishMatch(result) {
   const lossSide = result === 'win' ? 'right' : 'left';
@@ -2240,9 +2261,7 @@ function finishMatch(result) {
     const colorP = playerChange > 0 ? '#4ad06a' : (playerChange < 0 ? 'var(--red-bright)' : 'var(--muted)');
     const colorO = oppChange > 0 ? '#4ad06a' : (oppChange < 0 ? 'var(--red-bright)' : 'var(--muted)');
     document.getElementById('result-detail').innerHTML =
-      (result === 'win'
-        ? `${match.player.name} stands tall.<br>${match.opponent.name} could not answer the bell.`
-        : `${match.opponent.name} wins by KO.<br>${match.player.name} comes back stronger.`)
+      rhymeResult(result, match.player.name, match.opponent.name)
       + `<div style="margin-top:14px; font-size:12px; letter-spacing:1px;">`
       + `<div>${match.player.name} OVR: ${playerBefore} → <strong style="color:${colorP}">${playerAfter} ${arrowP}${Math.abs(playerChange)}</strong></div>`
       + `<div>${match.opponent.name} OVR: ${oppBefore} → <strong style="color:${colorO}">${oppAfter} ${arrowO}${Math.abs(oppChange)}</strong></div>`
