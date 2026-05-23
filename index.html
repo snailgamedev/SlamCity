@@ -2,11 +2,15 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
+<!-- no-cache so deploy updates show without a manual hard-refresh (2026-05-23 · the old v3.0.0 NUKE page was caching) -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#0a0a0d" />
-<title>SLAM CITY · v1.0</title>
+<title>SLAM CITY · v1.1</title>
 <style>
   :root {
     --bg-0: #0a0a0d;
@@ -396,7 +400,7 @@
 
   <button class="btn" onclick="goto('roster')">ENTER THE RING</button>
   <button class="btn btn-secondary" id="quick-play-btn" onclick="quickPlay()" style="display:none">QUICK PLAY</button>
-  <div class="splash-foot">v1.1 · build 2026-05-23·1625 · arena+collision+impact · 11 brothers · for AARON</div>
+  <div class="splash-foot">v1.1 · build 2026-05-23·1631 · nocache · arena+collision+impact · 11 brothers · for AARON</div>
 </div>
 
 <!-- ========== ROSTER ========== -->
