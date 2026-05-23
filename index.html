@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#0a0a0d" />
-<title>SLAM CITY · v2.13 · REAL LOOKS</title>
+<title>SLAM CITY · v2.14 · RESPONSIVE</title>
 <!-- retro arcade type: Press Start 2P for marquee, Oxanium for readable UI · safe fallback stack -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -650,6 +650,29 @@
   .load-tip { margin-top: 18px; font-size: 11px; color: var(--soft); line-height: 1.5; min-height: 34px; }
   .load-tip .tip-k { color: var(--gold); font-style: italic; }
   .load-skip { margin-top: 16px; font-size: 9px; color: var(--muted); letter-spacing: 2px; }
+
+  /* ===== TRUE RESPONSIVE — measured height + orientation; every screen fits the device ===== */
+  .screen { min-height: var(--app-h, 100dvh); }
+  /* bigger ring in portrait */
+  .portrait .ring-fighter { width: 53%; max-width: 230px; }
+  .portrait .ring { min-height: 300px; }
+  /* mobile/tablet LANDSCAPE — compact so the whole fight fits a short viewport, no scroll */
+  body.landscape #fight { padding-top: max(4px, var(--safe-top)); padding-bottom: max(4px, var(--safe-bottom)); }
+  body.landscape .fight-head { margin-bottom: 2px; }
+  body.landscape .fighter-row { margin-bottom: 2px; gap: 6px; }
+  body.landscape .hp-bar-outer { height: 11px; }
+  body.landscape .st-bar-outer { height: 5px; }
+  body.landscape .bar-line { margin-top: 2px; }
+  body.landscape .ring { min-height: 0; flex: 1; margin: 2px 0; }
+  body.landscape .ring-fighter { width: 30%; max-width: 130px; bottom: 4px; }
+  body.landscape .captions { display: none; }       /* reclaim height; status line still narrates */
+  body.landscape .combat-controls { padding: 4px 6px 2px; gap: 10px; }
+  body.landscape .joystick { width: 88px; height: 88px; flex: 0 0 88px; }
+  body.landscape .joy-knob { width: 40px; height: 40px; }
+  body.landscape .atk-cluster { max-width: 260px; gap: 5px; }
+  body.landscape .atk-btn { min-height: 34px; font-size: 11px; }
+  body.landscape .atk-btn.fin, body.landscape .atk-btn.block, body.landscape .atk-btn.dodge { min-height: 30px; font-size: 10px; }
+  body.landscape .prefight .pf-count { font-size: clamp(30px, 10vh, 52px); }
 </style>
 </head>
 <body>
@@ -667,7 +690,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v2.13 · build 2026-05-23·1914 · REAL APPEARANCES (skin tones + afro/perm/waves/straight/bleached actually render) · OVR 1-99 · menu glow-up · real 3D · 90/10 wrestling · LOOPING · for AARON</div>
+  <div class="splash-foot">v2.14 · build 2026-05-23·1918 · TRUE RESPONSIVE (measured viewport · portrait+landscape · fits any device) · real looks · 3D · 90/10 wrestling · LOOPING · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -897,7 +920,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v2.13</div>
+    <div class="load-skip">tap to skip · v2.14</div>
   </div>
 </div>
 
@@ -1527,7 +1550,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '2.13';
+const GAME_VERSION = '2.14';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -2618,7 +2641,20 @@ function playKOSound() {
 
 function playClickSound() { tone(680, 0.04, 'square', 0.06, 40); }   // UI tick — every menu button confirms
 
+/* Measures the REAL viewport (not a default) → exact height + orientation classes so every screen fits the device. */
+function fitViewport() {
+  const w = window.innerWidth, h = window.innerHeight;
+  const landscape = w > h && Math.min(w, h) < 620;   // mobile/tablet landscape (desktop stays normal)
+  document.body.classList.toggle('landscape', landscape);
+  document.body.classList.toggle('portrait', !landscape);
+  document.documentElement.style.setProperty('--app-h', h + 'px');
+  document.documentElement.style.setProperty('--app-w', w + 'px');
+}
+window.addEventListener('resize', fitViewport);
+window.addEventListener('orientationchange', () => setTimeout(fitViewport, 120));
+
 /* ========== BOOT ========== */
+fitViewport();
 // Global click feedback: menu buttons, cards + toggles all play a tick (combat buttons keep their own sounds).
 document.addEventListener('pointerdown', (e) => {
   const b = e.target.closest('button:not(.atk-btn), .mode-card, .platform-card, .roster-card, .toggle');
