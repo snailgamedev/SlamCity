@@ -1,0 +1,5 @@
+.backups/
+tests/node_modules/
+tests/package-lock.json
+.DS_Store
+tests/review-2026-05-23/

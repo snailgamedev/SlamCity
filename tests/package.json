@@ -1,0 +1,20 @@
+{
+  "name": "sc-tests",
+  "version": "1.0.0",
+  "description": "Playwright visual-regression / liveliness tests for SC + cross-project audits (Stone 36 lineage · 2026-05-23)",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "smoke": "node smoke.mjs",
+    "smoke:deep": "node smoke-deep.mjs",
+    "gate": "node smoke.mjs && node smoke-deep.mjs",
+    "test:sc-splash": "node splash-entrance.mjs",
+    "test:sc-stagger": "node splash-stagger-and-reduced-motion.mjs",
+    "test:wud-endcard": "node wud-endcard-verify.mjs",
+    "test:all": "node smoke.mjs && node smoke-deep.mjs && node splash-entrance.mjs && node splash-stagger-and-reduced-motion.mjs && node wud-endcard-verify.mjs",
+    "setup": "npm install && npx playwright install chromium"
+  },
+  "dependencies": {
+    "playwright": "^1.60.0"
+  }
+}

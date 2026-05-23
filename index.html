@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="theme-color" content="#0a0a0d" />
+<title>SLAM CITY · v1.0</title>
+<style>
+  :root {
+    --bg-0: #0a0a0d;
+    --bg-1: #14080a;
+    --bg-2: #1a0e10;
+    --bg-3: #2a1216;
+    --red: #c8404a;
+    --red-bright: #e04050;
+    --red-deep: #a02030;
+    --cream: #f4e6c8;
+    --gold: #c8a060;
+    --muted: #888;
+    --soft: #aaa;
+    --warn: #f4a05a;
+    --safe-top: env(safe-area-inset-top, 0);
+    --safe-bottom: env(safe-area-inset-bottom, 0);
+    --safe-l: env(safe-area-inset-left, 0);
+    --safe-r: env(safe-area-inset-right, 0);
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    background: var(--bg-0);
+    color: var(--cream);
+    font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+    min-height: 100dvh;
+    overscroll-behavior: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* Arena background applies to all screens */
+  body {
+    background:
+      radial-gradient(ellipse at 50% 30%, rgba(200,64,74,0.14), transparent 60%),
+      radial-gradient(ellipse at 50% 100%, rgba(50,30,30,0.6), transparent 70%),
+      linear-gradient(180deg, #0a0a0d 0%, #14080a 60%, #1a0a0c 100%);
+    background-attachment: fixed;
+  }
+
+  /* Concrete-floor texture overlay */
+  body::before {
+    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background:
+      repeating-linear-gradient(0deg, transparent 0 12px, rgba(255,255,255,0.012) 12px 13px),
+      repeating-linear-gradient(90deg, transparent 0 12px, rgba(255,255,255,0.012) 12px 13px);
+    mix-blend-mode: overlay;
+  }
+
+  /* SCREENS · only active visible */
+  .screen { display: none; min-height: 100dvh; position: relative; z-index: 1; padding: max(16px, var(--safe-top)) max(12px, var(--safe-r)) max(16px, var(--safe-bottom)) max(12px, var(--safe-l)); }
+  .screen.active { display: flex; flex-direction: column; }
+
+  /* Title block reusable */
+  .title-block { text-align: center; margin: 8px 0 16px; }
+  .city { font-size: 11px; letter-spacing: 6px; color: var(--red); font-weight: 600; text-transform: uppercase; }
+  .name { font-size: clamp(40px, 11vw, 76px); font-weight: 900; letter-spacing: 2px; color: var(--cream); text-shadow: 0 2px 0 #000, 0 4px 12px rgba(200,64,74,0.4); line-height: 0.95; margin: 2px 0 4px; }
+  .role { font-size: 11px; letter-spacing: 3px; color: var(--muted); font-weight: 600; text-transform: uppercase; }
+
+  /* ===== SPLASH ===== (LIVELINESS · iter 6 + adversarial-audit fixes 2026-05-23 · top-to-bottom reveal · synced breathing · consistent easing) */
+  #splash { justify-content: center; align-items: center; text-align: center; gap: 24px; }
+  /* Shared premium easing — ONE curve across the whole reveal (audit fix: was mixed cubic-bezier + plain ease-out) */
+  .splash-title {
+    font-size: clamp(56px, 16vw, 110px); font-weight: 900; letter-spacing: 4px;
+    color: var(--cream); text-shadow: 0 2px 0 #000, 0 6px 20px rgba(200,64,74,0.6); line-height: 0.9;
+    /* delay 0.35s so the title lands AFTER its "PRESENTS" label — top-to-bottom build, not hero-first (audit fix: reveal order was backwards) */
+    animation: splash-title-enter 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.35s both, splash-title-pulse 4.2s ease-in-out 1.3s infinite;
+  }
+  @keyframes splash-title-enter {
+    0% { opacity: 0; transform: translateY(20px) scale(0.96); letter-spacing: 0px; }
+    60% { opacity: 1; letter-spacing: 6px; }
+    100% { opacity: 1; transform: translateY(0) scale(1); letter-spacing: 4px; }
+  }
+  /* Pulse now has a perceptible heartbeat — scale + glow, not just an invisible 8px shadow delta (audit fix) */
+  @keyframes splash-title-pulse {
+    0%, 100% { text-shadow: 0 2px 0 #000, 0 6px 20px rgba(200,64,74,0.55); transform: scale(1); }
+    50% { text-shadow: 0 2px 0 #000, 0 8px 34px rgba(200,64,74,0.95), 0 0 16px rgba(244,160,90,0.45); transform: scale(1.018); }
+  }
+  /* Two subs stagger: PRESENTS (top) leads at 0.1s, BROTHER CREW FIGHTER (bottom) follows at 0.75s — top-to-bottom (audit fix: both were 0.3s, popped simultaneously) */
+  .splash-sub { font-size: 12px; letter-spacing: 8px; color: var(--red); text-transform: uppercase; animation: splash-sub-enter 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.75s both; }
+  #splash .splash-sub:first-of-type { animation-delay: 0.1s; }
+  @keyframes splash-sub-enter { 0% { opacity: 0; letter-spacing: 4px; } 100% { opacity: 0.85; letter-spacing: 8px; } }
+  .splash-verse {
+    max-width: 90vw; margin: 24px 0; padding: 20px 24px; border-left: 3px solid var(--gold);
+    background: rgba(200,160,96,0.06); border-radius: 4px;
+    animation: splash-verse-enter 0.8s cubic-bezier(0.16, 1, 0.3, 1) 1.05s both;
+  }
+  @keyframes splash-verse-enter { 0% { opacity: 0; transform: translateX(-12px); } 100% { opacity: 1; transform: translateX(0); } }
+  .splash-verse-text { font-style: italic; color: var(--cream); font-size: 14px; line-height: 1.6; }
+  .splash-verse-ref { display: block; color: var(--gold); font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-top: 10px; font-size: 11px; }
+  /* Cross breathes in SYNC with the title: same 4.2s period + same 1.6s start → phase-locked, not drifting (audit fix: was 5s, drifted forever) */
+  .splash-cross { color: var(--gold); margin-right: 6px; display: inline-block; animation: splash-cross-pulse 4.2s ease-in-out 1.3s infinite; }
+  @keyframes splash-cross-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.78; transform: scale(1.05); } }
+  .btn {
+    background: var(--red); color: var(--cream); border: none;
+    padding: 16px 36px; font-size: 14px; font-weight: 900; letter-spacing: 3px;
+    text-transform: uppercase; border-radius: 4px; cursor: pointer;
+    box-shadow: 0 4px 16px rgba(200,64,74,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+    transition: transform 0.15s ease-out, box-shadow 0.15s ease-out, letter-spacing 0.2s ease-out;
+    min-width: 200px; min-height: 48px;
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(200,64,74,0.55), inset 0 1px 0 rgba(255,255,255,0.15); letter-spacing: 4px; }
+  .btn:active { transform: scale(0.96); box-shadow: 0 2px 8px rgba(200,64,74,0.4); transition-duration: 0.05s; }
+  .btn-secondary { background: var(--bg-2); border: 1px solid var(--bg-3); }
+  .btn-secondary:hover { box-shadow: 0 6px 16px rgba(0,0,0,0.4); }
+  /* Splash buttons stagger AFTER verse · top-to-bottom hierarchy · shared cubic-bezier easing (audit fix: was plain ease-out) */
+  #splash .btn { animation: splash-btn-enter 0.6s cubic-bezier(0.16, 1, 0.3, 1) 1.35s both; }
+  #splash .btn + .btn { animation-delay: 1.6s; }
+  @keyframes splash-btn-enter { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } }
+  .splash-foot { font-size: 9px; color: var(--muted); letter-spacing: 2px; margin-top: 20px; text-transform: uppercase; animation: splash-foot-enter 0.6s cubic-bezier(0.16, 1, 0.3, 1) 1.75s both; }
+  @keyframes splash-foot-enter { 0% { opacity: 0; } 100% { opacity: 0.6; } }
+
+  /* Accessibility · respect prefers-reduced-motion · vestibular-sensitive users skip the curtain reveal · final state still arrives */
+  @media (prefers-reduced-motion: reduce) {
+    .splash-title, .splash-sub, .splash-verse, .splash-cross, .splash-foot, .btn, #splash .btn { animation: none !important; transition: none !important; }
+    .splash-title { opacity: 1; }
+    .splash-sub { opacity: 0.85; }
+    .splash-verse { opacity: 1; }
+    .splash-foot { opacity: 0.6; }
+    #splash .btn { opacity: 1; }
+    .detail-stage svg, .ring-fighter.left svg, .ring-fighter.right svg { animation: none !important; }
+    .btn:hover { transform: none; letter-spacing: 3px; }
+  }
+
+  /* ===== ROSTER ===== */
+  #roster .roster-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  #roster .roster-head .back { background: none; border: 1px solid var(--bg-3); color: var(--cream); padding: 8px 14px; border-radius: 4px; font-size: 11px; letter-spacing: 1px; min-height: 44px; cursor: pointer; }
+  #roster .roster-head .head-title { font-size: 12px; letter-spacing: 4px; color: var(--red); font-weight: 700; text-transform: uppercase; }
+  .roster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; padding-bottom: 80px; }
+  .roster-card {
+    background: linear-gradient(180deg, var(--bg-2) 0%, var(--bg-1) 100%);
+    border: 1px solid var(--bg-3); border-top: 3px solid var(--red);
+    border-radius: 6px; padding: 10px; cursor: pointer;
+    transition: transform 0.14s cubic-bezier(0.16,1,0.3,1), border-color 0.14s, box-shadow 0.14s ease;
+    position: relative; overflow: hidden;
+  }
+  /* desktop hover lift + glow (2026-05-23) */
+  .roster-card:hover { transform: translateY(-3px); border-top-color: var(--red-bright); box-shadow: 0 7px 20px rgba(200,64,74,0.22), inset 0 0 0 1px rgba(200,64,74,0.18); }
+  /* mobile press — enhanced with shadow (the touch-target feedback) */
+  .roster-card:active { transform: scale(0.97); border-color: var(--red-bright); box-shadow: 0 2px 10px rgba(200,64,74,0.32); transition-duration: 0.06s; }
+  .roster-card .portrait { width: 100%; aspect-ratio: 1; margin-bottom: 6px; position: relative; }
+  .roster-card .portrait svg { width: 100%; height: 100%; }
+  .roster-card .rc-name { font-size: 13px; font-weight: 900; color: var(--cream); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 2px; }
+  .roster-card .rc-arch { font-size: 9px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; }
+  .roster-card .rc-ovr { position: absolute; top: 6px; right: 8px; font-size: 16px; font-weight: 900; color: var(--cream); text-shadow: 0 1px 0 #000; }
+  .roster-card .rc-slot { position: absolute; top: 8px; left: 8px; font-size: 8px; color: var(--muted); font-weight: 700; }
+  .roster-card .rc-delta { position: absolute; top: 24px; right: 8px; font-size: 9px; font-weight: 800; letter-spacing: 0.5px; }
+  .roster-card .rc-delta.up { color: #4ad06a; }
+  .roster-card .rc-delta.down { color: var(--red-bright); }
+
+  /* ===== DETAIL ===== */
+  #detail .detail-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  #detail .back-btn { background: none; border: 1px solid var(--bg-3); color: var(--cream); padding: 8px 14px; border-radius: 4px; font-size: 11px; min-height: 44px; cursor: pointer; }
+  .detail-stage { position: relative; width: 100%; max-width: 380px; aspect-ratio: 3/4; margin: 0 auto; }
+  .detail-stage .floor-shadow { position: absolute; bottom: 4%; left: 50%; transform: translateX(-50%); width: 60%; height: 4%; background: radial-gradient(ellipse, rgba(0,0,0,0.7), transparent 70%); z-index: 0; }
+  .detail-stage .spotlight { position: absolute; top: -8%; left: 50%; transform: translateX(-50%); width: 80%; height: 110%; background: radial-gradient(ellipse at 50% 10%, rgba(255,220,180,0.08), transparent 60%); z-index: 0; pointer-events: none; }
+  .detail-stage svg { width: 100%; height: 100%; position: relative; z-index: 1; animation: idle-breathe 3.6s ease-in-out infinite; filter: drop-shadow(0 6px 12px rgba(0,0,0,0.5)); }
+  @keyframes idle-breathe { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-3px) scale(1.005); } }
+
+  .stats-card { width: 100%; max-width: 480px; margin: 12px auto 0; background: linear-gradient(180deg, var(--bg-2) 0%, var(--bg-1) 100%); border: 1px solid var(--bg-3); border-top: 3px solid var(--red); padding: 16px 18px; border-radius: 6px; box-shadow: 0 4px 20px rgba(0,0,0,0.6); }
+  .stats-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--bg-3); }
+  .stats-head .slot { font-size: 10px; color: var(--muted); letter-spacing: 2px; }
+  .stats-head .ovr { font-size: 36px; font-weight: 900; color: var(--cream); line-height: 1; }
+  .stats-head .ovr-label { font-size: 9px; color: var(--muted); letter-spacing: 2px; text-align: right; margin-top: 4px; }
+  .stat-row { display: flex; align-items: center; margin-bottom: 8px; font-size: 12px; }
+  .stat-label { width: 84px; color: var(--soft); letter-spacing: 1px; text-transform: uppercase; font-weight: 600; }
+  .stat-bar { flex: 1; height: 8px; background: var(--bg-1); border: 1px solid var(--bg-3); border-radius: 2px; overflow: hidden; position: relative; }
+  .stat-fill { height: 100%; background: linear-gradient(90deg, var(--red) 0%, var(--warn) 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.2); transition: width 0.4s; }
+  .stat-num { width: 28px; text-align: right; color: var(--cream); font-weight: 700; font-size: 12px; margin-left: 10px; }
+  .finishers { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--bg-3); }
+  .fin-label { font-size: 9px; color: var(--muted); letter-spacing: 2px; margin-bottom: 6px; }
+  .fin-list { display: flex; gap: 8px; flex-wrap: wrap; }
+  .fin-pill { background: var(--bg-3); border: 1px solid var(--red); padding: 4px 10px; border-radius: 3px; font-size: 11px; font-weight: 700; color: var(--cream); letter-spacing: 1px; }
+  .fin-pill.signature { border-color: var(--gold); color: var(--gold); }
+  .walkout { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--bg-3); }
+  .walkout-label { font-size: 9px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
+  .walkout-quote { font-style: italic; color: var(--cream); font-weight: 500; padding-left: 10px; border-left: 2px solid var(--gold); line-height: 1.55; font-size: 13px; }
+  .walkout-cross { color: var(--gold); margin-right: 4px; font-style: normal; }
+  .walkout-ref { display: block; color: var(--gold); font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-top: 6px; font-size: 10px; }
+  .vibe-line { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--bg-3); font-size: 11px; color: var(--soft); font-style: italic; line-height: 1.4; }
+
+  .action-row { display: flex; gap: 10px; margin: 16px auto; max-width: 480px; padding: 0 4px; }
+  .action-row .btn { flex: 1; padding: 14px 20px; font-size: 13px; min-width: 0; }
+
+  /* ===== FIGHT ===== */
+  #fight { padding-top: max(12px, var(--safe-top)); }
+  .fight-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .round-label { font-size: 10px; letter-spacing: 3px; color: var(--red); font-weight: 700; text-transform: uppercase; }
+  .round-num { font-size: 12px; color: var(--cream); font-weight: 700; }
+  .fighter-row { display: flex; gap: 8px; margin-bottom: 8px; }
+  .fighter-slot { flex: 1; }
+  .fs-name { font-size: 11px; font-weight: 900; color: var(--cream); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+  .fs-name.right { text-align: right; }
+  .hp-bar-outer { height: 14px; background: var(--bg-1); border: 1px solid var(--bg-3); border-radius: 2px; overflow: hidden; position: relative; }
+  .hp-bar-fill { height: 100%; background: linear-gradient(90deg, #4ad06a 0%, #f4a05a 60%, var(--red) 100%); transition: width 0.4s; }
+  .hp-bar-fill.right { transform: scaleX(-1); transform-origin: center; }
+  /* low-HP danger pulse (2026-05-23 · filter+shadow only · no transform = right bar scaleX(-1) preserved) */
+  .hp-bar-fill.danger { animation: hp-danger 0.7s ease-in-out infinite; }
+  @keyframes hp-danger { 0%,100% { filter: brightness(1); box-shadow: none; } 50% { filter: brightness(1.4); box-shadow: 0 0 9px rgba(255,70,70,0.75); } }
+  .hp-num { font-size: 10px; color: var(--cream); position: absolute; top: 50%; transform: translateY(-50%); padding: 0 6px; font-weight: 700; }
+  .hp-num.left { left: 0; }
+  .hp-num.right { right: 0; }
+  .st-bar-outer { height: 6px; background: var(--bg-1); border: 1px solid var(--bg-3); border-radius: 2px; margin-top: 4px; overflow: hidden; }
+  .st-bar-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--cream)); transition: width 0.3s; }
+  .st-bar-fill.right { transform: scaleX(-1); transform-origin: center; }
+
+  /* ARENA PRESENCE (2026-05-23 · fighters now stand IN a lit venue, not float in void · no z-index changes = flash/attacks untouched) */
+  .ring { position: relative; flex: 1; min-height: 280px; margin: 8px 0; display: flex; align-items: flex-end; justify-content: space-between; padding: 0 4px 8px; overflow: hidden; border-radius: 8px;
+    background: radial-gradient(130% 90% at 50% 108%, rgba(200,64,74,0.13), transparent 56%), linear-gradient(180deg, transparent 44%, rgba(0,0,0,0.30)); }
+  /* warmer, wider arena floor glow (was a thin red line) */
+  .ring::before { content: ''; position: absolute; bottom: 5px; left: 6%; right: 6%; height: 12px; background: radial-gradient(70% 100% at 50% 50%, rgba(200,160,96,0.30), rgba(200,64,74,0.22) 55%, transparent); filter: blur(3px); }
+  /* ARENA SPOTLIGHTS (2026-05-23 · fills the dead upper ring with two light cones angling toward the fighters + overhead red haze · z-index 0 + pointer-events none = flash/attacks untouched) */
+  .ring::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 58%; pointer-events: none; z-index: 0;
+    background:
+      radial-gradient(ellipse 42% 130% at 27% -22%, rgba(200,160,96,0.11), transparent 60%),
+      radial-gradient(ellipse 42% 130% at 73% -22%, rgba(200,160,96,0.11), transparent 60%),
+      radial-gradient(ellipse 85% 65% at 50% -12%, rgba(200,64,74,0.07), transparent 72%); }
+  .ring-fighter { position: relative; width: 50%; max-width: 250px; aspect-ratio: 3/4; z-index: 1; }
+  /* PRESENCE BOOST (2026-05-23 · backlight behind fighter separates them from the dark bg + subtle brightness/contrast lift · keeps each fighter's identity-colors · ::before is behind the svg/flash so combat untouched) */
+  .ring-fighter::before { content: ''; position: absolute; inset: 6% 6% 9% 6%; z-index: -1; pointer-events: none;
+    background: radial-gradient(52% 58% at 50% 46%, rgba(255,214,176,0.13), rgba(200,64,74,0.06) 55%, transparent 72%); filter: blur(2px); }
+  /* grounded shadow + red rim · brightness/contrast lift so fighters read clearer · NO svg z-index = flash/burst keep natural DOM order ON TOP */
+  .ring-fighter svg { width: 100%; height: 100%; filter: drop-shadow(0 9px 10px rgba(0,0,0,0.72)) drop-shadow(0 0 16px rgba(200,64,74,0.13)) brightness(1.1) contrast(1.06); }
+  .ring-fighter.left svg { animation: idle-bob-L 2.4s ease-in-out infinite; }
+  .ring-fighter.right svg { animation: idle-bob-R 2.4s ease-in-out infinite; transform: scaleX(-1); }
+  @keyframes idle-bob-L { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+  @keyframes idle-bob-R { 0%,100% { transform: scaleX(-1) translateY(0); } 50% { transform: scaleX(-1) translateY(-4px); } }
+
+  .ring-fighter.attack-jab svg { animation: anim-jab 0.5s ease-out !important; }
+  .ring-fighter.attack-cross svg { animation: anim-cross 0.55s ease-out !important; }
+  .ring-fighter.attack-power svg { animation: anim-power 0.7s ease-out !important; }
+  .ring-fighter.attack-finisher svg { animation: anim-finisher 1s ease-out !important; }
+  .ring-fighter.right.attack-jab svg { animation: anim-jab-R 0.5s ease-out !important; }
+  .ring-fighter.right.attack-cross svg { animation: anim-cross-R 0.55s ease-out !important; }
+  .ring-fighter.right.attack-power svg { animation: anim-power-R 0.7s ease-out !important; }
+  .ring-fighter.right.attack-finisher svg { animation: anim-finisher-R 1s ease-out !important; }
+  .ring-fighter.hit svg { animation: anim-hit 0.4s ease-out !important; }
+  .ring-fighter.right.hit svg { animation: anim-hit-R 0.4s ease-out !important; }
+  .ring-fighter.ko svg { animation: anim-ko 1.2s ease-in forwards !important; opacity: 0.6; }
+  .ring-fighter.right.ko svg { animation: anim-ko-R 1.2s ease-in forwards !important; opacity: 0.6; }
+
+  /* Attack animations · attacker translates DEEP into opponent space for real contact */
+  /* COLLISION FIX 2026-05-23 · lunges boosted so fighters genuinely CROSS into each other at contact (was 3px box-touch · now real overlap) · attacker meets defender, doesn't swing in place */
+  @keyframes anim-jab { 0% { transform: translateX(0); } 45% { transform: translateX(120px) scale(1.06); } 60% { transform: translateX(112px) scale(1.06); } 100% { transform: translateX(0); } }
+  @keyframes anim-jab-R { 0% { transform: scaleX(-1) translateX(0); } 45% { transform: scaleX(-1) translateX(120px) scale(1.06); } 60% { transform: scaleX(-1) translateX(112px) scale(1.06); } 100% { transform: scaleX(-1) translateX(0); } }
+  @keyframes anim-cross { 0% { transform: translateX(0) rotate(0); } 45% { transform: translateX(150px) rotate(-10deg) scale(1.1); } 60% { transform: translateX(140px) rotate(-8deg) scale(1.1); } 100% { transform: translateX(0) rotate(0); } }
+  @keyframes anim-cross-R { 0% { transform: scaleX(-1); } 45% { transform: scaleX(-1) translateX(150px) rotate(-10deg) scale(1.1); } 60% { transform: scaleX(-1) translateX(140px) rotate(-8deg) scale(1.1); } 100% { transform: scaleX(-1); } }
+  @keyframes anim-power { 0% { transform: translateX(0) scale(1); } 22% { transform: translateX(-24px) scale(1.07); } 55% { transform: translateX(170px) scale(1.2) rotate(-8deg); } 70% { transform: translateX(158px) scale(1.18) rotate(-6deg); } 100% { transform: translateX(0) scale(1); } }
+  @keyframes anim-power-R { 0% { transform: scaleX(-1) scale(1); } 22% { transform: scaleX(-1) translateX(-24px) scale(1.07); } 55% { transform: scaleX(-1) translateX(170px) scale(1.2) rotate(-8deg); } 70% { transform: scaleX(-1) translateX(158px) scale(1.18) rotate(-6deg); } 100% { transform: scaleX(-1) scale(1); } }
+  @keyframes anim-finisher { 0% { transform: translateX(0) scale(1); filter: drop-shadow(0 0 0 var(--gold)); } 18% { transform: translateX(-38px) scale(1.14); filter: drop-shadow(0 0 25px var(--gold)); } 55% { transform: translateX(200px) scale(1.32) rotate(-12deg); filter: drop-shadow(0 0 40px var(--gold)) brightness(1.3); } 70% { transform: translateX(188px) scale(1.3) rotate(-10deg); filter: drop-shadow(0 0 35px var(--gold)) brightness(1.2); } 100% { transform: translateX(0) scale(1); filter: drop-shadow(0 0 0 var(--gold)); } }
+  @keyframes anim-finisher-R { 0% { transform: scaleX(-1) scale(1); } 18% { transform: scaleX(-1) translateX(-38px) scale(1.14); filter: drop-shadow(0 0 25px var(--gold)); } 55% { transform: scaleX(-1) translateX(200px) scale(1.32) rotate(-12deg); filter: drop-shadow(0 0 40px var(--gold)) brightness(1.3); } 70% { transform: scaleX(-1) translateX(188px) scale(1.3) rotate(-10deg); filter: drop-shadow(0 0 35px var(--gold)) brightness(1.2); } 100% { transform: scaleX(-1) scale(1); } }
+  /* Hit · defender recoils BACKWARD (away from attacker) by move-power, with extra rotation + flash */
+  @keyframes anim-hit { 0% { transform: translateX(0); } 20% { transform: translateX(-22px) rotate(10deg); filter: brightness(1.7) drop-shadow(0 0 16px var(--red-bright)); } 50% { transform: translateX(-12px) rotate(4deg); } 80% { transform: translateX(-4px); } 100% { transform: translateX(0); } }
+  @keyframes anim-hit-R { 0% { transform: scaleX(-1); } 20% { transform: scaleX(-1) translateX(-22px) rotate(10deg); filter: brightness(1.7) drop-shadow(0 0 16px var(--red-bright)); } 50% { transform: scaleX(-1) translateX(-12px) rotate(4deg); } 80% { transform: scaleX(-1) translateX(-4px); } 100% { transform: scaleX(-1); } }
+  /* Heavy recoil for power/finisher hits */
+  .ring-fighter.hit-heavy svg { animation: anim-hit-heavy 0.55s ease-out !important; }
+  .ring-fighter.right.hit-heavy svg { animation: anim-hit-heavy-R 0.55s ease-out !important; }
+  @keyframes anim-hit-heavy { 0% { transform: translateX(0); } 18% { transform: translateX(-42px) rotate(18deg); filter: brightness(1.9) drop-shadow(0 0 22px var(--gold)); } 45% { transform: translateX(-30px) rotate(8deg); } 75% { transform: translateX(-10px) rotate(2deg); } 100% { transform: translateX(0); } }
+  @keyframes anim-hit-heavy-R { 0% { transform: scaleX(-1); } 18% { transform: scaleX(-1) translateX(-42px) rotate(18deg); filter: brightness(1.9) drop-shadow(0 0 22px var(--gold)); } 45% { transform: scaleX(-1) translateX(-30px) rotate(8deg); } 75% { transform: scaleX(-1) translateX(-10px) rotate(2deg); } 100% { transform: scaleX(-1); } }
+  @keyframes anim-ko { 0% { transform: rotate(0); } 100% { transform: rotate(-85deg) translateY(40px); opacity: 0.5; } }
+  @keyframes anim-ko-R { 0% { transform: scaleX(-1) rotate(0); } 100% { transform: scaleX(-1) rotate(-85deg) translateY(40px); opacity: 0.5; } }
+
+  .shake { animation: shake 0.4s; }
+  @keyframes shake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
+  /* IMPACT JUICE 2026-05-23 · heavy hits rock the ring harder */
+  .ring.shake-heavy { animation: shake-heavy 0.42s; }
+  @keyframes shake-heavy { 0%,100% { transform: translateX(0) translateY(0); } 12% { transform: translateX(-15px) translateY(3px); } 28% { transform: translateX(13px) translateY(-2px); } 44% { transform: translateX(-10px) translateY(2px); } 62% { transform: translateX(7px); } 80% { transform: translateX(-3px); } }
+
+  .impact-flash { position: absolute; inset: 0; pointer-events: none; opacity: 0; }
+  .impact-flash.fire { animation: flash 0.25s; }
+  @keyframes flash { 0% { opacity: 0; background: radial-gradient(circle at center, var(--cream), transparent 50%); } 30% { opacity: 0.8; } 100% { opacity: 0; } }
+  /* punchier flash on heavy/finisher hits */
+  .impact-flash.fire-heavy { animation: flash-heavy 0.34s; }
+  @keyframes flash-heavy { 0% { opacity: 0; background: radial-gradient(circle at center, #fff, var(--gold) 28%, var(--red) 50%, transparent 66%); } 22% { opacity: 1; } 100% { opacity: 0; } }
+
+  .impact-burst { position: absolute; pointer-events: none; font-size: 24px; font-weight: 900; color: var(--gold); text-shadow: 0 2px 0 #000, 0 0 8px var(--red); opacity: 0; }
+  .impact-burst.go { animation: burst 0.8s ease-out forwards; }
+  /* CONTACT SHOCKWAVE 2026-05-23 · expanding ring at the meeting point when they collide */
+  .impact-burst::before { content: ''; position: absolute; left: 50%; top: 60%; width: 22px; height: 22px; border-radius: 50%; border: 3px solid rgba(255,240,210,0.85); transform: translate(-50%,-50%) scale(0); opacity: 0; }
+  .impact-burst.go::before { animation: shockwave 0.5s ease-out; }
+  @keyframes shockwave { 0% { opacity: 0.9; transform: translate(-50%,-50%) scale(0.2); border-width: 4px; } 100% { opacity: 0; transform: translate(-50%,-50%) scale(3.6); border-width: 0; } }
+  /* damage-number severity tiers (2026-05-23) · base = jab/small (24px gold) */
+  .impact-burst.dmg-big { font-size: 33px; color: var(--red-bright); text-shadow: 0 2px 0 #000, 0 0 10px var(--red); }
+  .impact-burst.dmg-huge { font-size: 46px; color: #ff5a5a; text-shadow: 0 2px 0 #000, 0 0 18px var(--gold), 0 0 8px #fff; }
+  @keyframes burst { 0% { opacity: 0; transform: translate(-50%,-50%) scale(0.5); } 30% { opacity: 1; transform: translate(-50%,-80%) scale(1.4); } 100% { opacity: 0; transform: translate(-50%,-120%) scale(1.2); } }
+
+  /* Moves panel */
+  .moves-panel { padding-top: 8px; }
+  .moves-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .move-btn {
+    background: linear-gradient(180deg, var(--bg-2) 0%, var(--bg-1) 100%);
+    border: 1px solid var(--bg-3); color: var(--cream);
+    padding: 14px 8px; font-size: 11px; font-weight: 900; letter-spacing: 1.5px;
+    text-transform: uppercase; border-radius: 4px; cursor: pointer;
+    min-height: 56px; position: relative;
+    transition: transform 0.1s, border-color 0.1s;
+  }
+  .move-btn:active { transform: scale(0.97); border-color: var(--red); }
+  .move-btn.signature { border-color: var(--red); }
+  .move-btn.finisher { border-color: var(--gold); color: var(--gold); background: linear-gradient(180deg, #3a2a18 0%, #2a1810 100%); }
+  .move-btn.finisher.locked { opacity: 0.4; pointer-events: none; }
+  .move-btn .move-name { display: block; }
+  .move-btn .move-cost { display: block; font-size: 8px; color: var(--muted); margin-top: 3px; font-weight: 600; }
+  .move-btn.signature .move-cost { color: var(--red); }
+  .move-btn.finisher .move-cost { color: var(--gold); }
+
+  /* Combat log */
+  .combat-log {
+    margin-top: 8px; max-height: 70px; overflow-y: auto;
+    font-size: 11px; color: var(--soft); padding: 6px 10px;
+    background: rgba(0,0,0,0.3); border-radius: 4px; border: 1px solid var(--bg-3);
+    line-height: 1.5;
+  }
+  .combat-log .log-line { margin-bottom: 2px; }
+  .combat-log .log-line.player { color: var(--cream); }
+  .combat-log .log-line.enemy { color: var(--soft); }
+  .combat-log .log-line.crit { color: var(--gold); font-weight: 700; }
+  .combat-log .log-line.scripture { color: var(--gold); font-style: italic; }
+
+  /* ===== RESULT ===== */
+  #result { justify-content: center; align-items: center; text-align: center; gap: 24px; }
+  .result-banner { font-size: clamp(40px, 12vw, 80px); font-weight: 900; letter-spacing: 3px; color: var(--cream); text-shadow: 0 4px 0 #000, 0 6px 16px var(--red); animation: result-pop 0.6s ease-out; }
+  .result-banner.loss { color: var(--soft); text-shadow: 0 2px 0 #000; }
+  @keyframes result-pop { 0% { transform: scale(0.6); opacity: 0; } 60% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); } }
+  .result-detail { font-size: 13px; color: var(--soft); max-width: 320px; line-height: 1.6; }
+  .result-scripture { max-width: 380px; padding: 16px 20px; border-left: 3px solid var(--gold); background: rgba(200,160,96,0.06); border-radius: 4px; text-align: left; margin: 8px 0 20px; }
+  .result-scripture-text { font-style: italic; color: var(--cream); font-size: 13px; line-height: 1.55; }
+  .result-scripture-ref { display: block; color: var(--gold); font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-top: 8px; font-size: 10px; }
+  /* RESULT-SCREEN STAGED ENTRANCE (2026-05-23 · banner punch → detail → scripture → career → buttons rise in sequence · .active-gated so it re-triggers each result · every element has an entrance = no bug-class-#10 orphan) */
+  #result.active .result-banner { animation: result-pop 0.55s cubic-bezier(0.16,1,0.3,1) both; }
+  #result.active .result-detail { animation: result-rise 0.5s cubic-bezier(0.16,1,0.3,1) 0.38s both; }
+  #result.active .result-scripture { animation: result-rise 0.55s cubic-bezier(0.16,1,0.3,1) 0.62s both; }
+  #result.active #career-strip { animation: result-rise 0.5s cubic-bezier(0.16,1,0.3,1) 0.86s both; }
+  #result.active .action-row { animation: result-rise 0.5s cubic-bezier(0.16,1,0.3,1) 1.08s both; }
+  @keyframes result-rise { 0% { opacity: 0; transform: translateY(16px); } 100% { opacity: 1; transform: translateY(0); } }
+  @media (prefers-reduced-motion: reduce) { #result.active .result-banner, #result.active .result-detail, #result.active .result-scripture, #result.active #career-strip, #result.active .action-row { animation: none !important; } }
+
+  /* WALKOUT INTRO (2026-05-23 · brief entrance beat on fight-start · NON-BLOCKING: pointer-events none + no match-lock so the smoke gate + fast players are unaffected · auto-fades) */
+  .walkout-intro { position: absolute; inset: 0; z-index: 55; display: flex; align-items: center; justify-content: center; padding: 24px;
+    background: radial-gradient(70% 55% at 50% 42%, rgba(40,28,12,0.5), rgba(0,0,0,0.82) 82%); opacity: 0; pointer-events: none; visibility: hidden; transition: opacity 0.4s ease; }
+  .walkout-intro.on { opacity: 1; visibility: visible; }
+  .walkout-intro .wi-inner { max-width: 460px; text-align: center; transform: translateY(14px); transition: transform 0.55s cubic-bezier(0.16,1,0.3,1); }
+  .walkout-intro.on .wi-inner { transform: translateY(0); }
+  .wi-label { font-size: 10px; letter-spacing: 5px; color: var(--gold); text-transform: uppercase; opacity: 0.8; margin-bottom: 8px; }
+  .wi-name { font-size: clamp(34px, 11vw, 64px); font-weight: 900; letter-spacing: 3px; color: var(--cream); text-transform: uppercase; line-height: 0.95; text-shadow: 0 2px 0 #000, 0 6px 24px rgba(200,64,74,0.6); margin-bottom: 16px; }
+  .wi-verse { font-style: italic; color: var(--cream); font-size: clamp(13px, 4vw, 16px); line-height: 1.5; opacity: 0.92; }
+  .wi-verse .wi-cross { color: var(--gold); font-style: normal; margin-right: 6px; }
+  .wi-ref { display: block; color: var(--gold); font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-top: 10px; font-size: 10px; }
+  @media (prefers-reduced-motion: reduce) { .walkout-intro, .walkout-intro .wi-inner { transition: none !important; } }
+  /* FINISHER REVERENCE (2026-05-23 · when a SCRIPTURE FINISHER lands the KO, the verse holds reverently in the ring before the result · SCRIPTURE RESPECT formatting · gold + italic KJV) */
+  .finisher-reverence { position: absolute; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 24px;
+    background: radial-gradient(60% 50% at 50% 45%, rgba(40,28,12,0.55), rgba(0,0,0,0.88) 80%); opacity: 0; pointer-events: none; visibility: hidden;
+    transition: opacity 0.45s ease; }
+  .finisher-reverence.on { opacity: 1; visibility: visible; }
+  .finisher-reverence .fr-inner { max-width: 440px; text-align: center; transform: translateY(10px) scale(0.98); transition: transform 0.6s cubic-bezier(0.16,1,0.3,1); }
+  .finisher-reverence.on .fr-inner { transform: translateY(0) scale(1); }
+  .fr-strike-label { font-size: 11px; letter-spacing: 5px; color: var(--gold); text-transform: uppercase; margin-bottom: 18px; opacity: 0.85; }
+  .fr-verse { font-style: italic; color: var(--cream); font-size: clamp(18px, 5.5vw, 26px); line-height: 1.5; text-shadow: 0 2px 12px rgba(0,0,0,0.8); }
+  .fr-verse .fr-cross { color: var(--gold); font-style: normal; margin-right: 8px; }
+  .fr-ref { display: block; color: var(--gold); font-weight: 800; letter-spacing: 3px; text-transform: uppercase; margin-top: 18px; font-size: 12px; text-shadow: 0 0 14px rgba(200,160,96,0.4); }
+  @media (prefers-reduced-motion: reduce) { .finisher-reverence, .finisher-reverence .fr-inner { transition: none !important; } }
+
+  .stat-strip { display: flex; gap: 16px; font-size: 11px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+  .stat-strip strong { color: var(--cream); font-weight: 700; font-size: 13px; display: block; }
+  .stat-strip > div { text-align: center; }
+
+  /* Mobile tweaks */
+  @media (max-width: 380px) {
+    .roster-grid { grid-template-columns: repeat(2, 1fr); }
+    .moves-grid { gap: 6px; }
+    .move-btn { padding: 10px 4px; font-size: 10px; min-height: 50px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ========== SPLASH ========== -->
+<div id="splash" class="screen active">
+  <div class="splash-sub">PRESENTS</div>
+  <div class="splash-title">SLAM<br>CITY</div>
+  <div class="splash-sub">A BROTHER CREW FIGHTER</div>
+
+  <div class="splash-verse">
+    <div class="splash-verse-text" id="splash-verse-text"></div>
+    <span class="splash-verse-ref" id="splash-verse-ref"></span>
+  </div>
+
+  <button class="btn" onclick="goto('roster')">ENTER THE RING</button>
+  <button class="btn btn-secondary" id="quick-play-btn" onclick="quickPlay()" style="display:none">QUICK PLAY</button>
+  <div class="splash-foot">v1.1 · build 2026-05-23·1625 · arena+collision+impact · 11 brothers · for AARON</div>
+</div>
+
+<!-- ========== ROSTER ========== -->
+<div id="roster" class="screen">
+  <div class="roster-head">
+    <button class="back" onclick="goto('splash')">‹ Back</button>
+    <div class="head-title">Pick Your Fighter</div>
+    <div style="width:60px"></div>
+  </div>
+  <div class="roster-grid" id="roster-grid"></div>
+</div>
+
+<!-- ========== DETAIL ========== -->
+<div id="detail" class="screen">
+  <div class="detail-head">
+    <button class="back-btn" onclick="goto('roster')">‹ Roster</button>
+    <div class="head-title" id="detail-head-name"></div>
+    <div style="width:80px"></div>
+  </div>
+
+  <div class="detail-stage">
+    <div class="spotlight"></div>
+    <div class="floor-shadow"></div>
+    <div id="detail-svg-mount"></div>
+  </div>
+
+  <div class="stats-card" id="detail-stats"></div>
+
+  <div class="action-row">
+    <button class="btn btn-secondary" onclick="goto('roster')">PICK ANOTHER</button>
+    <button class="btn" onclick="startMatchWith(currentDetail)">FIGHT WITH THIS ONE</button>
+  </div>
+</div>
+
+<!-- ========== FIGHT ========== -->
+<div id="fight" class="screen">
+  <div class="fight-head">
+    <div class="round-label">Round <span class="round-num" id="fight-round">1</span></div>
+    <div class="round-label" id="fight-turn-indicator" style="color:var(--cream)">Your Turn</div>
+  </div>
+
+  <div class="fighter-row">
+    <div class="fighter-slot">
+      <div class="fs-name" id="left-name">—</div>
+      <div class="hp-bar-outer">
+        <div class="hp-bar-fill" id="left-hp" style="width:100%"></div>
+        <div class="hp-num left" id="left-hp-num">100</div>
+      </div>
+      <div class="st-bar-outer"><div class="st-bar-fill" id="left-st" style="width:100%"></div></div>
+    </div>
+    <div class="fighter-slot">
+      <div class="fs-name right" id="right-name">—</div>
+      <div class="hp-bar-outer">
+        <div class="hp-bar-fill right" id="right-hp" style="width:100%"></div>
+        <div class="hp-num right" id="right-hp-num">100</div>
+      </div>
+      <div class="st-bar-outer"><div class="st-bar-fill right" id="right-st" style="width:100%"></div></div>
+    </div>
+  </div>
+
+  <div class="ring" id="ring">
+    <div class="ring-fighter left" id="ring-left">
+      <div id="ring-left-svg"></div>
+      <div class="impact-flash" id="left-flash"></div>
+      <div class="impact-burst" id="left-burst"></div>
+    </div>
+    <div class="ring-fighter right" id="ring-right">
+      <div id="ring-right-svg"></div>
+      <div class="impact-flash" id="right-flash"></div>
+      <div class="impact-burst" id="right-burst"></div>
+    </div>
+  </div>
+
+  <div class="moves-panel">
+    <div class="moves-grid" id="moves-grid"></div>
+  </div>
+
+  <div class="combat-log" id="combat-log"></div>
+  <div class="walkout-intro" id="walkout-intro" aria-hidden="true">
+    <div class="wi-inner">
+      <div class="wi-label" id="wi-label"></div>
+      <div class="wi-name" id="wi-name"></div>
+      <div class="wi-verse" id="wi-verse"></div>
+      <div class="wi-ref" id="wi-ref"></div>
+    </div>
+  </div>
+  <div class="finisher-reverence" id="finisher-reverence" aria-hidden="true">
+    <div class="fr-inner">
+      <div class="fr-strike-label">SCRIPTURE STRIKE</div>
+      <div class="fr-verse" id="fr-verse"></div>
+      <div class="fr-ref" id="fr-ref"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== RESULT ========== -->
+<div id="result" class="screen">
+  <div class="result-banner" id="result-banner">VICTORY</div>
+  <div class="result-detail" id="result-detail"></div>
+  <div class="result-scripture" id="result-scripture-block" style="display:none">
+    <div class="result-scripture-text" id="result-scripture-text"></div>
+    <span class="result-scripture-ref" id="result-scripture-ref"></span>
+  </div>
+
+  <div class="stat-strip" id="career-strip"></div>
+
+  <div class="action-row" style="flex-direction:column; max-width:280px">
+    <button class="btn" onclick="goto('roster')">PICK A FIGHTER</button>
+    <button class="btn btn-secondary" onclick="goto('splash')">MAIN MENU</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ========== FIGHTERS DATA ========== */
+const FIGHTERS = [
+  {
+    id:'aaron', name:'AARON', slot:17, arch:'BRAWLER', ovr:89,
+    stats:{striking:92, grappling:85, stamina:88, heart:99, charisma:95},
+    finishers:['RKO','SPEAR'],
+    vibe:'The brother · entire reason SLAM CITY exists · headliner energy',
+    walkout:{text:'Iron sharpeneth iron · so a man sharpeneth the countenance of his friend.', ref:'Proverbs 27:17 · KJV', label:'Brother Anthem'},
+    moves:[
+      {name:'Jab',type:'jab',dmg:[8,14],cost:8,acc:0.92},
+      {name:'Combo',type:'cross',dmg:[14,22],cost:18,acc:0.85},
+      {name:'Spear',type:'power',dmg:[22,32],cost:30,acc:0.78, sig:true},
+      {name:'RKO',type:'finisher',dmg:[55,70],cost:55,acc:0.95, fin:true}
+    ],
+    art:{skin:'#c8956a', skinDark:'#8a5d3e', hair:'#3a2418', hairLight:'#5a3825', hoodie:'#1a1a1f', hoodieDark:'#050508', accent:'#e04050', shorts:'#2a2a30', logo:'SC', build:1.0, scriptureFinisher:{text:'A friend loveth at all times · and a brother is born for adversity.', ref:'Proverbs 17:17'}}
+  },
+  {
+    id:'azriel', name:'AZRIEL', slot:18, arch:'HIGHFLYER', ovr:87,
+    stats:{striking:85, grappling:72, stamina:90, heart:94, charisma:88},
+    finishers:['450 SPLASH','PHOENIX SPLASH'],
+    vibe:'Angel-name energy · top-rope aerial · gospel walkout',
+    walkout:{text:'For he shall give his angels charge over thee · to keep thee in all thy ways.', ref:'Psalm 91:11 · KJV', label:'Angel Walk'},
+    moves:[
+      {name:'Strike',type:'jab',dmg:[7,13],cost:6,acc:0.94},
+      {name:'Top Rope',type:'cross',dmg:[16,24],cost:20,acc:0.82},
+      {name:'450 Splash',type:'power',dmg:[24,34],cost:32,acc:0.75, sig:true},
+      {name:'Phoenix Splash',type:'finisher',dmg:[58,74],cost:58,acc:0.92, fin:true}
+    ],
+    art:{skin:'#e6c094', skinDark:'#a48058', hair:'#d8b870', hairLight:'#f4d890', hoodie:'#f0e8d0', hoodieDark:'#a89868', accent:'#c8a060', shorts:'#3a3020', logo:'AZ', build:0.96, scriptureFinisher:{text:'They shall mount up with wings as eagles.', ref:'Isaiah 40:31'}}
+  },
+  {
+    id:'vlad', name:'VLADMIRE', slot:19, arch:'POWERHOUSE', ovr:86,
+    stats:{striking:82, grappling:96, stamina:78, heart:85, charisma:80},
+    finishers:['LAST RIDE','TRIPLE POWERBOMB'],
+    vibe:'Gothic-name big-man slammer · intimidator presence',
+    walkout:{text:'It is God that girdeth me with strength · and maketh my way perfect.', ref:'Psalm 18:32 · KJV', label:'Strength of the Lord'},
+    moves:[
+      {name:'Heavy Hand',type:'jab',dmg:[10,16],cost:9,acc:0.88},
+      {name:'Slam',type:'cross',dmg:[18,28],cost:22,acc:0.82},
+      {name:'Powerbomb',type:'power',dmg:[28,38],cost:35,acc:0.74, sig:true},
+      {name:'Last Ride',type:'finisher',dmg:[62,78],cost:60,acc:0.88, fin:true}
+    ],
+    art:{skin:'#e8d4c0', skinDark:'#b09080', hair:'#1a1410', hairLight:'#2a2018', hoodie:'#0d0d12', hoodieDark:'#000', accent:'#6a4080', shorts:'#1a1018', logo:'VL', build:1.12, scriptureFinisher:{text:'The LORD is a man of war.', ref:'Exodus 15:3'}}
+  },
+  {
+    id:'luke', name:'LUKE', slot:20, arch:'BOXER', ovr:85,
+    stats:{striking:94, grappling:65, stamina:86, heart:90, charisma:84},
+    finishers:['KO HOOK','HEAD KICK'],
+    vibe:'Gospel-coded name · clean technician · pure-form striker',
+    walkout:{text:'And as ye would that men should do to you · do ye also to them likewise.', ref:'Luke 6:31 · KJV', label:'The Golden Rule'},
+    moves:[
+      {name:'Jab',type:'jab',dmg:[9,14],cost:6,acc:0.96},
+      {name:'1-2',type:'cross',dmg:[15,22],cost:16,acc:0.90},
+      {name:'KO Hook',type:'power',dmg:[26,36],cost:30,acc:0.82, sig:true},
+      {name:'Head Kick',type:'finisher',dmg:[58,72],cost:55,acc:0.90, fin:true}
+    ],
+    art:{skin:'#f0d4b0', skinDark:'#b89070', hair:'#d4a070', hairLight:'#e8c090', hoodie:'#e8e0d0', hoodieDark:'#a09880', accent:'#3060a0', shorts:'#1a2030', logo:'LK', build:0.98, scriptureFinisher:{text:'I have fought a good fight.', ref:'2 Timothy 4:7'}}
+  },
+  {
+    id:'cannon', name:'CANNON', slot:21, arch:'STRIKER', ovr:84,
+    stats:{striking:90, grappling:72, stamina:84, heart:86, charisma:82},
+    finishers:['SUPERMAN PUNCH','ROUNDHOUSE KO'],
+    vibe:'Explosive name · explosive striker · high-energy entrance',
+    walkout:{text:'But ye shall receive power · after that the Holy Ghost is come upon you.', ref:'Acts 1:8 · KJV', label:'Power From On High'},
+    moves:[
+      {name:'Cannon Jab',type:'jab',dmg:[9,15],cost:7,acc:0.93},
+      {name:'Cross',type:'cross',dmg:[16,24],cost:17,acc:0.87},
+      {name:'Superman Punch',type:'power',dmg:[25,35],cost:30,acc:0.78, sig:true},
+      {name:'Roundhouse KO',type:'finisher',dmg:[60,75],cost:56,acc:0.88, fin:true}
+    ],
+    art:{skin:'#d8a880', skinDark:'#a07050', hair:'#2a1810', hairLight:'#4a2820', hoodie:'#3a1a14', hoodieDark:'#1a0a08', accent:'#f48030', shorts:'#1a1010', logo:'CN', build:1.02, scriptureFinisher:{text:'For God hath not given us the spirit of fear · but of power.', ref:'2 Timothy 1:7'}}
+  },
+  {
+    id:'lee', name:'LEE', slot:22, arch:'KICKBOXER', ovr:86,
+    stats:{striking:93, grappling:75, stamina:88, heart:88, charisma:90},
+    finishers:['FLYING KNEE','SPINNING HEEL'],
+    vibe:'Bruce Lee energy · 8-limb striker · lean martial-arts master',
+    walkout:{text:'Be strong and of a good courage · be not afraid · neither be thou dismayed.', ref:'Joshua 1:9 · KJV', label:'Courage of the Warrior'},
+    moves:[
+      {name:'Lead Kick',type:'jab',dmg:[9,15],cost:7,acc:0.93},
+      {name:'8-Limb Combo',type:'cross',dmg:[17,25],cost:19,acc:0.85},
+      {name:'Spinning Heel',type:'power',dmg:[26,36],cost:32,acc:0.76, sig:true},
+      {name:'Flying Knee',type:'finisher',dmg:[60,76],cost:58,acc:0.90, fin:true}
+    ],
+    art:{skin:'#e8c89c', skinDark:'#a88860', hair:'#1a1008', hairLight:'#2a1810', hoodie:'#1a1a1a', hoodieDark:'#000', accent:'#f0c020', shorts:'#0a0a0a', logo:'LE', build:0.92, scriptureFinisher:{text:'Fight the good fight of faith.', ref:'1 Timothy 6:12'}}
+  },
+  {
+    id:'ashton', name:'ASHTON', slot:23, arch:'STRIKER', ovr:83,
+    stats:{striking:88, grappling:70, stamina:82, heart:80, charisma:92},
+    finishers:['ROUNDHOUSE KO','SUPERMAN PUNCH'],
+    vibe:'Modern street · cool fast striker · trap-walkout swag',
+    walkout:{text:'Let no man despise thy youth · but be thou an example of the believers.', ref:'1 Timothy 4:12 · KJV', label:'Young Lion'},
+    moves:[
+      {name:'Quick Jab',type:'jab',dmg:[8,13],cost:6,acc:0.94},
+      {name:'Combo',type:'cross',dmg:[14,21],cost:15,acc:0.88},
+      {name:'Roundhouse',type:'power',dmg:[24,33],cost:29,acc:0.78, sig:true},
+      {name:'Superman Punch',type:'finisher',dmg:[55,70],cost:54,acc:0.88, fin:true}
+    ],
+    art:{skin:'#d4b090', skinDark:'#9a7858', hair:'#1a1410', hairLight:'#2a2018', hoodie:'#3a3a48', hoodieDark:'#1a1a28', accent:'#4080c0', shorts:'#202028', logo:'AS', build:0.96, scriptureFinisher:{text:'Let thine eyes look right on.', ref:'Proverbs 4:25'}}
+  },
+  {
+    id:'kale', name:'KALE', slot:24, arch:'WRESTLER', ovr:85,
+    stats:{striking:75, grappling:95, stamina:90, heart:88, charisma:78},
+    finishers:['F5','SUPLEX CITY'],
+    vibe:'Farm-built powerlifter · earth-toned · grounded wrestler',
+    walkout:{text:'In all labour there is profit.', ref:'Proverbs 14:23 · KJV', label:'The Laborer'},
+    moves:[
+      {name:'Body Lock',type:'jab',dmg:[8,14],cost:8,acc:0.90},
+      {name:'Suplex',type:'cross',dmg:[18,26],cost:22,acc:0.84},
+      {name:'F5',type:'power',dmg:[28,38],cost:34,acc:0.76, sig:true},
+      {name:'Suplex City',type:'finisher',dmg:[60,76],cost:60,acc:0.88, fin:true}
+    ],
+    art:{skin:'#d4a878', skinDark:'#9a7048', hair:'#5a3818', hairLight:'#7a4828', hoodie:'#2a4028', hoodieDark:'#1a2818', accent:'#a08040', shorts:'#3a3020', logo:'KA', build:1.08, scriptureFinisher:{text:'Whatsoever thy hand findeth to do · do it with thy might.', ref:'Ecclesiastes 9:10'}}
+  },
+  {
+    id:'tucker', name:'TUCKER', slot:25, arch:'BRAWLER', ovr:82,
+    stats:{striking:84, grappling:80, stamina:86, heart:85, charisma:79},
+    finishers:['RKO','SPEAR'],
+    vibe:'Country scrap · bar-fight energy · rural-tough',
+    walkout:{text:'The race is not to the swift · nor the battle to the strong.', ref:'Ecclesiastes 9:11 · KJV', label:'Underdog Walk'},
+    moves:[
+      {name:'Bar Brawl',type:'jab',dmg:[8,14],cost:7,acc:0.91},
+      {name:'Country Combo',type:'cross',dmg:[14,21],cost:16,acc:0.85},
+      {name:'Spear',type:'power',dmg:[24,33],cost:30,acc:0.76, sig:true},
+      {name:'RKO',type:'finisher',dmg:[55,70],cost:55,acc:0.86, fin:true}
+    ],
+    art:{skin:'#dcb098', skinDark:'#a07868', hair:'#4a2818', hairLight:'#6a3a28', hoodie:'#4a3020', hoodieDark:'#2a1810', accent:'#a06030', shorts:'#3a2818', logo:'TK', build:1.04, scriptureFinisher:{text:'The just shall live by faith.', ref:'Romans 1:17'}}
+  },
+  {
+    id:'ryan', name:'RYAN', slot:26, arch:'MMA', ovr:84,
+    stats:{striking:84, grappling:84, stamina:86, heart:84, charisma:84},
+    finishers:['GROUND POUND','SUBMISSION'],
+    vibe:'All-rounder athlete · balanced MMA · do-it-all fighter',
+    walkout:{text:'I can do all things through Christ which strengtheneth me.', ref:'Philippians 4:13 · KJV', label:'All Things Through Christ'},
+    moves:[
+      {name:'Combo',type:'jab',dmg:[8,14],cost:7,acc:0.92},
+      {name:'Takedown',type:'cross',dmg:[16,23],cost:18,acc:0.85},
+      {name:'Ground Pound',type:'power',dmg:[25,34],cost:30,acc:0.78, sig:true},
+      {name:'Rear Naked',type:'finisher',dmg:[58,72],cost:56,acc:0.88, fin:true}
+    ],
+    art:{skin:'#d8b090', skinDark:'#a08068', hair:'#3a2820', hairLight:'#5a3828', hoodie:'#1a3a4a', hoodieDark:'#0a1a28', accent:'#40a0c0', shorts:'#1a2028', logo:'RY', build:1.0, scriptureFinisher:{text:'Strengthened with all might · according to his glorious power.', ref:'Colossians 1:11'}}
+  },
+  {
+    id:'caleb', name:'CALEB', slot:27, arch:'MMA', ovr:86,
+    stats:{striking:82, grappling:90, stamina:88, heart:96, charisma:82},
+    finishers:['SUBMISSION','GROUND POUND'],
+    vibe:'Biblical Caleb · spy of Numbers · submission specialist · wholly follows the LORD',
+    walkout:{text:'But my servant Caleb · because he had another spirit with him · and hath followed me fully · him will I bring into the land.', ref:'Numbers 14:24 · KJV', label:'Another Spirit'},
+    moves:[
+      {name:'Strike',type:'jab',dmg:[8,13],cost:7,acc:0.92},
+      {name:'Clinch',type:'cross',dmg:[15,22],cost:17,acc:0.86},
+      {name:'Ground Pound',type:'power',dmg:[26,35],cost:31,acc:0.78, sig:true},
+      {name:'Submission',type:'finisher',dmg:[60,75],cost:58,acc:0.90, fin:true}
+    ],
+    art:{skin:'#c89878', skinDark:'#8a6850', hair:'#1a0e08', hairLight:'#2a1810', hoodie:'#1a3020', hoodieDark:'#0a1810', accent:'#40a040', shorts:'#1a2018', logo:'CB', build:1.0, scriptureFinisher:{text:'He wholly followed the LORD.', ref:'Joshua 14:14'}}
+  }
+];
+
+/* ========== SVG FIGHTER RENDERER (parametric · matches Aaron preview style) ========== */
+function renderFighter(art, mode='full') {
+  const { skin, skinDark, hair, hairLight, hoodie, hoodieDark, accent, shorts, logo, build } = art;
+  const scale = build || 1.0;
+  return `<svg viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g-skin-${logo}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${skin}"/>
+      <stop offset="100%" stop-color="${skinDark}"/>
+    </linearGradient>
+    <linearGradient id="g-hoodie-${logo}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${hoodie}"/>
+      <stop offset="60%" stop-color="${hoodie}"/>
+      <stop offset="100%" stop-color="${hoodieDark}"/>
+    </linearGradient>
+    <linearGradient id="g-shorts-${logo}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${shorts}"/>
+      <stop offset="100%" stop-color="#1a1a20"/>
+    </linearGradient>
+    <linearGradient id="g-accent-${logo}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${accent}"/>
+      <stop offset="100%" stop-color="${shadeColor(accent,-30)}"/>
+    </linearGradient>
+    <radialGradient id="g-blush-${logo}" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="${skinDark}" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="${skinDark}" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <g transform="translate(150,200) scale(${scale}) translate(-150,-200)">
+    <!-- Back leg -->
+    <g>
+      <path d="M 145 240 Q 138 280 142 320 L 158 320 Q 156 280 158 245 Z" fill="url(#g-shorts-${logo})" stroke="#0a0a0d" stroke-width="1.2"/>
+      <path d="M 142 320 Q 138 350 140 375 L 158 378 Q 161 350 158 320 Z" fill="url(#g-skin-${logo})" stroke="#0a0a0d" stroke-width="1.2"/>
+      <ellipse cx="148" cy="385" rx="18" ry="6" fill="#1a1a1f" stroke="${accent}" stroke-width="1.5"/>
+      <path d="M 134 384 L 162 384 L 162 380 L 134 380 Z" fill="${accent}" opacity="0.85"/>
+    </g>
+    <!-- Front leg -->
+    <g>
+      <path d="M 152 240 Q 165 285 172 325 L 192 325 Q 188 280 178 245 Z" fill="url(#g-shorts-${logo})" stroke="#0a0a0d" stroke-width="1.2"/>
+      <ellipse cx="180" cy="305" rx="8" ry="4" fill="#0a0a0d" opacity="0.3"/>
+      <path d="M 172 325 Q 175 355 178 380 L 198 380 Q 198 350 192 325 Z" fill="url(#g-skin-${logo})" stroke="#0a0a0d" stroke-width="1.2"/>
+      <ellipse cx="188" cy="388" rx="20" ry="7" fill="#1a1a1f" stroke="${accent}" stroke-width="1.5"/>
+      <path d="M 170 387 L 206 387 L 206 382 L 170 382 Z" fill="${accent}" opacity="0.85"/>
+      <line x1="180" y1="384" x2="196" y2="384" stroke="#f4e6c8" stroke-width="0.5"/>
+    </g>
+    <!-- Torso -->
+    <g>
+      <path d="M 110 165 Q 105 175 108 210 Q 110 235 120 250 L 180 250 Q 192 235 194 210 Q 195 175 190 165 Q 175 155 150 155 Q 125 155 110 165 Z" fill="url(#g-hoodie-${logo})" stroke="#0a0a0d" stroke-width="1.5"/>
+      <path d="M 148 158 L 152 158 L 154 250 L 146 250 Z" fill="url(#g-accent-${logo})" opacity="0.85"/>
+      <path d="M 122 162 Q 118 170 122 178 Q 130 175 138 172 Q 140 165 138 158 Q 128 158 122 162 Z" fill="${hoodieDark}" stroke="${hoodie}" stroke-width="0.8"/>
+      <path d="M 178 162 Q 182 170 178 178 Q 170 175 162 172 Q 160 165 162 158 Q 172 158 178 162 Z" fill="${hoodieDark}" stroke="${hoodie}" stroke-width="0.8"/>
+      <line x1="140" y1="180" x2="142" y2="200" stroke="${accent}" stroke-width="1.2"/>
+      <line x1="160" y1="180" x2="158" y2="200" stroke="${accent}" stroke-width="1.2"/>
+      <circle cx="142" cy="202" r="1.5" fill="${accent}"/>
+      <circle cx="158" cy="202" r="1.5" fill="${accent}"/>
+      <text x="150" y="220" text-anchor="middle" font-family="Helvetica" font-size="9" font-weight="900" fill="${hairLight}" letter-spacing="1.5">${logo}</text>
+    </g>
+    <!-- Back arm (raised guard) -->
+    <g>
+      <path d="M 113 175 Q 100 180 92 195 Q 88 210 95 215 L 108 200 Q 118 188 115 175 Z" fill="url(#g-hoodie-${logo})" stroke="#0a0a0d" stroke-width="1.2"/>
+      <path d="M 95 215 Q 88 215 82 198 Q 80 178 88 168 L 100 175 Q 102 192 105 210 Z" fill="url(#g-skin-${logo})" stroke="#0a0a0d" stroke-width="1.2"/>
+      <circle cx="88" cy="165" r="9" fill="url(#g-skin-${logo})" stroke="#0a0a0d" stroke-width="1.2"/>
+      <line x1="83" y1="163" x2="93" y2="163" stroke="#0a0a0d" stroke-width="0.6" opacity="0.5"/>
+      <rect x="84" y="170" width="10" height="3" fill="${accent}"/>
+    </g>
+    <!-- Front arm (jab ready) -->
+    <g>
+      <path d="M 188 175 Q 200 178 208 192 Q 212 208 206 215 L 195 202 Q 188 188 188 175 Z" fill="url(#g-hoodie-${logo})" stroke="#0a0a0d" stroke-width="1.2"/>
+      <path d="M 206 215 Q 215 220 220 235 Q 222 250 218 255 L 205 250 Q 200 232 200 218 Z" fill="url(#g-skin-${logo})" stroke="#0a0a0d" stroke-width="1.2"/>
+      <circle cx="222" cy="252" r="10" fill="url(#g-skin-${logo})" stroke="#0a0a0d" stroke-width="1.2"/>
+      <line x1="218" y1="258" x2="228" y2="248" stroke="#0a0a0d" stroke-width="0.6" opacity="0.5"/>
+      <rect x="212" y="246" width="14" height="4" fill="${accent}" transform="rotate(-30 219 248)"/>
+    </g>
+    <!-- Neck -->
+    <path d="M 142 145 L 158 145 L 160 162 L 140 162 Z" fill="url(#g-skin-${logo})" stroke="#0a0a0d" stroke-width="1.2"/>
+    <!-- Head -->
+    <g>
+      <path d="M 130 105 Q 128 125 132 138 Q 138 148 150 149 Q 162 148 168 138 Q 172 125 170 105 Q 168 88 150 86 Q 132 88 130 105 Z" fill="url(#g-skin-${logo})" stroke="#0a0a0d" stroke-width="1.2"/>
+      <path d="M 128 100 Q 127 88 138 82 Q 150 78 162 82 Q 173 88 172 100 Q 172 92 168 90 Q 158 87 150 87 Q 142 87 132 90 Q 128 92 128 100 Z" fill="${hair}" stroke="${shadeColor(hair,-20)}" stroke-width="0.8"/>
+      <path d="M 138 86 Q 145 82 152 84 Q 159 82 165 86" stroke="${hairLight}" stroke-width="0.8" fill="none"/>
+      <path d="M 137 108 Q 142 106 146 109" stroke="#2a1810" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <path d="M 154 109 Q 158 106 163 108" stroke="#2a1810" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <ellipse cx="142" cy="115" rx="2.8" ry="2" fill="#f4e6c8"/>
+      <ellipse cx="158" cy="115" rx="2.8" ry="2" fill="#f4e6c8"/>
+      <circle cx="142" cy="115.5" r="1.6" fill="#2a1810"/>
+      <circle cx="158" cy="115.5" r="1.6" fill="#2a1810"/>
+      <circle cx="142.5" cy="115" r="0.5" fill="#f4e6c8"/>
+      <circle cx="158.5" cy="115" r="0.5" fill="#f4e6c8"/>
+      <path d="M 150 118 Q 148 125 147 130 Q 149 132 150 132 Q 151 132 153 130 Q 152 125 150 118 Z" fill="url(#g-skin-${logo})" stroke="#0a0a0d" stroke-width="0.6" opacity="0.7"/>
+      <path d="M 144 138 Q 150 140 156 138" stroke="#2a1810" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+      <path d="M 134 132 Q 142 145 150 146 Q 158 145 166 132" stroke="#0a0a0d" stroke-width="0.6" fill="none" opacity="0.4"/>
+      <ellipse cx="138" cy="125" rx="5" ry="4" fill="url(#g-blush-${logo})"/>
+      <ellipse cx="162" cy="125" rx="5" ry="4" fill="url(#g-blush-${logo})"/>
+      <path d="M 128 118 Q 126 124 128 130" stroke="#0a0a0d" stroke-width="0.8" fill="url(#g-skin-${logo})"/>
+      <path d="M 172 118 Q 174 124 172 130" stroke="#0a0a0d" stroke-width="0.8" fill="url(#g-skin-${logo})"/>
+    </g>
+    <ellipse cx="170" cy="392" rx="60" ry="4" fill="#000" opacity="0.5"/>
+  </g>
+</svg>`;
+}
+
+function shadeColor(hex, percent) {
+  const n = parseInt(hex.replace('#',''), 16);
+  let r = (n >> 16) + percent;
+  let g = ((n >> 8) & 0xff) + percent;
+  let b = (n & 0xff) + percent;
+  r = Math.max(0,Math.min(255,r));
+  g = Math.max(0,Math.min(255,g));
+  b = Math.max(0,Math.min(255,b));
+  return '#' + ((r<<16)|(g<<8)|b).toString(16).padStart(6,'0');
+}
+
+/* ========== STATE ========== */
+const SAVE_KEY = 'sc:save:v1';
+const save = loadSave();
+let currentDetail = null;
+let match = null;
+
+function loadSave() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (!parsed.ovrDelta) parsed.ovrDelta = {};
+      return parsed;
+    }
+  } catch(e) {}
+  return { wins:0, losses:0, kos:0, finishers:0, scriptureStrikes:0, picks:{}, ovrDelta:{} };
+}
+function persistSave() {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch(e) {}
+}
+
+/* OVR DYNAMIC SYSTEM · ratings respond to match results · floor 60 · ceiling 99 */
+function getCurrentOVR(id) {
+  const f = FIGHTERS.find(x => x.id === id);
+  if (!f) return 0;
+  const delta = save.ovrDelta[id] || 0;
+  return Math.max(60, Math.min(99, f.ovr + delta));
+}
+function getOVRDelta(id) {
+  return save.ovrDelta[id] || 0;
+}
+function adjustOVR(id, change) {
+  const cur = getCurrentOVR(id);
+  const target = Math.max(60, Math.min(99, cur + change));
+  const actualChange = target - cur;
+  save.ovrDelta[id] = (save.ovrDelta[id] || 0) + actualChange;
+  return actualChange;
+}
+
+/* ========== SCREEN ROUTING ========== */
+function goto(id) {
+  // Kill pending hit-sound tones on transition so an abandoned fight doesn't leak phantom tones onto the next screen.
+  // Exception: 'result' — the KO/finisher victory sound is INTENDED to ride into the result screen (bug-class #5 fix, 2026-05-23).
+  if (id !== 'result' && typeof clearSounds === 'function') clearSounds();
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id==='roster') buildRoster();
+  if (id==='splash') refreshSplash();
+  window.scrollTo(0,0);
+}
+
+/* ========== SPLASH ========== */
+const SPLASH_VERSES = [
+  { text:'Iron sharpeneth iron · so a man sharpeneth the countenance of his friend.', ref:'Proverbs 27:17' },
+  { text:'I have fought a good fight · I have finished my course · I have kept the faith.', ref:'2 Timothy 4:7' },
+  { text:'Whatsoever thy hand findeth to do · do it with thy might.', ref:'Ecclesiastes 9:10' },
+  { text:'The race is not to the swift · nor the battle to the strong.', ref:'Ecclesiastes 9:11' },
+  { text:'I can do all things through Christ which strengtheneth me.', ref:'Philippians 4:13' },
+  { text:'Be strong and of a good courage · be not afraid · neither be thou dismayed.', ref:'Joshua 1:9' },
+  { text:'Let us not be weary in well doing · for in due season we shall reap.', ref:'Galatians 6:9' }
+];
+function refreshSplash() {
+  const d = new Date();
+  const seed = d.getFullYear()*1000 + (d.getMonth()+1)*40 + d.getDate();
+  const v = SPLASH_VERSES[seed % SPLASH_VERSES.length];
+  document.getElementById('splash-verse-text').innerHTML = '<span class="splash-cross">✝</span>"' + v.text + '"';
+  document.getElementById('splash-verse-ref').textContent = '— ' + v.ref + ' · KJV';
+  if (save.wins + save.losses > 0) {
+    document.getElementById('quick-play-btn').style.display = 'inline-block';
+  }
+}
+
+/* ========== ROSTER ========== */
+function buildRoster() {
+  const grid = document.getElementById('roster-grid');
+  grid.innerHTML = '';
+  FIGHTERS.forEach(f => {
+    const card = document.createElement('div');
+    card.className = 'roster-card';
+    card.onclick = () => openDetail(f.id);
+    const cur = getCurrentOVR(f.id);
+    const delta = getOVRDelta(f.id);
+    const deltaTxt = delta === 0 ? '' : `<div class="rc-delta ${delta > 0 ? 'up' : 'down'}">${delta > 0 ? '▲' : '▼'}${Math.abs(delta)}</div>`;
+    card.innerHTML = `
+      <div class="rc-slot">#${f.slot}</div>
+      <div class="rc-ovr">${cur}</div>
+      ${deltaTxt}
+      <div class="portrait">${renderFighter(f.art)}</div>
+      <div class="rc-name">${f.name}</div>
+      <div class="rc-arch">${f.arch}</div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+/* ========== DETAIL ========== */
+function openDetail(id) {
+  const f = FIGHTERS.find(x => x.id === id);
+  if (!f) return;
+  currentDetail = id;
+  document.getElementById('detail-head-name').textContent = f.name;
+  document.getElementById('detail-svg-mount').innerHTML = renderFighter(f.art);
+  const sc = document.getElementById('detail-stats');
+  const cur = getCurrentOVR(f.id);
+  const delta = getOVRDelta(f.id);
+  const deltaTxt = delta === 0 ? '' : `<span style="font-size:12px; color:${delta > 0 ? '#4ad06a' : 'var(--red-bright)'}; letter-spacing:1px; margin-left:6px;">${delta > 0 ? '▲' : '▼'}${Math.abs(delta)}</span>`;
+  sc.innerHTML = `
+    <div class="stats-head">
+      <div><div class="slot">SLOT ${f.slot} · ${f.arch} · BASE ${f.ovr}</div></div>
+      <div><div class="ovr">${cur}${deltaTxt}</div><div class="ovr-label">OVR</div></div>
+    </div>
+    ${statRow('Striking',f.stats.striking)}
+    ${statRow('Grappling',f.stats.grappling)}
+    ${statRow('Stamina',f.stats.stamina)}
+    ${statRow('Heart',f.stats.heart)}
+    ${statRow('Charisma',f.stats.charisma)}
+    <div class="finishers">
+      <div class="fin-label">SIGNATURE FINISHERS</div>
+      <div class="fin-list">
+        ${f.finishers.map(x => `<span class="fin-pill signature">${x}</span>`).join('')}
+      </div>
+    </div>
+    <div class="walkout">
+      <div class="walkout-label">✝ Walkout Scripture · ${f.walkout.label}</div>
+      <div class="walkout-quote"><span class="walkout-cross">✝</span>"${f.walkout.text}"</div>
+      <span class="walkout-ref">— ${f.walkout.ref}</span>
+    </div>
+    <div class="vibe-line">${f.vibe}</div>
+  `;
+  goto('detail');
+}
+function statRow(label, val) {
+  return `<div class="stat-row"><span class="stat-label">${label}</span><div class="stat-bar"><div class="stat-fill" style="width:${val}%"></div></div><span class="stat-num">${val}</span></div>`;
+}
+
+/* ========== COMBAT ENGINE ========== */
+function startMatchWith(playerId) {
+  const player = FIGHTERS.find(f => f.id === playerId);
+  const pool = FIGHTERS.filter(f => f.id !== playerId);
+  const opponent = pool[Math.floor(Math.random()*pool.length)];
+  match = {
+    player, opponent,
+    pHP: 100, oHP: 100,
+    pST: 100, oST: 100,
+    round: 1,
+    turn: 'player',
+    log: [],
+    locked: false,
+    finishedFighter: null
+  };
+  save.picks[playerId] = (save.picks[playerId] || 0) + 1;
+  persistSave();
+  renderFight();
+  goto('fight');
+  showWalkout(player);
+}
+
+function showWalkout(fighter) {
+  // Brief entrance beat · NON-BLOCKING (no match-lock, pointer-events none) so smoke + fast players act freely · auto-fades.
+  const w = fighter && fighter.walkout;
+  const el = document.getElementById('walkout-intro');
+  if (!w || !el) return;
+  document.getElementById('wi-label').textContent = w.label || 'WALKOUT';
+  document.getElementById('wi-name').textContent = fighter.name;
+  document.getElementById('wi-verse').innerHTML = '<span class="wi-cross">✝</span>"' + w.text + '"';
+  document.getElementById('wi-ref').textContent = '— ' + w.ref;
+  el.classList.add('on');
+  setTimeout(() => el.classList.remove('on'), 2000);
+}
+
+function quickPlay() {
+  const ids = Object.keys(save.picks);
+  let pick = ids[Math.floor(Math.random()*ids.length)];
+  if (!pick) pick = FIGHTERS[Math.floor(Math.random()*FIGHTERS.length)].id;
+  startMatchWith(pick);
+}
+
+function renderFight() {
+  const { player, opponent, pHP, oHP, pST, oST, round, turn } = match;
+  document.getElementById('left-name').textContent = player.name;
+  document.getElementById('right-name').textContent = opponent.name;
+  document.getElementById('fight-round').textContent = round;
+  document.getElementById('fight-turn-indicator').textContent = turn === 'player' ? 'Your Turn' : opponent.name + ' attacking';
+  document.getElementById('fight-turn-indicator').style.color = turn === 'player' ? 'var(--cream)' : 'var(--red)';
+  document.getElementById('left-hp').style.width = pHP + '%';
+  document.getElementById('right-hp').style.width = oHP + '%';
+  // low-HP danger pulse (2026-05-23 · pulses the bar near death · filter/shadow only so the right bar's scaleX(-1) is preserved)
+  document.getElementById('left-hp').classList.toggle('danger', pHP > 0 && pHP < 25);
+  document.getElementById('right-hp').classList.toggle('danger', oHP > 0 && oHP < 25);
+  document.getElementById('left-hp-num').textContent = Math.max(0, Math.round(pHP));
+  document.getElementById('right-hp-num').textContent = Math.max(0, Math.round(oHP));
+  document.getElementById('left-st').style.width = pST + '%';
+  document.getElementById('right-st').style.width = oST + '%';
+  document.getElementById('ring-left-svg').innerHTML = renderFighter(player.art);
+  document.getElementById('ring-right-svg').innerHTML = renderFighter(opponent.art);
+  renderMoves();
+  renderLog();
+}
+
+function renderMoves() {
+  const grid = document.getElementById('moves-grid');
+  grid.innerHTML = '';
+  match.player.moves.forEach((m, i) => {
+    const btn = document.createElement('button');
+    let cls = 'move-btn';
+    if (m.sig) cls += ' signature';
+    if (m.fin) cls += ' finisher';
+    const finisherLocked = m.fin && match.pHP > 30; // finishers unlock when low HP
+    if (finisherLocked) cls += ' locked';
+    btn.className = cls;
+    const enabled = !match.locked && match.turn === 'player' && match.pST >= m.cost && !finisherLocked;
+    btn.disabled = !enabled;
+    btn.style.opacity = enabled ? 1 : 0.45;
+    btn.innerHTML = `<span class="move-name">${m.name}</span><span class="move-cost">${m.fin ? (finisherLocked ? 'HP < 30 to use' : '✝ FINISHER · ' + m.cost + ' ST') : (m.sig ? 'SIGNATURE · ' : '') + m.cost + ' ST'}</span>`;
+    btn.onclick = () => playerAct(m);
+    grid.appendChild(btn);
+  });
+}
+
+function renderLog() {
+  const el = document.getElementById('combat-log');
+  el.innerHTML = match.log.slice(-5).map(l => `<div class="log-line ${l.cls}">${l.text}</div>`).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+function pushLog(text, cls='') {
+  match.log.push({ text, cls });
+  renderLog();
+}
+
+function playerAct(move) {
+  if (match.locked || match.turn !== 'player') return;
+  if (match.pST < move.cost) return;
+  match.locked = true;
+  match.pST -= move.cost;
+  const acc = move.acc + (match.player.stats.striking - 80) * 0.002;
+  const hit = Math.random() < acc;
+  const baseDmg = move.dmg[0] + Math.random() * (move.dmg[1] - move.dmg[0]);
+  const dmg = hit ? Math.round(baseDmg * (move.type === 'finisher' ? 1 : (move.type === 'power' ? 1.0 : 0.9))) : 0;
+
+  document.getElementById('ring-left').classList.add('attack-' + move.type);
+  setTimeout(() => document.getElementById('ring-left').classList.remove('attack-' + move.type), 700);
+
+  setTimeout(() => {
+    if (hit) {
+      match.oHP = Math.max(0, match.oHP - dmg);
+      const heavy = move.type === 'power' || move.type === 'finisher';
+      document.getElementById('ring-right').classList.add(heavy ? 'hit-heavy' : 'hit');
+      flash('right', heavy);
+      burst('right', dmg);
+      shakeRing(heavy);
+      playHitSound(move.type);
+      pushLog(`${match.player.name} → ${move.name} · ${dmg} dmg`, move.fin ? 'crit' : 'player');
+      if (move.fin) {
+        save.finishers++;
+        save.scriptureStrikes++;
+        const sf = match.player.art.scriptureFinisher;
+        if (sf) pushLog(`✝ ${sf.text} — ${sf.ref}`, 'scripture');
+      }
+      setTimeout(() => document.getElementById('ring-right').classList.remove(heavy ? 'hit-heavy' : 'hit'), heavy ? 600 : 500);
+    } else {
+      pushLog(`${match.player.name} → ${move.name} · missed`, 'player');
+      playMissSound();
+    }
+    setTimeout(() => {
+      renderFight();
+      if (match.oHP <= 0) {
+        // Scripture-finisher KO gets a reverent verse-beat in the ring before resolving (2026-05-23). Non-finisher KO unchanged.
+        if (move.fin) return showFinisherReverence(() => finishMatch('win'));
+        return finishMatch('win');
+      }
+      match.turn = 'opponent';
+      match.locked = false;
+      renderFight();
+      setTimeout(opponentAct, 900);
+    }, 400);
+  }, 350);
+}
+
+function opponentAct() {
+  if (match.locked) return;
+  match.locked = true;
+  match.oST = Math.min(100, match.oST + 10);
+  const opp = match.opponent;
+  const usable = opp.moves.filter(m => match.oST >= m.cost && !(m.fin && match.oHP > 30));
+  let move;
+  if (match.oHP < 35 && Math.random() < 0.6) {
+    const fin = usable.find(m => m.fin);
+    move = fin || usable[Math.floor(Math.random()*usable.length)];
+  } else if (match.oHP < 60 && Math.random() < 0.5) {
+    const sig = usable.find(m => m.sig);
+    move = sig || usable[Math.floor(Math.random()*usable.length)];
+  } else {
+    move = usable[Math.floor(Math.random()*usable.length)];
+  }
+  if (!move) move = opp.moves[0];
+  match.oST -= move.cost;
+
+  const acc = move.acc + (opp.stats.striking - 80) * 0.002;
+  const hit = Math.random() < acc;
+  const baseDmg = move.dmg[0] + Math.random() * (move.dmg[1] - move.dmg[0]);
+  const dmg = hit ? Math.round(baseDmg * (move.type === 'finisher' ? 1 : (move.type === 'power' ? 1.0 : 0.9))) : 0;
+
+  document.getElementById('ring-right').classList.add('attack-' + move.type);
+  setTimeout(() => document.getElementById('ring-right').classList.remove('attack-' + move.type), 700);
+
+  setTimeout(() => {
+    if (hit) {
+      match.pHP = Math.max(0, match.pHP - dmg);
+      const heavy = move.type === 'power' || move.type === 'finisher';
+      document.getElementById('ring-left').classList.add(heavy ? 'hit-heavy' : 'hit');
+      flash('left', heavy);
+      burst('left', dmg);
+      shakeRing(heavy);
+      playHitSound(move.type);
+      pushLog(`${opp.name} → ${move.name} · ${dmg} dmg`, move.fin ? 'crit' : 'enemy');
+      if (move.fin) {
+        const sf = opp.art.scriptureFinisher;
+        if (sf) pushLog(`✝ ${sf.text} — ${sf.ref}`, 'scripture');
+      }
+      setTimeout(() => document.getElementById('ring-left').classList.remove(heavy ? 'hit-heavy' : 'hit'), heavy ? 600 : 500);
+    } else {
+      pushLog(`${opp.name} → ${move.name} · missed`, 'enemy');
+      playMissSound();
+    }
+    setTimeout(() => {
+      match.pST = Math.min(100, match.pST + 12);
+      renderFight();
+      if (match.pHP <= 0) {
+        return finishMatch('loss');
+      }
+      match.turn = 'player';
+      match.locked = false;
+      renderFight();
+    }, 400);
+  }, 350);
+}
+
+function flash(side, heavy) {
+  const el = document.getElementById(side + '-flash');
+  el.classList.remove('fire', 'fire-heavy');
+  void el.offsetWidth;
+  el.classList.add(heavy ? 'fire-heavy' : 'fire');
+}
+function burst(side, dmg) {
+  const el = document.getElementById(side + '-burst');
+  el.textContent = '-' + dmg;
+  el.style.top = '38%';
+  // Position at contact point · for left defender = their right edge · for right defender = their left edge
+  el.style.left = side === 'left' ? '88%' : '12%';
+  // Severity scaling (2026-05-23): big hits LOOK big · jab=small gold · power=bigger red · finisher=huge bright-red
+  el.classList.remove('go', 'dmg-big', 'dmg-huge');
+  if (dmg >= 45) el.classList.add('dmg-huge');
+  else if (dmg >= 20) el.classList.add('dmg-big');
+  void el.offsetWidth;
+  el.classList.add('go');
+}
+function shakeRing(heavy) {
+  const r = document.getElementById('ring');
+  r.classList.remove('shake', 'shake-heavy');
+  void r.offsetWidth;
+  r.classList.add(heavy ? 'shake-heavy' : 'shake');
+}
+
+function showFinisherReverence(cb) {
+  // Holds the winner's scripture-finisher verse reverently in the ring, then proceeds. Graceful: if data/element missing, never block the KO.
+  const sf = match.player.art && match.player.art.scriptureFinisher;
+  const el = document.getElementById('finisher-reverence');
+  if (!sf || !el) { cb(); return; }
+  document.getElementById('fr-verse').innerHTML = '<span class="fr-cross">✝</span>"' + sf.text + '"';
+  document.getElementById('fr-ref').textContent = '— ' + sf.ref + ' · KJV';
+  el.classList.add('on');
+  setTimeout(() => { el.classList.remove('on'); setTimeout(cb, 480); }, 2000);
+}
+function finishMatch(result) {
+  const lossSide = result === 'win' ? 'right' : 'left';
+  document.getElementById('ring-' + lossSide).classList.add('ko');
+  playKOSound();
+  if (result === 'win') { save.wins++; save.kos++; }
+  else save.losses++;
+
+  // Dynamic OVR adjustment · win = +2 (+1 extra if finisher) · loss = -2 (-1 extra if KO'd)
+  const playerId = match.player.id;
+  const oppId = match.opponent.id;
+  const playerBefore = getCurrentOVR(playerId);
+  const oppBefore = getCurrentOVR(oppId);
+  let playerChange, oppChange;
+  if (result === 'win') {
+    playerChange = adjustOVR(playerId, 2);
+    oppChange = adjustOVR(oppId, -2);
+    // Underdog bonus · beating someone higher-OVR gives more
+    if (oppBefore > playerBefore + 3) playerChange += adjustOVR(playerId, 1);
+  } else {
+    playerChange = adjustOVR(playerId, -2);
+    oppChange = adjustOVR(oppId, 2);
+  }
+  const playerAfter = getCurrentOVR(playerId);
+  const oppAfter = getCurrentOVR(oppId);
+  persistSave();
+
+  setTimeout(() => {
+    const banner = document.getElementById('result-banner');
+    banner.textContent = result === 'win' ? 'VICTORY' : 'KNOCKED OUT';
+    banner.classList.toggle('loss', result === 'loss');
+    const arrowP = playerChange > 0 ? '▲' : (playerChange < 0 ? '▼' : '·');
+    const arrowO = oppChange > 0 ? '▲' : (oppChange < 0 ? '▼' : '·');
+    const colorP = playerChange > 0 ? '#4ad06a' : 'var(--red-bright)';
+    const colorO = oppChange > 0 ? '#4ad06a' : 'var(--red-bright)';
+    document.getElementById('result-detail').innerHTML =
+      (result === 'win'
+        ? `${match.player.name} stands tall.<br>${match.opponent.name} could not answer the bell.`
+        : `${match.opponent.name} wins by KO.<br>${match.player.name} comes back stronger.`)
+      + `<div style="margin-top:14px; font-size:12px; letter-spacing:1px;">`
+      + `<div>${match.player.name} OVR: ${playerBefore} → <strong style="color:${colorP}">${playerAfter} ${arrowP}${Math.abs(playerChange)}</strong></div>`
+      + `<div>${match.opponent.name} OVR: ${oppBefore} → <strong style="color:${colorO}">${oppAfter} ${arrowO}${Math.abs(oppChange)}</strong></div>`
+      + `</div>`;
+
+    const sf = result === 'win' ? match.player.art.scriptureFinisher : null;
+    const sb = document.getElementById('result-scripture-block');
+    if (sf) {
+      sb.style.display = 'block';
+      document.getElementById('result-scripture-text').innerHTML = '<span class="walkout-cross">✝</span>"' + sf.text + '"';
+      document.getElementById('result-scripture-ref').textContent = '— ' + sf.ref + ' · KJV';
+    } else {
+      sb.style.display = 'none';
+    }
+
+    document.getElementById('career-strip').innerHTML = `
+      <div><strong>${save.wins}</strong>WINS</div>
+      <div><strong>${save.losses}</strong>LOSSES</div>
+      <div><strong>${save.kos}</strong>KOs</div>
+      <div><strong>${save.finishers}</strong>FINISHERS</div>
+    `;
+    goto('result');
+  }, 1400);
+}
+
+/* ========== WEBAUDIO SYNTH SOUNDS (no asset files · per WUD pattern) ========== */
+let actx = null;
+function ensureCtx() {
+  if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){} }
+  return actx;
+}
+function tone(freq, dur, type='sine', vol=0.15, slide=0) {
+  const ctx = ensureCtx(); if (!ctx) return;
+  const o = ctx.createOscillator();
+  const g = ctx.createGain();
+  o.type = type; o.frequency.value = freq;
+  if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(20, freq + slide), ctx.currentTime + dur);
+  g.gain.value = 0;
+  g.gain.linearRampToValueAtTime(vol, ctx.currentTime + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
+  o.connect(g); g.connect(ctx.destination);
+  o.start(); o.stop(ctx.currentTime + dur);
+}
+/* Tracked sfx delays · cleared on screen-transition so multi-tone hit sounds can't bleed phantom tones onto the next screen (bug-class #5 · web-audio-overlap · fixed 2026-05-23) */
+let soundTimers = [];
+function sfxDelay(fn, ms) { const id = setTimeout(fn, ms); soundTimers.push(id); return id; }
+function clearSounds() { soundTimers.forEach(clearTimeout); soundTimers = []; }
+function playHitSound(type) {
+  if (type === 'jab') tone(220, 0.12, 'square', 0.1, -80);
+  else if (type === 'cross') { tone(180, 0.16, 'square', 0.12, -100); sfxDelay(()=>tone(140,0.1,'sawtooth',0.08,-60),60); }
+  else if (type === 'power') { tone(120, 0.25, 'sawtooth', 0.18, -80); sfxDelay(()=>tone(80,0.2,'triangle',0.12,-40),80); }
+  else if (type === 'finisher') {
+    tone(110, 0.3, 'sawtooth', 0.2, -60);
+    sfxDelay(()=>tone(220,0.18,'square',0.15,0),100);
+    sfxDelay(()=>tone(440,0.25,'triangle',0.12,200),250);
+    sfxDelay(()=>tone(660,0.4,'sine',0.1,300),420);
+  }
+}
+function playMissSound() { tone(180, 0.08, 'sine', 0.06, -40); }
+function playKOSound() {
+  tone(80, 0.5, 'sawtooth', 0.2, -40);
+  sfxDelay(()=>tone(60,0.6,'sine',0.15,-30),200);
+  sfxDelay(()=>tone(440,0.3,'triangle',0.12,0),700);
+  sfxDelay(()=>tone(550,0.4,'sine',0.1,100),900);
+}
+
+/* ========== BOOT ========== */
+refreshSplash();
+
+</script>
+</body>
+</html>
