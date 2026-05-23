@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#0a0a0d" />
-<title>SLAM CITY · v2.5 · 6 MODES</title>
+<title>SLAM CITY · v2.6 · LOADING</title>
 <!-- retro arcade type: Press Start 2P for marquee, Oxanium for readable UI · safe fallback stack -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -581,6 +581,18 @@
   .set-btn.danger { border-color: var(--red); color: var(--red-bright); }
   .set-btn:active { transform: scale(0.98); }
   body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::after { animation-duration: 0.001s !important; animation-iteration-count: 1 !important; transition-duration: 0.001s !important; }
+
+  /* ===== loading overlay ===== */
+  .loading { position: fixed; inset: 0; z-index: 300; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 24px; background: radial-gradient(circle at 50% 42%, rgba(26,10,12,0.97), rgba(5,5,8,0.99)); cursor: pointer; }
+  .loading.on { display: flex; }
+  .load-inner { width: 100%; max-width: 380px; text-align: center; }
+  .load-title { font-family: var(--font-arcade); font-size: 16px; color: var(--gold); letter-spacing: 1px; margin-bottom: 20px; animation: load-flicker 1.1s ease-in-out infinite; }
+  @keyframes load-flicker { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
+  .load-bar { height: 14px; border: 2px solid var(--bg-3); border-radius: 8px; background: var(--bg-1); overflow: hidden; padding: 2px; }
+  .load-bar i { display: block; height: 100%; width: 0%; border-radius: 4px; background: linear-gradient(90deg, var(--red-deep), var(--red), var(--gold)); transition: width 0.12s linear; }
+  .load-tip { margin-top: 18px; font-size: 11px; color: var(--soft); line-height: 1.5; min-height: 34px; }
+  .load-tip .tip-k { color: var(--gold); font-style: italic; }
+  .load-skip { margin-top: 16px; font-size: 9px; color: var(--muted); letter-spacing: 2px; }
 </style>
 </head>
 <body>
@@ -597,7 +609,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v2.5 · build 2026-05-23·1818 · 6 MODES WIRED (Quick·Career·Gauntlet·Survival·Versus·Training) · hub+settings+platform · 11 brothers · for AARON</div>
+  <div class="splash-foot">v2.6 · build 2026-05-23·1828 · LOADING SCREENS (bar+tips) · 6 modes · hub·settings·platform·retro·live-AI·captions · 11 brothers · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -812,6 +824,16 @@
   <div class="action-row" style="flex-direction:column; max-width:280px">
     <button class="btn" id="result-primary" onclick="goto('hub')">HOME / MODES</button>
     <button class="btn btn-secondary" id="result-secondary" onclick="goto('hub')">HOME / MODES</button>
+  </div>
+</div>
+
+<!-- ========== LOADING OVERLAY ========== -->
+<div class="loading" id="loading" aria-hidden="true" onclick="skipLoading()">
+  <div class="load-inner">
+    <div class="load-title" id="load-title">LOADING</div>
+    <div class="load-bar"><i id="load-fill"></i></div>
+    <div class="load-tip" id="load-tip"></div>
+    <div class="load-skip">tap to skip</div>
   </div>
 </div>
 
@@ -1274,18 +1296,18 @@ function beginMode(playerId) {
   if (gameMode === 'versus' && !modeCtx.pickingOpponent) {     // versus = pick both: yours first…
     modeCtx.playerId = playerId; setRosterLabel(true); goto('roster'); return;
   }
-  if (gameMode === 'versus') { startMatchWith(modeCtx.playerId, playerId); return; }  // …then opponent
+  if (gameMode === 'versus') { launchFight(modeCtx.playerId, playerId); return; }  // …then opponent
   modeCtx.playerId = playerId;
   if (gameMode === 'gauntlet') {
     modeCtx.queue = FIGHTERS.filter(f => f.id !== playerId)
       .sort((a, b) => getCurrentOVR(a.id) - getCurrentOVR(b.id)).map(f => f.id);  // easiest → hardest
     modeCtx.idx = 0;
-    startMatchWith(playerId, modeCtx.queue[0]);
+    launchFight(playerId, modeCtx.queue[0]);
   } else if (gameMode === 'survival') {
     modeCtx.streak = 0;
-    startMatchWith(playerId);
+    launchFight(playerId);
   } else {
-    startMatchWith(playerId);                                   // quick / career / training
+    launchFight(playerId);                                      // quick / career / training
   }
 }
 // Continue a chain after a WIN (called from the result screen).
@@ -1293,13 +1315,13 @@ function nextInMode() {
   if (gameMode === 'gauntlet') {
     modeCtx.idx++;
     if (modeCtx.idx >= modeCtx.queue.length) { goto('hub'); return; }   // cleared the crew
-    startMatchWith(modeCtx.playerId, modeCtx.queue[modeCtx.idx]);
+    launchFight(modeCtx.playerId, modeCtx.queue[modeCtx.idx]);
   } else if (gameMode === 'survival') {
     modeCtx.streak++;
     if (modeCtx.streak % 2 === 0 && save.difficulty < 4) { save.difficulty++; persistSave(); }  // escalate
-    startMatchWith(modeCtx.playerId);
+    launchFight(modeCtx.playerId);
   } else {
-    startMatchWith(modeCtx.playerId);                           // training: keep going
+    launchFight(modeCtx.playerId);                              // training: keep going
   }
 }
 
@@ -1333,6 +1355,44 @@ function resetProgress() {
   location.reload();
 }
 
+/* ========== LOADING OVERLAY ========== */
+const LOAD_TIPS = [
+  'Get close — hits only land in range.',
+  'BLOCK soaks damage · DODGE has invincibility frames.',
+  'Finishers unlock when the opponent drops low.',
+  'Heavyweights hit harder; lightweights move faster.',
+  'Win well and your ratings climb — lose and they slip.',
+  'Read their feints — bait them into whiffing.',
+  'Manage stamina · gassing out leaves you wide open.',
+  '✝ "Iron sharpeneth iron." — Proverbs 27:17'
+];
+let loadTimer = null, loadCb = null, loadRAF = null;
+function showLoading(title, cb, ms) {
+  ms = ms || 850;
+  if (save.reducedMotion) { if (cb) cb(); return; }          // skip the beat on reduced-motion
+  const el = document.getElementById('loading'); if (!el) { if (cb) cb(); return; }
+  loadCb = cb;
+  document.getElementById('load-title').textContent = title || 'LOADING';
+  const tip = LOAD_TIPS[Math.floor(Math.random() * LOAD_TIPS.length)];
+  document.getElementById('load-tip').innerHTML = /✝/.test(tip) ? '<span class="tip-k">' + tip + '</span>' : tip;
+  const fill = document.getElementById('load-fill'); fill.style.width = '0%';
+  el.classList.add('on'); el.setAttribute('aria-hidden', 'false');
+  const start = performance.now();
+  cancelAnimationFrame(loadRAF);
+  const step = (t) => { const pct = Math.min(100, ((t - start) / ms) * 100); fill.style.width = pct + '%'; if (pct < 100) loadRAF = requestAnimationFrame(step); };
+  loadRAF = requestAnimationFrame(step);
+  clearTimeout(loadTimer); loadTimer = setTimeout(finishLoading, ms);
+}
+function finishLoading() {
+  clearTimeout(loadTimer); cancelAnimationFrame(loadRAF);
+  const el = document.getElementById('loading');
+  if (el) { el.classList.remove('on'); el.setAttribute('aria-hidden', 'true'); }
+  const cb = loadCb; loadCb = null;
+  if (cb) cb();
+}
+function skipLoading() { const el = document.getElementById('loading'); if (el && el.classList.contains('on')) finishLoading(); }
+function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
+
 /* ========== SPLASH ========== */
 const SPLASH_VERSES = [
   { text:'Iron sharpeneth iron · so a man sharpeneth the countenance of his friend.', ref:'Proverbs 27:17' },
@@ -1349,9 +1409,6 @@ function refreshSplash() {
   const v = SPLASH_VERSES[seed % SPLASH_VERSES.length];
   document.getElementById('splash-verse-text').innerHTML = '<span class="splash-cross">✝</span>"' + v.text + '"';
   document.getElementById('splash-verse-ref').textContent = '— ' + v.ref + ' · KJV';
-  if (save.wins + save.losses > 0) {
-    document.getElementById('quick-play-btn').style.display = 'inline-block';
-  }
 }
 
 /* ========== ROSTER ========== */
