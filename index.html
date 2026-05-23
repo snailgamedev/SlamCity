@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#0a0a0d" />
-<title>SLAM CITY · v2.6 · LOADING</title>
+<title>SLAM CITY · v2.7 · 3D RING</title>
 <!-- retro arcade type: Press Start 2P for marquee, Oxanium for readable UI · safe fallback stack -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -582,6 +582,18 @@
   .set-btn:active { transform: scale(0.98); }
   body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::after { animation-duration: 0.001s !important; animation-iteration-count: 1 !important; transition-duration: 0.001s !important; }
 
+  /* ===== 3D ring: a retro perspective floor; fighters stay as flat billboard sprites in front ===== */
+  .arena-floor3d { position: absolute; left: 0; right: 0; bottom: 0; height: 62%; z-index: 0; overflow: hidden; perspective: 300px; perspective-origin: 50% 0%; }
+  .floor-grid { position: absolute; left: -60%; right: -60%; bottom: 0; height: 260%; transform-origin: 50% 100%; transform: rotateX(76deg);
+    background-image:
+      repeating-linear-gradient(to bottom, rgba(224,64,80,0.5) 0 1px, transparent 1px 36px),
+      repeating-linear-gradient(to right, rgba(200,160,96,0.34) 0 1px, transparent 1px 44px),
+      radial-gradient(ellipse at 50% 100%, rgba(200,64,74,0.22), transparent 72%),
+      linear-gradient(180deg, #050306 0%, #15090b 68%, #22110f 100%);
+    box-shadow: inset 0 36px 70px rgba(0,0,0,0.78);
+  }
+  .floor-grid::after { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 40%; background: linear-gradient(180deg, var(--bg-1), transparent); } /* fade into the back wall */
+
   /* ===== loading overlay ===== */
   .loading { position: fixed; inset: 0; z-index: 300; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 24px; background: radial-gradient(circle at 50% 42%, rgba(26,10,12,0.97), rgba(5,5,8,0.99)); cursor: pointer; }
   .loading.on { display: flex; }
@@ -609,7 +621,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v2.6 · build 2026-05-23·1828 · LOADING SCREENS (bar+tips) · 6 modes · hub·settings·platform·retro·live-AI·captions · 11 brothers · for AARON</div>
+  <div class="splash-foot">v2.7 · build 2026-05-23·1831 · 3D RING (perspective floor + billboard sprites) · loading · 6 modes · hub·settings·platform·retro·live-AI·captions · 11 brothers · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -728,6 +740,7 @@
   <div class="ring" id="ring">
     <div class="arena-bg" aria-hidden="true">
       <div class="arena-crowd"></div>
+      <div class="arena-floor3d"><div class="floor-grid"></div></div>
       <div class="arena-rope r1"></div>
       <div class="arena-rope r2"></div>
       <div class="arena-rope r3"></div>
