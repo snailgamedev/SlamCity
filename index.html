@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#0a0a0d" />
-<title>SLAM CITY · v2.1 · LIVING RATINGS</title>
+<title>SLAM CITY · v2.2 · DIFFICULTY + WALK-IN</title>
 <style>
   :root {
     --bg-0: #0a0a0d;
@@ -482,6 +482,26 @@
   .tut-bars .hp { height: 8px; background: linear-gradient(90deg, #4ad06a, var(--gold) 60%, var(--red)); }
   .tut-bars .st { height: 4px; background: linear-gradient(90deg, #6aa0ff, #3a6acc); }
   .tut-card .btn { width: 100%; }
+
+  /* pre-fight VS + countdown */
+  .prefight { position: absolute; inset: 0; z-index: 150; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; background: radial-gradient(circle at 50% 40%, rgba(30,12,14,0.92), rgba(5,5,8,0.96)); }
+  .prefight.on { display: flex; }
+  .pf-inner { text-align: center; width: 100%; max-width: 460px; }
+  .pf-diff-tag { font-size: 10px; letter-spacing: 3px; color: var(--muted); font-weight: 800; margin-bottom: 18px; }
+  .pf-diff-tag span { color: var(--gold); }
+  .pf-names { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 16px; }
+  .pf-side { flex: 1; }
+  .pf-name { font-size: clamp(20px, 7vw, 34px); font-weight: 900; color: var(--cream); letter-spacing: 1px; animation: pf-slide 0.5s cubic-bezier(0.16,1,0.3,1) both; }
+  .pf-side:last-child .pf-name { animation-delay: 0.12s; color: #ffd0d0; }
+  .pf-wc { font-size: 9px; letter-spacing: 1.5px; color: var(--muted); margin-top: 4px; text-transform: uppercase; }
+  .pf-vs { font-size: 26px; font-weight: 900; color: var(--red-bright); text-shadow: 0 0 14px var(--red); animation: pf-pop 0.5s cubic-bezier(0.16,1,0.3,1) both; }
+  @keyframes pf-slide { 0% { opacity: 0; transform: translateY(14px); } 100% { opacity: 1; transform: translateY(0); } }
+  @keyframes pf-pop { 0% { opacity: 0; transform: scale(0.4); } 100% { opacity: 1; transform: scale(1); } }
+  .pf-verse { font-size: 11.5px; font-style: italic; color: var(--soft); line-height: 1.5; max-width: 360px; margin: 0 auto 22px; min-height: 32px; }
+  .pf-count { font-size: clamp(52px, 18vw, 86px); font-weight: 900; color: var(--cream); line-height: 1; text-shadow: 0 4px 20px rgba(0,0,0,0.7); animation: pf-count-in 0.3s ease-out; }
+  .pf-count.go { color: var(--gold); text-shadow: 0 0 30px var(--gold), 0 0 10px #fff; animation: pf-fight 0.5s cubic-bezier(0.16,1,0.3,1); }
+  @keyframes pf-count-in { 0% { opacity: 0.2; transform: scale(1.6); } 100% { opacity: 1; transform: scale(1); } }
+  @keyframes pf-fight { 0% { opacity: 0; transform: scale(0.5) rotate(-6deg); } 55% { transform: scale(1.18) rotate(2deg); } 100% { opacity: 1; transform: scale(1) rotate(0); } }
 </style>
 </head>
 <body>
@@ -499,7 +519,7 @@
 
   <button class="btn" onclick="goto('roster')">ENTER THE RING</button>
   <button class="btn btn-secondary" id="quick-play-btn" onclick="quickPlay()" style="display:none">QUICK PLAY</button>
-  <div class="splash-foot">v2.1 · build 2026-05-23·1731 · LIVING RATINGS · 7 abilities·weight class·position · tutorial · died-stay-dead FIXED · 11 brothers · for AARON</div>
+  <div class="splash-foot">v2.2 · build 2026-05-23·1749 · 5 DIFFICULTIES · pre-fight VS+countdown · living ratings · 11 brothers · for AARON</div>
 </div>
 
 <!-- ========== ROSTER ========== -->
@@ -621,6 +641,19 @@
   </div>
 
   <button class="tut-help" id="tut-help" type="button" onclick="showTutorial()" aria-label="how to play">?</button>
+
+  <div class="prefight" id="prefight" aria-hidden="true">
+    <div class="pf-inner">
+      <div class="pf-diff-tag">DIFFICULTY · <span id="pf-diff">PRO</span></div>
+      <div class="pf-names">
+        <div class="pf-side"><div class="pf-name" id="pf-p">—</div><div class="pf-wc" id="pf-p-wc"></div></div>
+        <div class="pf-vs">VS</div>
+        <div class="pf-side"><div class="pf-name" id="pf-o">—</div><div class="pf-wc" id="pf-o-wc"></div></div>
+      </div>
+      <div class="pf-verse" id="pf-verse"></div>
+      <div class="pf-count" id="pf-count">3</div>
+    </div>
+  </div>
 
   <div class="tutorial" id="tutorial" aria-hidden="true">
     <div class="tut-card">
@@ -941,10 +974,14 @@ function loadSave() {
       const parsed = JSON.parse(raw);
       if (!parsed.ovrDelta) parsed.ovrDelta = {};
       if (!parsed.abilDelta) parsed.abilDelta = {};   // living per-ability deltas
+      if (typeof parsed.difficulty !== 'number') parsed.difficulty = 2;  // Pro
+      if (typeof parsed.sfxOn !== 'boolean') parsed.sfxOn = true;
+      if (typeof parsed.vol !== 'number') parsed.vol = 0.9;
       return parsed;
     }
   } catch(e) {}
-  return { wins:0, losses:0, kos:0, finishers:0, scriptureStrikes:0, picks:{}, ovrDelta:{}, abilDelta:{} };
+  return { wins:0, losses:0, kos:0, finishers:0, scriptureStrikes:0, picks:{}, ovrDelta:{}, abilDelta:{},
+           difficulty:2, sfxOn:true, vol:0.9, platform:null, reducedMotion:false, tutorialSeen:false };
 }
 function persistSave() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch(e) {}
@@ -1144,6 +1181,17 @@ const ATK = {
 let rafId = null;
 let controlsBound = false;
 
+// 5 difficulty tiers — scale AI speed, reaction cadence, block frequency, and the
+// opponent's damage + toughness. Persisted in save.difficulty (default 2 = PRO).
+const DIFFICULTIES = [
+  { key:'rookie',  name:'ROOKIE',  blurb:'learning the ropes', speed:0.80, react:1.70, block:0.20, oDmg:0.80, oTough:0.85 },
+  { key:'amateur', name:'AMATEUR', blurb:'a real test',        speed:0.90, react:1.30, block:0.35, oDmg:0.90, oTough:0.92 },
+  { key:'pro',     name:'PRO',     blurb:'balanced fight',      speed:1.00, react:1.00, block:0.50, oDmg:1.00, oTough:1.00 },
+  { key:'veteran', name:'VETERAN', blurb:'they hit back hard',  speed:1.12, react:0.80, block:0.68, oDmg:1.12, oTough:1.08 },
+  { key:'legend',  name:'LEGEND',  blurb:'for the brave',       speed:1.25, react:0.60, block:0.85, oDmg:1.28, oTough:1.15 }
+];
+function curDiff() { return DIFFICULTIES[Math.max(0, Math.min(4, save.difficulty ?? 2))]; }
+
 function startMatchWith(playerId) {
   const player = FIGHTERS.find(f => f.id === playerId);
   const pool = FIGHTERS.filter(f => f.id !== playerId);
@@ -1161,6 +1209,7 @@ function startMatchWith(playerId) {
     pLockMove: 0,
     joy: 0,
     paused: false,
+    started: false,
     killFin: false,
     ai: { decision: 0, blockCD: 0 },
     lastT: 0,
@@ -1175,7 +1224,6 @@ function startMatchWith(playerId) {
   persistSave();
   goto('fight');
   initFightVisuals();
-  showWalkout(player);
 }
 
 function showWalkout(fighter) {
@@ -1229,7 +1277,10 @@ function initFightVisuals() {
     cancelAnimationFrame(rafId);
     rafId = requestAnimationFrame(gameLoop);
   });
-  if (!save.tutorialSeen) showTutorial();   // first-time players get the how-to-fight card
+  // Fight does NOT start instantly — freeze, then run tutorial (first time) → pre-fight countdown.
+  match.paused = true;
+  if (!save.tutorialSeen) showTutorial();
+  else beginPrefight();
 }
 
 function applyPositions() {
@@ -1458,6 +1509,8 @@ function resolveAttack(atk) {
   if (move.fin)              dmg *= atkAb.finisher / 80;              // FINISHER scales the kill blow
   if (atkHP < 30)            dmg *= 1 + (atkAb.heart / 100) * 0.22;   // HEART = clutch when hurt
   dmg *= WEIGHT_CLASSES[defWC].tough;                                // weight class = toughness
+  if (isPlayer) dmg /= curDiff().oTough;                             // harder = opponent tankier
+  else          dmg *= curDiff().oDmg;                               // harder = opponent hits harder
   let blocked = false;
   const defBlock = isPlayer ? match.oBlock : match.pBlock;
   if (defBlock) { dmg *= Math.max(0.08, Math.min(0.34, 0.34 - defAb.blocking * 0.0022)); blocked = true; } // BLOCKING = absorb%
@@ -1515,7 +1568,7 @@ function updateAI(dt, dtms, fW, maxX) {
 
   // Defensive read — sometimes raise guard while the player is winding up in range.
   if (!match.oAtk && match.ai.blockCD <= 0 && match.pAtk && !match.pAtk.resolved && gap <= reachPx * 1.25) {
-    if (Math.random() < 0.55 * aggro) {
+    if (Math.random() < curDiff().block * (0.6 + 0.4 * aggro)) {
       match.oBlock = true;
       document.getElementById('right-guard').classList.add('on');
       match.ai.blockCD = 900;
@@ -1528,12 +1581,12 @@ function updateAI(dt, dtms, fW, maxX) {
   match.ai.decision = Math.max(0, match.ai.decision - dtms);
 
   if (gap > reachPx * 0.92) {
-    match.oX -= RT.aiSpeed * (match.oAb.speed / 80) * dt;                 // SPEED-driven approach
+    match.oX -= RT.aiSpeed * (match.oAb.speed / 80) * curDiff().speed * dt;                 // SPEED + difficulty approach
   } else if (match.oST < 18) {
-    match.oX = Math.min(maxX, match.oX + RT.aiSpeed * (match.oAb.speed / 80) * 0.7 * dt); // gassed → create space
+    match.oX = Math.min(maxX, match.oX + RT.aiSpeed * (match.oAb.speed / 80) * curDiff().speed * 0.7 * dt); // gassed → create space
   } else if (match.oCool <= 0 && match.ai.decision <= 0) {
     aiAttack();
-    match.ai.decision = 240 + Math.random() * 360 * (2 - aggro);
+    match.ai.decision = (240 + Math.random() * 360 * (2 - aggro)) * curDiff().react;
   }
 }
 
@@ -1626,7 +1679,40 @@ function hideTutorial() {
   const el = document.getElementById('tutorial'); if (!el) return;
   el.classList.remove('on'); el.setAttribute('aria-hidden', 'true');
   save.tutorialSeen = true; persistSave();
-  if (match && !match.over) { match.paused = false; match.lastT = performance.now(); }
+  if (match && !match.over) {
+    if (!match.started) beginPrefight();                 // first-time: tutorial → countdown → fight
+    else { match.paused = false; match.lastT = performance.now(); }  // replay during a live fight: just resume
+  }
+}
+
+// Pre-fight ceremony — VS card + 3-2-1-FIGHT countdown while the loop stays frozen.
+function beginPrefight() {
+  const el = document.getElementById('prefight'); if (!el) { endPrefight(); return; }
+  match.paused = true;
+  document.getElementById('pf-p').textContent = match.player.name;
+  document.getElementById('pf-o').textContent = match.opponent.name;
+  document.getElementById('pf-p-wc').textContent = WEIGHT_CLASSES[match.pWC].name + ' · ' + match.player.arch;
+  document.getElementById('pf-o-wc').textContent = WEIGHT_CLASSES[match.oWC].name + ' · ' + match.opponent.arch;
+  const w = match.player.walkout;
+  document.getElementById('pf-verse').innerHTML = w ? '<span style="color:var(--gold)">✝</span> "' + w.text + '" — ' + w.ref : '';
+  document.getElementById('pf-diff').textContent = curDiff().name;
+  el.classList.add('on'); el.setAttribute('aria-hidden', 'false');
+  const cd = document.getElementById('pf-count');
+  let n = 3; cd.textContent = n; cd.className = 'pf-count';
+  const tick = () => {
+    if (!match || match.over || match.started) { el.classList.remove('on'); el.setAttribute('aria-hidden', 'true'); return; } // started===true => skipped
+    n--;
+    if (n > 0) { cd.textContent = n; playCountSound(false); setTimeout(tick, 720); }
+    else if (n === 0) { cd.textContent = 'FIGHT!'; cd.className = 'pf-count go'; playCountSound(true); setTimeout(() => { el.classList.remove('on'); el.setAttribute('aria-hidden', 'true'); endPrefight(); }, 700); }
+  };
+  setTimeout(tick, 850);
+}
+function endPrefight() {
+  if (!match || match.over) return;
+  match.started = true;
+  match.paused = false;
+  match.lastT = performance.now();
+  setStatus('FIGHT!', 'var(--gold)', 900);
 }
 
 function flash(side, heavy) {
@@ -1798,6 +1884,10 @@ function playSwingSound(kind) {
 }
 function playBlockSound() { tone(900, 0.05, 'square', 0.09, -200); sfxDelay(() => tone(1380, 0.045, 'square', 0.05, -300), 28); }
 function playDodgeSound() { tone(680, 0.12, 'sine', 0.05, 360); }
+function playCountSound(isFight) {
+  if (isFight) { tone(330, 0.18, 'square', 0.16, 140); sfxDelay(() => tone(660, 0.3, 'sawtooth', 0.14, 120), 90); sfxDelay(() => tone(990, 0.42, 'triangle', 0.1, 220), 210); }
+  else tone(440, 0.09, 'square', 0.1, 10);
+}
 function playKOSound() {
   tone(80, 0.5, 'sawtooth', 0.2, -40);
   sfxDelay(()=>tone(60,0.6,'sine',0.15,-30),200);
