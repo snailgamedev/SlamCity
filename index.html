@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#0a0a0d" />
-<title>SLAM CITY · v2.16 · ROSTER</title>
+<title>SLAM CITY · v2.17 · CREATOR</title>
 <!-- retro arcade type: Press Start 2P for marquee, Oxanium for readable UI · safe fallback stack -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -686,6 +686,22 @@
   .rc-disc { font-size: 8px; }
   .rc-disc.boxing { color: #7fd0ff; }
   .rc-disc.wrestling { color: var(--gold); }
+
+  /* character creator */
+  #create { justify-content: flex-start; }
+  .create-preview { position: relative; height: 200px; margin: 4px auto 10px; max-width: 200px; }
+  .create-preview #create-svg { width: 100%; height: 100%; }
+  .create-preview #create-svg svg { width: 100%; height: 100%; }
+  .create-ovr { position: absolute; top: 4px; right: 4px; font-family: var(--font-arcade); font-size: 11px; color: var(--gold); }
+  #create-form { display: flex; flex-direction: column; gap: 10px; max-width: 460px; width: 100%; margin: 0 auto; }
+  .cr-row { background: linear-gradient(180deg, var(--bg-2), var(--bg-1)); border: 1px solid var(--bg-3); border-radius: 9px; padding: 9px 12px; }
+  .cr-label { font-size: 10px; letter-spacing: 1px; color: var(--soft); font-weight: 800; margin-bottom: 7px; }
+  .cr-label span { color: var(--gold); }
+  .cr-opts { display: flex; gap: 7px; flex-wrap: wrap; }
+  .cr-sw { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--bg-3); cursor: pointer; }
+  .cr-sw.on { border-color: var(--gold); box-shadow: 0 0 8px rgba(200,160,96,0.6); }
+  .cr-chip { padding: 7px 12px; border-radius: 13px; border: 1px solid var(--bg-3); background: var(--bg-1); color: var(--soft); font-family: inherit; font-weight: 700; font-size: 10px; letter-spacing: 0.5px; cursor: pointer; text-transform: capitalize; }
+  .cr-chip.on { background: linear-gradient(180deg, #3a1a1e, #260f12); border-color: var(--red); color: #ffd0d0; }
 </style>
 </head>
 <body>
@@ -703,7 +719,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v2.16 · build 2026-05-23·1930 · ROSTER search/filter (class·weight·A-Z) + 6 CPU fighters + boxing/wrestling discipline labels · 17 fighters · LOOPING · for AARON</div>
+  <div class="splash-foot">v2.17 · build 2026-05-23·1935 · CHARACTER CREATOR (name·look·discipline·stats·finisher · live preview · saved + pickable) · 17+ roster · LOOPING · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -741,6 +757,7 @@
     <button class="mode-card" onclick="startMode('versus')"><span class="mode-ic">⚔️</span><span class="mode-txt"><b>VERSUS</b><i>pick both fighters</i></span></button>
     <button class="mode-card" onclick="startMode('training')"><span class="mode-ic">🥊</span><span class="mode-txt"><b>TRAINING</b><i>no-stakes practice</i></span></button>
   </div>
+  <button class="btn btn-secondary" type="button" onclick="goto('create')" style="margin-top:12px">＋ CREATE A FIGHTER</button>
 </div>
 
 <!-- ========== SETTINGS ========== -->
@@ -773,6 +790,18 @@
   </div>
   <div class="roster-empty" id="roster-empty" style="display:none">no fighters match</div>
   <div class="roster-grid" id="roster-grid"></div>
+</div>
+
+<!-- ========== CREATE A FIGHTER ========== -->
+<div id="create" class="screen">
+  <div class="hub-head">
+    <button class="back-btn" onclick="goto('hub')">‹ Hub</button>
+    <div class="set-title">CREATE A FIGHTER</div>
+    <span style="width:60px"></span>
+  </div>
+  <div class="create-preview"><div id="create-svg"></div><div class="create-ovr" id="create-ovr"></div></div>
+  <div id="create-form"></div>
+  <button class="btn" id="create-btn" type="button" onclick="saveCustomFighter()" style="max-width:320px;margin:14px auto 0">CREATE &amp; ADD TO ROSTER</button>
 </div>
 
 <!-- ========== DETAIL ========== -->
@@ -945,7 +974,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v2.16</div>
+    <div class="load-skip">tap to skip · v2.17</div>
   </div>
 </div>
 
@@ -1332,11 +1361,12 @@ function loadSave() {
       if (typeof parsed.vol !== 'number') parsed.vol = 0.9;
       if (typeof parsed.captionsOn !== 'boolean') parsed.captionsOn = true;
       if (!('seenVersion' in parsed)) parsed.seenVersion = null;
+      if (!Array.isArray(parsed.customFighters)) parsed.customFighters = [];
       return parsed;
     }
   } catch(e) {}
   return { wins:0, losses:0, kos:0, finishers:0, scriptureStrikes:0, picks:{}, ovrDelta:{}, abilDelta:{},
-           difficulty:2, sfxOn:true, vol:0.9, captionsOn:true, platform:null, reducedMotion:false, tutorialSeen:false, seenVersion:null };
+           difficulty:2, sfxOn:true, vol:0.9, captionsOn:true, platform:null, reducedMotion:false, tutorialSeen:false, seenVersion:null, customFighters:[] };
 }
 function persistSave() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch(e) {}
@@ -1442,6 +1472,7 @@ function goto(id) {
   if (id==='platform') renderPlatform();
   if (id==='hub') renderHub();
   if (id==='settings') renderSettings();
+  if (id==='create') renderCreate();
   window.scrollTo(0,0);
 }
 
@@ -1610,7 +1641,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '2.16';
+const GAME_VERSION = '2.17';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -1703,6 +1734,69 @@ function buildRoster() {
     `;
     grid.appendChild(card);
   });
+}
+
+/* ========== CUSTOM CHARACTER CREATOR ========== */
+const ARCH_BY_DISC = { wrestling: ['BRAWLER', 'POWERHOUSE', 'WRESTLER'], boxing: ['BOXER', 'STRIKER', 'KICKBOXER'] };
+const HAIR_STYLES = ['short', 'short-afro', 'curly-afro', 'perm', 'waves', 'straight'];
+const creator = { name: 'MY FIGHTER', skin: 'white', hairColor: 'black', hairStyle: 'short', disc: 'wrestling', arch: 'BRAWLER', striking: 80, grappling: 80, stamina: 80, heart: 80, finisher: 'Custom Bomb' };
+const FIN_SCRIPT = { text: 'I can do all things through Christ which strengtheneth me.', ref: 'Philippians 4:13' };
+
+function creatorArt() {
+  return Object.assign({ hoodie: '#1d1d24', hoodieDark: '#0a0a0d', accent: '#c8a060', shorts: '#26262e', logo: ((creator.name || 'MY').replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase() || 'MY'), build: 1.0, scriptureFinisher: FIN_SCRIPT, hairStyle: creator.hairStyle }, SKIN[creator.skin], HAIRC[creator.hairColor]);
+}
+function crSwatch(label, opts, cur, setter, colorOf) {
+  return `<div class="cr-row"><div class="cr-label">${label}</div><div class="cr-opts">` + opts.map(o => `<button class="cr-sw ${o === cur ? 'on' : ''}" style="background:${colorOf(o)}" onclick="setCreator('${setter}','${o}')" title="${o}"></button>`).join('') + `</div></div>`;
+}
+function crChips(label, opts, cur, setter) {
+  return `<div class="cr-row"><div class="cr-label">${label}</div><div class="cr-opts">` + opts.map(o => `<button class="cr-chip ${o === cur ? 'on' : ''}" onclick="setCreator('${setter}','${o}')">${o}</button>`).join('') + `</div></div>`;
+}
+function crSlider(label, key) {
+  return `<div class="cr-row"><div class="cr-label">${label} · <span id="cr-${key}-v">${creator[key]}</span></div><input type="range" class="set-slider" min="60" max="95" value="${creator[key]}" oninput="setCreatorStat('${key}',this.value)"></div>`;
+}
+function renderCreate() {
+  document.getElementById('create-form').innerHTML =
+      `<div class="cr-row"><div class="cr-label">NAME</div><input id="cr-name" class="roster-search" maxlength="14" value="${creator.name}" oninput="setCreator('name',this.value)" autocomplete="off"></div>`
+    + crChips('DISCIPLINE', ['wrestling', 'boxing'], creator.disc, 'disc')
+    + crChips('STYLE', ARCH_BY_DISC[creator.disc], creator.arch, 'arch')
+    + crSwatch('SKIN', Object.keys(SKIN), creator.skin, 'skin', k => SKIN[k].skin)
+    + crSwatch('HAIR COLOR', Object.keys(HAIRC), creator.hairColor, 'hairColor', k => HAIRC[k].hair)
+    + crChips('HAIRSTYLE', HAIR_STYLES, creator.hairStyle, 'hairStyle')
+    + crSlider('STRIKING', 'striking') + crSlider('GRAPPLING', 'grappling') + crSlider('STAMINA', 'stamina') + crSlider('HEART', 'heart')
+    + `<div class="cr-row"><div class="cr-label">FINISHER</div><input id="cr-fin" class="roster-search" maxlength="20" value="${creator.finisher}" oninput="setCreator('finisher',this.value)" autocomplete="off"></div>`;
+  updateCreatorPreview();
+}
+function setCreator(key, val) {
+  creator[key] = val;
+  if (key === 'disc') creator.arch = ARCH_BY_DISC[val][0];
+  if (key === 'name' || key === 'finisher') { updateCreatorPreview(); return; }  // don't re-render (keep input focus)
+  renderCreate();
+}
+function setCreatorStat(key, v) { creator[key] = parseInt(v, 10); const el = document.getElementById('cr-' + key + '-v'); if (el) el.textContent = creator[key]; updateCreatorPreview(); }
+function updateCreatorPreview() {
+  document.getElementById('create-svg').innerHTML = renderFighter(creatorArt());
+  const ovr = Math.max(1, Math.min(99, Math.round((creator.striking + creator.grappling + creator.stamina + creator.heart + 80) / 5)));
+  document.getElementById('create-ovr').textContent = 'OVR ~' + ovr;
+}
+function customSpecToFighter(spec) {
+  const ovr = Math.max(1, Math.min(99, Math.round((spec.stats.striking + spec.stats.grappling + spec.stats.stamina + spec.stats.heart + spec.stats.charisma) / 5)));
+  return {
+    id: spec.id, name: spec.name, slot: 90, arch: spec.arch, ovr, custom: true,
+    stats: spec.stats, finishers: [spec.finisher], vibe: 'your created fighter',
+    walkout: { text: FIN_SCRIPT.text, ref: FIN_SCRIPT.ref + ' · KJV', label: 'Walkout' },
+    moves: [ { name: 'Jab', type: 'jab', dmg: [8, 14], cost: 7, acc: 0.9 }, { name: 'Combo', type: 'cross', dmg: [15, 22], cost: 17, acc: 0.85 }, { name: 'Signature', type: 'power', dmg: [24, 34], cost: 31, acc: 0.77, sig: true }, { name: spec.finisher, type: 'finisher', dmg: [56, 72], cost: 56, acc: 0.9, fin: true } ],
+    art: Object.assign({ hoodie: '#1d1d24', hoodieDark: '#0a0a0d', accent: '#c8a060', shorts: '#26262e', logo: ((spec.name || 'MY').replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase() || 'MY'), build: 1.0, scriptureFinisher: FIN_SCRIPT, hairStyle: spec.hairStyle }, SKIN[spec.skin], HAIRC[spec.hairColor])
+  };
+}
+function addCustomToRoster(spec) { if (!FIGHTERS.find(x => x.id === spec.id)) FIGHTERS.push(customSpecToFighter(spec)); }
+function loadCustomFighters() { (save.customFighters || []).forEach(addCustomToRoster); }
+function saveCustomFighter() {
+  const id = 'custom_' + Date.now();
+  const spec = { id, name: (creator.name || 'MY FIGHTER').toUpperCase().slice(0, 14), arch: creator.arch, skin: creator.skin, hairColor: creator.hairColor, hairStyle: creator.hairStyle, stats: { striking: creator.striking, grappling: creator.grappling, stamina: creator.stamina, heart: creator.heart, charisma: 80 }, finisher: (creator.finisher || 'Custom Finish') };
+  save.customFighters.push(spec); persistSave();
+  addCustomToRoster(spec);
+  rosterFilter.disc = 'all';
+  goto('roster');
 }
 
 /* ========== DETAIL ========== */
@@ -2748,6 +2842,7 @@ document.addEventListener('pointerdown', (e) => {
   const b = e.target.closest('button:not(.atk-btn), .mode-card, .platform-card, .roster-card, .toggle');
   if (b && !b.disabled) { ensureCtx(); playClickSound(); }
 }, true);
+loadCustomFighters();   // restore created fighters into the roster
 applyReducedMotion();
 applyPlatform();
 refreshSplash();
