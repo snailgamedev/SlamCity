@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#0a0a0d" />
-<title>SLAM CITY · v2.15 · 12 STATS</title>
+<title>SLAM CITY · v2.16 · ROSTER</title>
 <!-- retro arcade type: Press Start 2P for marquee, Oxanium for readable UI · safe fallback stack -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -673,6 +673,19 @@
   body.landscape .atk-btn { min-height: 34px; font-size: 11px; }
   body.landscape .atk-btn.fin, body.landscape .atk-btn.block, body.landscape .atk-btn.dodge { min-height: 30px; font-size: 10px; }
   body.landscape .prefight .pf-count { font-size: clamp(30px, 10vh, 52px); }
+
+  /* roster search + filter chips + discipline labels */
+  .roster-filter { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+  .roster-search { width: 100%; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--bg-3); background: var(--bg-1); color: var(--cream); font-family: inherit; font-size: 12px; }
+  .roster-search:focus { outline: none; border-color: var(--red); }
+  .roster-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .rchip { padding: 6px 11px; border-radius: 14px; border: 1px solid var(--bg-3); background: var(--bg-1); color: var(--soft); font-family: inherit; font-weight: 800; font-size: 9px; letter-spacing: 1px; cursor: pointer; }
+  .rchip.on { background: linear-gradient(180deg, #3a1a1e, #260f12); border-color: var(--red); color: #ffd0d0; }
+  .rchip.sort.on { background: linear-gradient(180deg, #3a2a18, #2a1810); border-color: var(--gold); color: var(--gold); }
+  .roster-empty { text-align: center; color: var(--muted); font-size: 12px; padding: 30px; }
+  .rc-disc { font-size: 8px; }
+  .rc-disc.boxing { color: #7fd0ff; }
+  .rc-disc.wrestling { color: var(--gold); }
 </style>
 </head>
 <body>
@@ -690,7 +703,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v2.15 · build 2026-05-23·1922 · 12 LIVING STATS (grappling·submission·pin-power·chin·conditioning + more) wired into wrestling math · OVR 1-99 · responsive · 90/10 wrestling · LOOPING · for AARON</div>
+  <div class="splash-foot">v2.16 · build 2026-05-23·1930 · ROSTER search/filter (class·weight·A-Z) + 6 CPU fighters + boxing/wrestling discipline labels · 17 fighters · LOOPING · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -747,6 +760,18 @@
     <div class="head-title" id="roster-mode-label">PICK YOUR FIGHTER</div>
     <div style="width:60px"></div>
   </div>
+  <div class="roster-filter">
+    <input id="roster-search" class="roster-search" placeholder="🔎 search fighter…" oninput="buildRoster()" autocomplete="off">
+    <div class="roster-chips" id="roster-chips">
+      <button class="rchip on" data-f="all" onclick="setRosterFilter('all')">ALL</button>
+      <button class="rchip" data-f="wrestling" onclick="setRosterFilter('wrestling')">WRESTLING</button>
+      <button class="rchip" data-f="boxing" onclick="setRosterFilter('boxing')">BOXING</button>
+      <button class="rchip sort on" data-f="ovr" onclick="setRosterFilter('ovr')">OVR ↓</button>
+      <button class="rchip sort" data-f="az" onclick="setRosterFilter('az')">A–Z</button>
+      <button class="rchip sort" data-f="weight" onclick="setRosterFilter('weight')">WEIGHT</button>
+    </div>
+  </div>
+  <div class="roster-empty" id="roster-empty" style="display:none">no fighters match</div>
   <div class="roster-grid" id="roster-grid"></div>
 </div>
 
@@ -920,7 +945,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v2.15</div>
+    <div class="load-skip">tap to skip · v2.16</div>
   </div>
 </div>
 
@@ -1129,6 +1154,36 @@ FIGHTERS.forEach(f => {
   if (L) Object.assign(f.art, SKIN[L[0]], HAIRC[L[1]], { hairStyle: L[2] });
   else if (!f.art.hairStyle) f.art.hairStyle = 'short';
 });
+
+/* ========== EXTRA CPU FIGHTERS (non-brother roster depth) ========== */
+const BOXING_ARCH = ['BOXER', 'STRIKER', 'KICKBOXER'];
+function disciplineOf(f) { return BOXING_ARCH.includes(f.arch) ? 'BOXING' : 'WRESTLING'; }
+function mkCPU(id, name, arch, ovr, st, skinK, hairK, style, finName, finV, accent) {
+  const [striking, grappling, stamina, heart, charisma] = st;
+  return {
+    id, name, slot: 0, arch, ovr, cpu: true,
+    stats: { striking, grappling, stamina, heart, charisma },
+    finishers: [finName],
+    vibe: arch.toLowerCase() + ' · circuit veteran',
+    walkout: { text: finV.text, ref: finV.ref + ' · KJV', label: 'Walkout' },
+    moves: [
+      { name: 'Jab', type: 'jab', dmg: [8, 14], cost: 7, acc: 0.9 },
+      { name: 'Combo', type: 'cross', dmg: [15, 22], cost: 17, acc: 0.85 },
+      { name: 'Signature Slam', type: 'power', dmg: [24, 34], cost: 31, acc: 0.77, sig: true },
+      { name: finName, type: 'finisher', dmg: [56, 72], cost: 56, acc: 0.9, fin: true }
+    ],
+    art: Object.assign({ hoodie: '#1d1d24', hoodieDark: '#0a0a0d', accent: accent || '#8a8a92', shorts: '#26262e', logo: id.slice(0, 2).toUpperCase(), build: 1.0, scriptureFinisher: finV, hairStyle: style }, SKIN[skinK], HAIRC[hairK])
+  };
+}
+const CPU_FIGHTERS = [
+  mkCPU('titan',  'TITAN',  'POWERHOUSE', 87, [82, 96, 84, 88, 80], 'black', 'black',    'short-afro', 'Tower Drop',   { text: 'The Lord is my strength and my shield.', ref: 'Psalm 28:7' }, '#c84a4a'),
+  mkCPU('rico',   'RICO',   'BOXER',      85, [95, 70, 88, 86, 90], 'pr',    'black',    'waves',      'Counter Cross',{ text: 'I press toward the mark.', ref: 'Philippians 3:14' }, '#4aa0c8'),
+  mkCPU('duke',   'DUKE',   'BRAWLER',    84, [88, 86, 84, 90, 78], 'white', 'brown',    'straight',   'Duke Driver',  { text: 'Be strong and of a good courage.', ref: 'Joshua 1:9' }, '#c89a4a'),
+  mkCPU('viper',  'VIPER',  'KICKBOXER',  86, [93, 74, 90, 84, 85], 'black', 'black',    'curly-afro', 'Venom Kick',   { text: 'They that wait upon the Lord shall renew their strength.', ref: 'Isaiah 40:31' }, '#5ac84a'),
+  mkCPU('bishop', 'BISHOP', 'WRESTLER',   88, [78, 97, 88, 92, 82], 'white', 'bleached', 'short-afro', 'Last Rites',   { text: 'Fight the good fight of faith.', ref: '1 Timothy 6:12' }, '#a04ac8'),
+  mkCPU('ace',    'ACE',    'STRIKER',    83, [92, 72, 86, 82, 88], 'white', 'blonde',   'perm',       'Ace of Spades',{ text: 'Whatsoever thy hand findeth to do, do it with thy might.', ref: 'Ecclesiastes 9:10' }, '#c8c84a')
+];
+CPU_FIGHTERS.forEach((f, i) => { f.slot = 30 + i; FIGHTERS.push(f); });
 
 /* ========== SVG FIGHTER RENDERER (parametric · matches Aaron preview style) ========== */
 function renderFighter(art, mode='full') {
@@ -1555,7 +1610,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '2.15';
+const GAME_VERSION = '2.16';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -1604,23 +1659,47 @@ function refreshSplash() {
 }
 
 /* ========== ROSTER ========== */
+const rosterFilter = { disc: 'all', sort: 'ovr' };
+const WC_ORDER = { HEAVY: 0, MIDDLE: 1, WELTER: 2, LIGHT: 3 };
+function setRosterFilter(f) {
+  if (f === 'all' || f === 'wrestling' || f === 'boxing') rosterFilter.disc = f;
+  else rosterFilter.sort = f;
+  document.querySelectorAll('#roster-chips .rchip').forEach(b => {
+    const v = b.dataset.f;
+    const active = b.classList.contains('sort') ? (v === rosterFilter.sort) : (v === rosterFilter.disc);
+    b.classList.toggle('on', active);
+  });
+  buildRoster();
+}
 function buildRoster() {
   const grid = document.getElementById('roster-grid');
   grid.innerHTML = '';
-  FIGHTERS.forEach(f => {
+  const q = (document.getElementById('roster-search')?.value || '').trim().toUpperCase();
+  let list = FIGHTERS.filter(f => {
+    if (rosterFilter.disc !== 'all' && disciplineOf(f).toLowerCase() !== rosterFilter.disc) return false;
+    if (q && !(f.name.toUpperCase().includes(q) || f.arch.includes(q))) return false;
+    return true;
+  });
+  if (rosterFilter.sort === 'az') list.sort((a, b) => a.name.localeCompare(b.name));
+  else if (rosterFilter.sort === 'weight') list.sort((a, b) => WC_ORDER[weightClassOf(a)] - WC_ORDER[weightClassOf(b)] || getCurrentOVR(b.id) - getCurrentOVR(a.id));
+  else list.sort((a, b) => getCurrentOVR(b.id) - getCurrentOVR(a.id));   // OVR default
+  const empty = document.getElementById('roster-empty');
+  if (empty) empty.style.display = list.length ? 'none' : 'block';
+  list.forEach(f => {
     const card = document.createElement('div');
     card.className = 'roster-card';
     card.onclick = () => openDetail(f.id);
     const cur = getCurrentOVR(f.id);
     const delta = getOVRDelta(f.id);
     const deltaTxt = delta === 0 ? '' : `<div class="rc-delta ${delta > 0 ? 'up' : 'down'}">${delta > 0 ? '▲' : '▼'}${Math.abs(delta)}</div>`;
+    const disc = disciplineOf(f);
     card.innerHTML = `
       <div class="rc-slot">#${f.slot}</div>
       <div class="rc-ovr">${cur}</div>
       ${deltaTxt}
       <div class="portrait">${renderFighter(f.art)}</div>
       <div class="rc-name">${f.name}</div>
-      <div class="rc-arch">${f.arch}</div>
+      <div class="rc-arch"><span class="rc-disc ${disc.toLowerCase()}">${disc === 'BOXING' ? '🥊' : '🤼'} ${disc}</span> · ${WEIGHT_CLASSES[weightClassOf(f)].abbr}</div>
     `;
     grid.appendChild(card);
   });
@@ -1640,7 +1719,7 @@ function openDetail(id) {
   const wc = WEIGHT_CLASSES[weightClassOf(f)];
   sc.innerHTML = `
     <div class="stats-head">
-      <div><div class="slot">SLOT ${f.slot} · ${f.arch} · ${wc.name.toUpperCase()}</div></div>
+      <div><div class="slot">${disciplineOf(f) === 'BOXING' ? '🥊 BOXING' : '🤼 WRESTLING'} · ${f.arch} · ${wc.name.toUpperCase()}</div></div>
       <div><div class="ovr">${cur}${deltaTxt}</div><div class="ovr-label">OVR · BASE ${baseOVR(f)}</div></div>
     </div>
     ${ABILITY_KEYS.map(k => statRow(ABILITY_LABELS[k], getAbility(f, k), getAbilityDelta(f, k))).join('')}
