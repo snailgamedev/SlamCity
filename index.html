@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#0a0a0d" />
-<title>SLAM CITY · v2.11 · UPDATE SYS</title>
+<title>SLAM CITY · v2.12 · MENU GLOW-UP</title>
 <!-- retro arcade type: Press Start 2P for marquee, Oxanium for readable UI · safe fallback stack -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -631,6 +631,13 @@
   .wn-row b { display: block; font-size: 11px; letter-spacing: 1px; color: var(--gold); }
   .wn-row span { font-size: 11px; color: var(--soft); line-height: 1.4; }
   .splash-desc { max-width: 320px; margin: 10px auto 0; font-size: 11px; line-height: 1.6; color: var(--soft); text-align: center; }
+  /* upgraded loading screen */
+  .load-logo { font-family: var(--font-arcade); font-size: clamp(20px, 7vw, 32px); line-height: 1.45; color: var(--cream); text-shadow: 0 0 18px rgba(224,64,80,0.5); margin-bottom: 14px; }
+  .load-ring { width: 40px; height: 40px; margin: 0 auto 16px; border-radius: 50%; border: 3px solid rgba(200,160,96,0.22); border-top-color: var(--gold); animation: load-spin 0.8s linear infinite; }
+  @keyframes load-spin { to { transform: rotate(360deg); } }
+  /* hub tagline + version chip */
+  .hub-tagline { font-size: 10.5px; color: var(--soft); line-height: 1.5; margin: -6px 0 14px; }
+  .hub-ver { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; font-size: 9px; letter-spacing: 1px; color: var(--gold); cursor: pointer; border: 1px solid var(--bg-3); border-radius: 12px; padding: 3px 9px; }
 
   /* ===== loading overlay ===== */
   .loading { position: fixed; inset: 0; z-index: 300; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 24px; background: radial-gradient(circle at 50% 42%, rgba(26,10,12,0.97), rgba(5,5,8,0.99)); cursor: pointer; }
@@ -660,7 +667,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v2.11 · build 2026-05-23·1904 · UPDATE SYSTEM (toast + what's-new) · game description · real 3D · tactile buttons · 90/10 wrestling · BATCH IN PROGRESS · for AARON</div>
+  <div class="splash-foot">v2.12 · build 2026-05-23·1909 · MENU + LOADING GLOW-UP (logo·spinner·tagline·win%·version chip) · update sys · real 3D · 90/10 wrestling · LOOPING · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -885,10 +892,12 @@
 <!-- ========== LOADING OVERLAY ========== -->
 <div class="loading" id="loading" aria-hidden="true" onclick="skipLoading()">
   <div class="load-inner">
+    <div class="load-logo">SLAM<br>CITY</div>
+    <div class="load-ring" aria-hidden="true"></div>
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip</div>
+    <div class="load-skip">tap to skip · v2.12</div>
   </div>
 </div>
 
@@ -1338,13 +1347,18 @@ function renderHub() {
   let mainId = null, mostPicks = -1;
   for (const id in (save.picks || {})) { if (save.picks[id] > mostPicks) { mostPicks = save.picks[id]; mainId = id; } }
   const main = mainId ? FIGHTERS.find(f => f.id === mainId) : null;
+  const total = wins + losses;
+  const winPct = total ? Math.round(wins / total * 100) : 0;
   document.getElementById('hub-profile').innerHTML =
-    `<div class="hp-row"><span class="hp-label">PROFILE</span><span class="hp-main">${main ? main.name + ' · OVR ' + getCurrentOVR(main.id) : 'no main yet'}</span></div>`
+      `<div class="hub-tagline">90% mat · 10% gloves — grapple, slam, pin &amp; submit the whole crew.</div>`
+    + `<div class="hp-row"><span class="hp-label">PROFILE</span><span class="hp-main">${main ? main.name + ' · OVR ' + getCurrentOVR(main.id) : 'no main yet'}</span></div>`
     + `<div class="hp-stats">`
     + `<span class="hp-stat"><b>${wins}</b>W</span><span class="hp-stat"><b>${losses}</b>L</span>`
+    + `<span class="hp-stat"><b>${winPct}%</b>WIN</span>`
     + `<span class="hp-stat"><b>${save.kos || 0}</b>KO</span><span class="hp-stat"><b>${save.finishers || 0}</b>FIN</span>`
     + `<span class="hp-stat"><b>${curDiff().name}</b></span>`
-    + `</div>`;
+    + `</div>`
+    + `<div class="hub-ver" onclick="showWhatsNew()">✦ v${GAME_VERSION} · what's new</div>`;
 }
 
 let gameMode = 'quick';
@@ -1466,7 +1480,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '2.11';
+const GAME_VERSION = '2.12';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
