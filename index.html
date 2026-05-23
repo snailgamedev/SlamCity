@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#0a0a0d" />
-<title>SLAM CITY · v2.3 · RETRO + LIVE AI</title>
+<title>SLAM CITY · v2.4 · HUB + SETTINGS</title>
 <!-- retro arcade type: Press Start 2P for marquee, Oxanium for readable UI · safe fallback stack -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -528,6 +528,59 @@
   .captions .cap-line.scripture { color: var(--gold); font-style: italic; }
   .captions { opacity: 0; transition: opacity 0.15s; }
   .captions.show { opacity: 1; }
+
+  /* ===== platform select + hub + settings ===== */
+  #platform, #hub, #settings { justify-content: flex-start; }
+  .hub-title { font-family: var(--font-arcade); font-size: clamp(18px, 6vw, 30px); line-height: 1.5; text-align: center; color: var(--cream); margin: 18px 0 10px; }
+  .hub-sub { text-align: center; font-size: 11px; color: var(--muted); letter-spacing: 1px; margin-bottom: 22px; }
+  .platform-grid { display: flex; flex-direction: column; gap: 14px; max-width: 420px; width: 100%; margin: 0 auto; }
+  .platform-card { display: block; text-align: center; padding: 22px 18px; border: 2px solid var(--bg-3); border-radius: 14px; background: linear-gradient(180deg, var(--bg-2), var(--bg-1)); color: var(--cream); cursor: pointer; transition: transform 0.08s, border-color 0.12s, box-shadow 0.12s; }
+  .platform-card:hover, .platform-card.detected { border-color: var(--red); box-shadow: 0 6px 22px rgba(200,64,74,0.25); }
+  .platform-card:active { transform: scale(0.97); }
+  .plat-ic { font-size: 40px; }
+  .plat-name { font-family: var(--font-arcade); font-size: 14px; margin: 8px 0 6px; }
+  .plat-desc { font-size: 10.5px; color: var(--soft); line-height: 1.5; }
+  .hub-detect { text-align: center; font-size: 10px; color: var(--muted); margin-top: 16px; letter-spacing: 1px; }
+
+  .hub-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .hub-logo { font-family: var(--font-arcade); font-size: clamp(16px, 5vw, 24px); color: var(--cream); }
+  .hub-gear { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--bg-3); background: var(--bg-2); color: var(--gold); font-size: 20px; cursor: pointer; }
+  .hub-gear:active { transform: scale(0.92); }
+  .hub-profile { background: linear-gradient(180deg, var(--bg-2), var(--bg-1)); border: 1px solid var(--bg-3); border-left: 3px solid var(--gold); border-radius: 8px; padding: 13px 15px; margin-bottom: 18px; }
+  .hp-row { display: flex; justify-content: space-between; align-items: baseline; }
+  .hp-label { font-size: 10px; letter-spacing: 2px; color: var(--muted); }
+  .hp-main { font-size: 13px; color: var(--cream); font-weight: 800; }
+  .hp-stats { display: flex; gap: 14px; margin-top: 10px; flex-wrap: wrap; }
+  .hp-stat { font-size: 11px; color: var(--soft); }
+  .hp-stat b { color: var(--gold); font-size: 15px; font-family: var(--font-arcade); margin-right: 4px; }
+  .hub-modes-label { font-size: 10px; letter-spacing: 3px; color: var(--muted); margin-bottom: 10px; }
+  .hub-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .mode-card { display: flex; align-items: center; gap: 10px; text-align: left; padding: 14px 12px; border: 1px solid var(--bg-3); border-radius: 12px; background: linear-gradient(180deg, var(--bg-2), var(--bg-1)); color: var(--cream); cursor: pointer; transition: transform 0.08s, border-color 0.12s; min-height: 62px; }
+  .mode-card:hover { border-color: var(--red); }
+  .mode-card:active { transform: scale(0.96); }
+  .mode-ic { font-size: 22px; flex: 0 0 auto; }
+  .mode-txt { display: flex; flex-direction: column; min-width: 0; }
+  .mode-txt b { font-size: 12px; letter-spacing: 0.5px; }
+  .mode-txt i { font-size: 9px; color: var(--muted); font-style: normal; margin-top: 3px; line-height: 1.3; }
+
+  .set-title { font-family: var(--font-arcade); font-size: 14px; color: var(--cream); }
+  .set-list { display: flex; flex-direction: column; gap: 12px; max-width: 460px; width: 100%; margin: 6px auto 0; }
+  .set-row { background: linear-gradient(180deg, var(--bg-2), var(--bg-1)); border: 1px solid var(--bg-3); border-radius: 10px; padding: 13px 15px; }
+  .set-row .set-label { font-size: 12px; font-weight: 700; color: var(--cream); letter-spacing: 0.5px; margin-bottom: 4px; }
+  .set-row .set-hint { font-size: 10px; color: var(--muted); margin-bottom: 10px; }
+  .seg { display: flex; gap: 6px; flex-wrap: wrap; }
+  .seg button { flex: 1; min-width: 56px; padding: 9px 4px; border: 1px solid var(--bg-3); border-radius: 8px; background: var(--bg-1); color: var(--soft); font-family: inherit; font-weight: 800; font-size: 10px; letter-spacing: 1px; cursor: pointer; }
+  .seg button.on { background: linear-gradient(180deg, #3a1a1e, #260f12); border-color: var(--red); color: #ffd0d0; }
+  .set-toggle { display: flex; align-items: center; justify-content: space-between; }
+  .toggle { width: 50px; height: 28px; border-radius: 16px; border: 1px solid var(--bg-3); background: var(--bg-1); position: relative; cursor: pointer; flex: 0 0 auto; transition: background 0.15s; }
+  .toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; border-radius: 50%; background: var(--soft); transition: transform 0.15s, background 0.15s; }
+  .toggle.on { background: linear-gradient(90deg, var(--red-deep), var(--red)); }
+  .toggle.on::after { transform: translateX(22px); background: var(--cream); }
+  .set-slider { width: 100%; accent-color: var(--red); }
+  .set-btn { width: 100%; padding: 11px; border-radius: 8px; border: 1px solid var(--bg-3); background: var(--bg-1); color: var(--cream); font-family: inherit; font-weight: 800; letter-spacing: 1px; cursor: pointer; }
+  .set-btn.danger { border-color: var(--red); color: var(--red-bright); }
+  .set-btn:active { transform: scale(0.98); }
+  body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::after { animation-duration: 0.001s !important; animation-iteration-count: 1 !important; transition-duration: 0.001s !important; }
 </style>
 </head>
 <body>
@@ -543,9 +596,55 @@
     <span class="splash-verse-ref" id="splash-verse-ref"></span>
   </div>
 
-  <button class="btn" onclick="goto('roster')">ENTER THE RING</button>
-  <button class="btn btn-secondary" id="quick-play-btn" onclick="quickPlay()" style="display:none">QUICK PLAY</button>
-  <div class="splash-foot">v2.3 · build 2026-05-23·1800 · RETRO FONT · UNPREDICTABLE AI (moods·feints·taunts) · CAPTIONS · 5 difficulties · pre-fight VS · 11 brothers · for AARON</div>
+  <button class="btn" onclick="enterGame()">ENTER THE RING</button>
+  <div class="splash-foot">v2.4 · build 2026-05-23·1806 · PLATFORM PICK · MODE HUB + PROFILE · FULL SETTINGS · 6 modes · retro+AI+captions · 11 brothers · for AARON</div>
+</div>
+
+<!-- ========== PLATFORM SELECT ========== -->
+<div id="platform" class="screen">
+  <div class="hub-title">WHAT ARE YOU<br>PLAYING ON?</div>
+  <div class="hub-sub">pick your controls — change it anytime in settings</div>
+  <div class="platform-grid">
+    <button class="platform-card" id="plat-pc" onclick="pickPlatform('pc')">
+      <div class="plat-ic">🖥️</div><div class="plat-name">PC / MAC</div>
+      <div class="plat-desc">keyboard + mouse · A/D move · J/K/L strike · Space block · Shift dodge</div>
+    </button>
+    <button class="platform-card" id="plat-mobile" onclick="pickPlatform('mobile')">
+      <div class="plat-ic">📱</div><div class="plat-name">MOBILE</div>
+      <div class="plat-desc">touch · left thumb joystick · right thumb attack buttons</div>
+    </button>
+  </div>
+  <div class="hub-detect" id="plat-detect"></div>
+</div>
+
+<!-- ========== HUB (mode select + profile) ========== -->
+<div id="hub" class="screen">
+  <div class="hub-head">
+    <div class="hub-logo">SLAM CITY</div>
+    <button class="hub-gear" onclick="goto('settings')" aria-label="settings">⚙</button>
+  </div>
+
+  <div class="hub-profile" id="hub-profile"></div>
+
+  <div class="hub-modes-label">CHOOSE A MODE</div>
+  <div class="hub-modes" id="hub-modes">
+    <button class="mode-card" onclick="startMode('quick')"><span class="mode-ic">⚡</span><span class="mode-txt"><b>QUICK FIGHT</b><i>jump into a random matchup</i></span></button>
+    <button class="mode-card" onclick="startMode('career')"><span class="mode-ic">📈</span><span class="mode-txt"><b>CAREER</b><i>climb the roster · ratings track</i></span></button>
+    <button class="mode-card" onclick="startMode('gauntlet')"><span class="mode-ic">🏆</span><span class="mode-txt"><b>GAUNTLET</b><i>beat all 11 brothers in a row</i></span></button>
+    <button class="mode-card" onclick="startMode('survival')"><span class="mode-ic">💀</span><span class="mode-txt"><b>SURVIVAL</b><i>endless · how far can you go</i></span></button>
+    <button class="mode-card" onclick="startMode('versus')"><span class="mode-ic">⚔️</span><span class="mode-txt"><b>VERSUS</b><i>pick both fighters</i></span></button>
+    <button class="mode-card" onclick="startMode('training')"><span class="mode-ic">🥊</span><span class="mode-txt"><b>TRAINING</b><i>no-stakes practice</i></span></button>
+  </div>
+</div>
+
+<!-- ========== SETTINGS ========== -->
+<div id="settings" class="screen">
+  <div class="hub-head">
+    <button class="back-btn" onclick="goto('hub')">‹ Hub</button>
+    <div class="set-title">SETTINGS</div>
+    <span style="width:60px"></span>
+  </div>
+  <div class="set-list" id="set-list"></div>
 </div>
 
 <!-- ========== ROSTER ========== -->
@@ -711,8 +810,8 @@
   <div class="stat-strip" id="career-strip"></div>
 
   <div class="action-row" style="flex-direction:column; max-width:280px">
-    <button class="btn" onclick="goto('roster')">PICK A FIGHTER</button>
-    <button class="btn btn-secondary" onclick="goto('splash')">MAIN MENU</button>
+    <button class="btn" onclick="goto('hub')">HOME / MODES</button>
+    <button class="btn btn-secondary" onclick="goto('roster')">PICK A FIGHTER</button>
   </div>
 </div>
 
@@ -1108,7 +1207,88 @@ function goto(id) {
   document.getElementById(id).classList.add('active');
   if (id==='roster') buildRoster();
   if (id==='splash') refreshSplash();
+  if (id==='platform') renderPlatform();
+  if (id==='hub') renderHub();
+  if (id==='settings') renderSettings();
   window.scrollTo(0,0);
+}
+
+/* ========== FRONT-END FLOW · platform → hub → modes/settings ========== */
+function detectPlatform() {
+  const touch = (navigator.maxTouchPoints || 0) > 0 || /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+  return touch ? 'mobile' : 'pc';
+}
+function enterGame() {
+  if (!save.platform) goto('platform');
+  else goto('hub');
+}
+function renderPlatform() {
+  const d = detectPlatform();
+  document.getElementById('plat-pc').classList.toggle('detected', d === 'pc' && !save.platform);
+  document.getElementById('plat-mobile').classList.toggle('detected', d === 'mobile' && !save.platform);
+  document.getElementById('plat-detect').textContent = 'detected: ' + (d === 'pc' ? 'PC / Mac' : 'Mobile') + (save.platform ? ' · current: ' + save.platform.toUpperCase() : '');
+}
+function pickPlatform(p) {
+  save.platform = p; persistSave();
+  applyPlatform();
+  goto('hub');
+}
+function applyPlatform() {
+  // Show the control hints that match the platform; keep touch controls always usable.
+  document.body.classList.toggle('is-pc', save.platform === 'pc');
+  document.body.classList.toggle('is-mobile', save.platform === 'mobile');
+}
+function renderHub() {
+  applyPlatform();
+  const wins = save.wins || 0, losses = save.losses || 0;
+  // most-picked fighter = "main"
+  let mainId = null, mostPicks = -1;
+  for (const id in (save.picks || {})) { if (save.picks[id] > mostPicks) { mostPicks = save.picks[id]; mainId = id; } }
+  const main = mainId ? FIGHTERS.find(f => f.id === mainId) : null;
+  document.getElementById('hub-profile').innerHTML =
+    `<div class="hp-row"><span class="hp-label">PROFILE</span><span class="hp-main">${main ? main.name + ' · OVR ' + getCurrentOVR(main.id) : 'no main yet'}</span></div>`
+    + `<div class="hp-stats">`
+    + `<span class="hp-stat"><b>${wins}</b>W</span><span class="hp-stat"><b>${losses}</b>L</span>`
+    + `<span class="hp-stat"><b>${save.kos || 0}</b>KO</span><span class="hp-stat"><b>${save.finishers || 0}</b>FIN</span>`
+    + `<span class="hp-stat"><b>${curDiff().name}</b></span>`
+    + `</div>`;
+}
+
+let gameMode = 'quick';
+function startMode(m) {
+  gameMode = m;
+  // Versus picks BOTH fighters; the rest pick yours then face a mode-chosen opponent (rules in the engine).
+  goto('roster');
+}
+
+/* ========== SETTINGS (all controls wired to real behavior) ========== */
+function settingRow(label, hint, control) {
+  return `<div class="set-row"><div class="set-label">${label}</div>${hint ? `<div class="set-hint">${hint}</div>` : ''}${control}</div>`;
+}
+function settingToggle(label, hint, key, handler) {
+  return `<div class="set-row set-toggle"><div><div class="set-label">${label}</div><div class="set-hint">${hint}</div></div><div class="toggle ${save[key] ? 'on' : ''}" role="switch" onclick="${handler}(this)"></div></div>`;
+}
+function renderSettings() {
+  document.getElementById('set-list').innerHTML =
+      settingRow('DIFFICULTY', curDiff().blurb, `<div class="seg" id="seg-diff">${DIFFICULTIES.map((d, i) => `<button class="${i === save.difficulty ? 'on' : ''}" onclick="setDifficulty(${i})">${d.name}</button>`).join('')}</div>`)
+    + settingToggle('SOUND EFFECTS', 'punches, blocks, the bell', 'sfxOn', 'toggleSfx')
+    + settingRow('VOLUME', 'how loud it hits', `<input type="range" class="set-slider" min="0" max="100" value="${Math.round((save.vol || 0) * 100)}" oninput="setVol(this.value)">`)
+    + settingToggle('SUBTITLES / CAPTIONS', 'on-screen play-by-play', 'captionsOn', 'toggleCaptions')
+    + settingToggle('REDUCED MOTION', 'calmer animations', 'reducedMotion', 'toggleReducedMotion')
+    + settingRow('CONTROLS', 'current: ' + ((save.platform || 'not set').toUpperCase()), `<button class="set-btn" onclick="goto('platform')">CHANGE PLATFORM</button>`)
+    + settingRow('HOW TO PLAY', 'replay the tutorial', `<button class="set-btn" onclick="showTutorial()">VIEW TUTORIAL</button>`)
+    + settingRow('RESET PROGRESS', 'wipes ratings, record + settings', `<button class="set-btn danger" onclick="resetProgress()">RESET EVERYTHING</button>`);
+}
+function setDifficulty(i) { save.difficulty = i; persistSave(); document.querySelectorAll('#seg-diff button').forEach((b, j) => b.classList.toggle('on', j === i)); }
+function toggleSfx(el) { save.sfxOn = !save.sfxOn; persistSave(); el.classList.toggle('on', save.sfxOn); if (save.sfxOn) { ensureCtx(); tone(660, 0.08, 'square', 0.12, 0); } }
+function setVol(v) { save.vol = Math.max(0, Math.min(1, v / 100)); persistSave(); }
+function toggleCaptions(el) { save.captionsOn = !save.captionsOn; persistSave(); el.classList.toggle('on', save.captionsOn); }
+function toggleReducedMotion(el) { save.reducedMotion = !save.reducedMotion; persistSave(); el.classList.toggle('on', save.reducedMotion); applyReducedMotion(); }
+function applyReducedMotion() { document.body.classList.toggle('reduced-motion', !!save.reducedMotion); }
+function resetProgress() {
+  if (!confirm('Reset ALL progress — ratings, record, and settings? This cannot be undone.')) return;
+  try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+  location.reload();
 }
 
 /* ========== SPLASH ========== */
@@ -1967,13 +2147,16 @@ function ensureCtx() {
   return actx;
 }
 function tone(freq, dur, type='sine', vol=0.15, slide=0) {
+  if (!save.sfxOn) return;                          // SOUND EFFECTS toggle
   const ctx = ensureCtx(); if (!ctx) return;
+  const v = vol * (save.vol != null ? save.vol : 0.9);  // VOLUME setting
+  if (v <= 0.0005) return;
   const o = ctx.createOscillator();
   const g = ctx.createGain();
   o.type = type; o.frequency.value = freq;
   if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(20, freq + slide), ctx.currentTime + dur);
   g.gain.value = 0;
-  g.gain.linearRampToValueAtTime(vol, ctx.currentTime + 0.01);
+  g.gain.linearRampToValueAtTime(v, ctx.currentTime + 0.01);
   g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
   o.connect(g); g.connect(ctx.destination);
   o.start(); o.stop(ctx.currentTime + dur);
@@ -2013,6 +2196,8 @@ function playKOSound() {
 }
 
 /* ========== BOOT ========== */
+applyReducedMotion();
+applyPlatform();
 refreshSplash();
 
 </script>
