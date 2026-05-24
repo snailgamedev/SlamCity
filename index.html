@@ -19,8 +19,19 @@
   // capture the install prompt (Android / desktop Chrome) for the in-game INSTALL button
   window.__installPrompt = null;
   window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); window.__installPrompt = e; });
-  // register the service worker (https only; silently no-ops on file:// / unsupported)
-  if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('sc-sw.js').catch(function () {}); }); }
+  // register the service worker + AUTO-UPDATE: check for a new build every open, apply it as soon as it's ready
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sc-sw.js').then(function (reg) {
+        reg.update();                                   // check for a fresh build on every open
+        setInterval(function () { reg.update(); }, 60000); // and periodically while open
+      }).catch(function () {});
+    });
+    var __swReloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      if (__swReloaded) return; __swReloaded = true; location.reload();   // a new build activated → refresh into it
+    });
+  }
 </script>
 <!-- Three.js (r128, vendored local · global THREE) powers the real-3D ring + jointed fighters (v4.0). Falls back to the CSS renderer if it fails to load. -->
 <script src="three.min.js"></script>
@@ -537,6 +548,12 @@
   .ef-slabel { width: 96px; font-size: 11px; color: var(--soft); text-transform: uppercase; letter-spacing: 0.5px; flex: 0 0 96px; }
   .ef-stat input[type=range] { flex: 1; }
   .ef-sval { width: 26px; text-align: right; font-size: 12px; font-weight: 800; color: var(--cream); flex: 0 0 26px; }
+  .adm-rank { border: 1px solid var(--bg-3); border-radius: 8px; overflow: hidden; margin-bottom: 8px; }
+  .adm-rank-row { display: flex; justify-content: space-between; gap: 10px; padding: 9px 11px; font-size: 11px; border-bottom: 1px solid rgba(255,255,255,0.05); background: var(--bg-1); }
+  .adm-rank-row:last-child { border-bottom: none; }
+  .adm-rank-row span:first-child { color: var(--gold); font-weight: 800; letter-spacing: 0.5px; }
+  .adm-rank-row span:last-child { color: var(--soft); text-align: right; }
+  .adm-rank-row.me { background: rgba(40,28,12,0.5); box-shadow: inset 3px 0 0 var(--gold); }
   .hud-btns { position: absolute; top: 6px; right: 8px; z-index: 30; display: flex; gap: 6px; }
   .hud-btn { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--bg-3); background: rgba(20,20,26,0.9); color: var(--soft); font-weight: 900; font-size: 12px; cursor: pointer; line-height: 1; display: flex; align-items: center; justify-content: center; padding: 0; }
   #pause-btn { font-size: 10px; letter-spacing: -1px; color: var(--cream); border-color: var(--bg-3); }
@@ -869,7 +886,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v4.3 · build 2026-05-24·1022 · CINEMATIC 3D — real shadows + a ring spotlight + a camera that drifts & punches in on big hits · OVERALL now matters (higher OVR hits harder / tanks more) · all 12 ratings move both ways · progress saved across sign-out/in · bans + every command undoable (90-day) · for AARON</div>
+  <div class="splash-foot">v4.4 · build 2026-05-24·1042 · SPRINT + move BEHIND your opponent · pause + how-to-play freeze the action · ALL modes build your overall (training counts, watch evolves CPUs) · pick BOTH fighters in CPU-vs-CPU · UNDO any admin action (not just last) + admin ranking list for all admins · auto-updates on open · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -1161,7 +1178,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v4.3</div>
+    <div class="load-skip">tap to skip · v4.4</div>
   </div>
 </div>
 
@@ -1843,25 +1860,25 @@ function shuffled(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { c
 function startMode(m) {
   gameMode = m;
   modeCtx.queue = []; modeCtx.idx = 0; modeCtx.streak = 0; modeCtx.playerId = null; modeCtx.pickingOpponent = false; modeCtx.season = null;
-  if (m === 'watch') {                                   // CPU vs CPU — no pick, two random fighters
-    const ids = shuffled(FIGHTERS.map(f => f.id));
-    launchFight(ids[0], ids[1]);
-    return;
-  }
-  setRosterLabel(false);
+  setRosterLabel(false);   // WATCH now lets you pick BOTH CPUs (fighter 1, then fighter 2)
   goto('roster');
 }
 function setRosterLabel(pickingOpp) {
   modeCtx.pickingOpponent = pickingOpp;
   const el = document.getElementById('roster-mode-label');
-  if (el) el.textContent = MODE_LABEL[gameMode] + ' · ' + (pickingOpp ? 'PICK OPPONENT' : 'PICK YOUR FIGHTER');
+  if (!el) return;
+  const isVs = gameMode === 'versus', isWatch = gameMode === 'watch';
+  const pick = (isVs || isWatch)
+    ? (pickingOpp ? (isWatch ? 'PICK CPU #2' : 'PICK OPPONENT') : (isWatch ? 'PICK CPU #1' : 'PICK YOUR FIGHTER'))
+    : 'PICK YOUR FIGHTER';
+  el.textContent = MODE_LABEL[gameMode] + ' · ' + pick;
 }
 // Entry from the roster/detail FIGHT button — sets up the matchup per mode.
 function beginMode(playerId) {
-  if (gameMode === 'versus' && !modeCtx.pickingOpponent) {     // versus = pick both: yours first…
+  if ((gameMode === 'versus' || gameMode === 'watch') && !modeCtx.pickingOpponent) {  // versus / watch = pick both, first one here…
     modeCtx.playerId = playerId; setRosterLabel(true); goto('roster'); return;
   }
-  if (gameMode === 'versus') { launchFight(modeCtx.playerId, playerId); return; }  // …then opponent
+  if (gameMode === 'versus' || gameMode === 'watch') { launchFight(modeCtx.playerId, playerId); return; }  // …then the second
   modeCtx.playerId = playerId;
   if (gameMode === 'gauntlet') {
     modeCtx.queue = FIGHTERS.filter(f => f.id !== playerId)
@@ -1976,7 +1993,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '4.3';
+const GAME_VERSION = '4.4';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -2010,6 +2027,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['4.4',  'Movement upgrade — push the stick to SPRINT, and change depth (W/S) to circle BEHIND your opponent (bodies only collide on the same plane) · PAUSE and HOW-TO-PLAY now truly freeze the action · EVERY mode builds your overall now (Training counts as gains-only practice; Watch evolves both CPUs) · CPU-vs-CPU lets you pick BOTH fighters · ADMIN: undo ANY past action (not just the last) + an admin ranking list every admin can see · the game auto-checks for updates each time you open it'],
   ['4.3',  'CINEMATIC 3D progress — real cast shadows, a dramatic ring spotlight, filmic tone-mapping, and a camera that slowly drifts + punches in on big hits / hype · OVERALL now MATTERS: a higher-OVR fighter hits harder and absorbs more (up to ±18% on the gap) · all 12 ratings can rise AND fall from how you fight · your progress (ratings + record) is saved across sign-out → sign-in · every admin command — bans, timeouts, all of it — is undoable for 90 days'],
   ['4.2',  'Fixed "fighting backwards" — fighters now face each other + a living camera that tracks the action for a more 3D feel · ALL 14 hairstyles render distinctly in 3D (afro, mohawk, dreads, man-bun, spiky, long…) · ADMIN: a searchable/sortable FIGHTERS screen where you can change ANYTHING about any fighter (rename, weight class, archetype, every 1–99 rating, moves, finisher, look) + 90-DAY UNDO on admin commands + UNCROWN · you can only message a CLAIMED fighter · creator now sets weight class + your move names + full 1–99 stats & OVR · ratings now move UP and DOWN from how you fight (not just a couple) · everything capped 1–99'],
   ['4.1',  'Rounder 3D fighters (no more boxy limbs — same model in the ring + customizer) · SNAPPIER combat (windups/cooldowns cut, hits land crisp, clear red flash on contact) · ADMIN TIERS — Eli (supreme) ▸ Aaron (senior) ▸ OG crew (mod), each with the right powers · moderation: timeout, kick, ban + a ban list · profanity filter on new names · new fighters start RANDOM 60–80 OVR (everything still capped 1–99) · feedback system (send from your profile/hub → admins read it) · clearer messages (📬 badge) · INSTALLABLE app + downloadable file on every device · revamped victory screen with a 3D winner · Old Man Eli is your PIN-locked account + you can recolor him from the panel'],
@@ -2486,14 +2504,19 @@ function renderAdmin() {
         + (tier === 1 ? `<button class="adm-mini" type="button" style="margin-bottom:8px" onclick="adminClearLog()">clear log</button>` : '')
       : `<div class="adm-log-row" style="color:var(--muted)">no actions yet</div>`;
   }
-  // ── 90-day UNDO ──
+  // ── 90-day UNDO · undo ANY point (each row has its own ↩) ──
   pruneUndo();
   const undo = save.undo || [];
-  html += `<div class="adm-sec-label">↩ UNDO · ${undo.length} (90-day)</div>`;
+  html += `<div class="adm-sec-label">↩ UNDO · ${undo.length} (90-day · tap any to roll back to it)</div>`;
   if (undo.length) {
     html += `<button class="btn btn-secondary" type="button" style="border-color:var(--gold);color:var(--gold)" onclick="undoLast()">↩ UNDO LAST · ${undo[0].label}</button>`;
-    html += `<div class="adm-log">` + undo.slice(0, 8).map(u => `<div class="adm-log-row"><span class="adm-log-t">${adminTimeAgo(u.t)}</span> ${u.label}</div>`).join('') + `</div>`;
+    html += `<div class="adm-log">` + undo.slice(0, 14).map((u, i) => `<div class="adm-row" style="padding:7px 10px"><span class="adm-log-t" style="flex:0 0 auto">${adminTimeAgo(u.t)}</span><span class="adm-rname" style="font-size:12px;text-transform:none;font-weight:600">${u.label}</span><span class="adm-acts"><button class="adm-mini" type="button" onclick="undoTo(${i})">↩</button></span></div>`).join('') + `</div>`;
   } else html += `<div class="adm-log-row" style="color:var(--muted)">nothing to undo</div>`;
+  // ── ADMIN RANKING (visible to every admin) ──
+  html += `<div class="adm-sec-label">🏅 ADMIN RANKING</div>`
+    + `<div class="adm-rank"><div class="adm-rank-row${tier === 1 ? ' me' : ''}"><span>👑 TIER 1 · SUPREME</span><span>OLD MAN ELI${(save.activeProfile === ADMIN_KEY) ? ' · you' : ''}</span></div>`
+    + `<div class="adm-rank-row${tier === 2 ? ' me' : ''}"><span>🥈 TIER 2 · SENIOR</span><span>AARON${(save.activeProfile === 'aaron') ? ' · you' : ''}</span></div>`
+    + `<div class="adm-rank-row${tier === 3 ? ' me' : ''}"><span>🛡 TIER 3 · CREW</span><span>${OG_IDS.filter(id => id !== 'aaron').map(id => (FIGHTERS.find(f => f.id === id) || {}).name || id).join(' · ')}</span></div></div>`;
   // ── tools ──
   html += `<div class="adm-sec-label">🛠 ADMIN TOOLS</div>`;
   html += `<button class="btn" type="button" style="border-color:var(--gold);color:var(--gold);background:rgba(40,28,12,0.4)" onclick="openAdminFighters()">👥 MANAGE / SEARCH ALL FIGHTERS ›</button>`;
@@ -2640,11 +2663,14 @@ function snapshotForUndo(label) {
   pruneUndo();
 }
 function pruneUndo() { const cut = Date.now() - 90 * 86400000; save.undo = (save.undo || []).filter(u => u.t >= cut).slice(0, 50); }   // 90 days, cap 50
-function undoLast() {
+function undoLast() { undoTo(0); }
+// Undo ANY point in the 90-day stack — restores the snapshot taken before that action + drops everything newer.
+function undoTo(idx) {
   if (curAdminTier() < 1 && !can('reset')) return;
   pruneUndo();
-  const u = (save.undo || []).shift();
-  if (!u) { setStatus && setStatus('NOTHING TO UNDO', 'var(--muted)', 900); return; }
+  const stack = save.undo || [];
+  if (idx < 0 || idx >= stack.length) { setStatus && setStatus('NOTHING TO UNDO', 'var(--muted)', 900); return; }
+  const u = stack[idx];
   save.profiles = u.profiles; save.customFighters = u.customFighters; save.champion = u.champion; save.belts = u.belts;
   save.bans = u.bans; save.abilDelta = u.abilDelta; save.wcOverride = u.wcOverride;
   for (let i = FIGHTERS.length - 1; i >= 0; i--) if (FIGHTERS[i].custom) FIGHTERS.splice(i, 1);   // rebuild customs from snapshot
@@ -2652,7 +2678,8 @@ function undoLast() {
   Object.keys(u.arch || {}).forEach(id => { const f = FIGHTERS.find(x => x.id === id); if (f) f.arch = u.arch[id]; });
   Object.keys(u.art || {}).forEach(id => { const f = FIGHTERS.find(x => x.id === id); if (f) f.art = JSON.parse(JSON.stringify(u.art[id])); });
   applyProfileLooks();
-  adminLogPush('↩ Undid: ' + u.label);
+  save.undo = stack.slice(idx + 1);   // everything from this point forward is undone
+  adminLogPush('↩ Undid: ' + u.label + (idx > 0 ? ' (+' + idx + ' newer)' : ''));
   persistSave(); renderAdmin();
   setStatus && setStatus('↩ UNDONE · ' + u.label, 'var(--gold)', 1300);
 }
@@ -3266,10 +3293,14 @@ function gameLoop(t) {
   if (match.pAI && !frozen) updateWatchAI(dt, dtms, fW);   // WATCH mode: AI drives the left fighter too
 
   if (!frozen && match.pStun <= 0 && match.pLockMove <= 0 && match.pDowned <= 0) {
-    const spd = RT.moveSpeed * (match.pAb.speed / 80) * (match.pBlock ? 0.4 : 1);
-    if (Math.abs(match.joy) > 0.08) match.pX += match.joy * spd * dt;                 // lateral
-    if (Math.abs(match.joyZ) > 0.08) match.pZ = Math.max(0, Math.min(1, match.pZ + match.joyZ * 0.85 * dt)); // DEPTH (into the ring)
-  }
+    const mag = Math.abs(match.joy);
+    const sprint = mag > 0.82 && match.pST > 6 && !match.pBlock;                       // push the stick all the way = SPRINT
+    const spd = RT.moveSpeed * (match.pAb.speed / 80) * (match.pBlock ? 0.4 : 1) * (sprint ? 1.7 : 1);
+    if (mag > 0.08) match.pX += match.joy * spd * dt;                                  // lateral (can now flank either side)
+    if (Math.abs(match.joyZ) > 0.08) match.pZ = Math.max(0, Math.min(1, match.pZ + match.joyZ * (sprint ? 1.3 : 0.85) * dt)); // DEPTH
+    if (sprint) match.pST = Math.max(0, match.pST - 13 * dt);                          // sprint drains stamina
+    match.pSprint = sprint;
+  } else match.pSprint = false;
 
   // STAMINA + CONDITIONING + weight class drive regen (conditioning = deeper gas tank)
   match.pST = Math.min(100, match.pST + RT.stRegen * (match.pAb.stamina / 80) * (0.7 + match.pAb.conditioning / 260) * WEIGHT_CLASSES[match.pWC].regen * dt);
@@ -3291,10 +3322,14 @@ function gameLoop(t) {
 
   match.pX = Math.max(0, Math.min(maxX, match.pX));
   match.oX = Math.max(0, Math.min(maxX, match.oX));
-  if (match.oX - match.pX < minGap) {
-    const overlap = minGap - (match.oX - match.pX);
-    match.pX = Math.max(0, match.pX - overlap / 2);
-    match.oX = Math.min(maxX, match.oX + overlap / 2);
+  // bodies only collide on the SAME depth plane → change depth (W/S or up/down) to slip BEHIND the opponent
+  const zClose = Math.abs(match.oZ - match.pZ) < 0.22;
+  const gap = match.oX - match.pX;
+  if (zClose && Math.abs(gap) < minGap) {
+    const dir = gap >= 0 ? 1 : -1;
+    const overlap = minGap - Math.abs(gap);
+    match.pX = Math.max(0, Math.min(maxX, match.pX - dir * overlap / 2));
+    match.oX = Math.max(0, Math.min(maxX, match.oX + dir * overlap / 2));
   }
 
   applyPositions();
@@ -3981,16 +4016,22 @@ function showFinisherReverence(cb) {
 // Opponent drifts the opposite way (gentler) so the whole roster stays alive.
 function applyProgression(result) {
   const pid0 = match.player.id, oid0 = match.opponent.id;
-  if (match.training || match.pAI) {   // TRAINING + WATCH are no-stakes — ratings don't move
+  if (match.pAI) {   // WATCH (CPU vs CPU) — both fighters still EVOLVE a little so the roster grows from every bout
+    const w = result === 'win' ? pid0 : oid0, l = result === 'win' ? oid0 : pid0;
+    adjustAbility(w, ABILITY_KEYS[Math.floor(Math.random() * ABILITY_KEYS.length)], +1);
+    adjustAbility(w, 'heart', +1);
+    adjustAbility(l, ABILITY_KEYS[Math.floor(Math.random() * ABILITY_KEYS.length)], -1);
+    persistSave();
     const a = getCurrentOVR(pid0), b = getCurrentOVR(oid0);
     return { pCh: {}, oCh: {}, pBefore: a, pAfter: a, oBefore: b, oAfter: b, lowHPwin: false };
   }
   const t = match.tally;
   const pid = match.player.id, oid = match.opponent.id;
+  const trainNoLoss = !!match.training;   // TRAINING now COUNTS — gains only, never a downgrade
   const lowHPwin = (result === 'win' && match.pHP < 25);
   const pBefore = getCurrentOVR(pid), oBefore = getCurrentOVR(oid);
   const pCh = {}, oCh = {};
-  const pNudge = (k, a) => { if (a) { const x = adjustAbility(pid, k, a); if (x) pCh[k] = (pCh[k] || 0) + x; } };
+  const pNudge = (k, a) => { if (trainNoLoss && a < 0) return; if (a) { const x = adjustAbility(pid, k, a); if (x) pCh[k] = (pCh[k] || 0) + x; } };
   const oNudge = (k, a) => { if (a) { const x = adjustAbility(oid, k, a); if (x) oCh[k] = (oCh[k] || 0) + x; } };
 
   const won = result === 'win';
@@ -4449,6 +4490,7 @@ function poseFighter(f, dt, now, moving) {
 function update3D(now) {
   if (!SC3D.ok || !match) return;
   let dt = (now - (SC3D.last || now)) / 1000; SC3D.last = now; if (dt > 0.05) dt = 0.05;
+  if (match.paused) dt = 0;   // PAUSE freezes the fighters in place (so pause/how-to-play visibly stop the action)
   const ring = document.getElementById('ring'); const ringW = (ring && ring.clientWidth) || 360;
   const L = SC3D.fighters.left, R = SC3D.fighters.right;
   if (L && R) {
