@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#0a0a0d" />
-<title>SLAM CITY · v3.2 · NO ANNOUNCER</title>
+<title>SLAM CITY · v3.3 · WHAT'S NEW = UPDATES</title>
 <!-- retro arcade type: Press Start 2P for marquee, Oxanium for readable UI · safe fallback stack -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -719,7 +719,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v3.2 · build 2026-05-23·2113 · announcer removed (plain captions) · REAL 3D geometry rebuild starting · 90/10 wrestling · 8 modes · for AARON</div>
+  <div class="splash-foot">v3.3 · build 2026-05-23·2116 · WHAT'S NEW = real version updates (not goals) · pro 3D + realistic movement + unique move animations incoming · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -983,7 +983,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v3.2</div>
+    <div class="load-skip">tap to skip · v3.3</div>
   </div>
 </div>
 
@@ -1697,7 +1697,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '3.2';
+const GAME_VERSION = '3.3';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -1721,14 +1721,16 @@ function showUpdateToast() {
 function showWhatsNew() {
   const el = document.getElementById('whatsnew'); if (!el) return;
   document.getElementById('wn-version').textContent = 'v' + GAME_VERSION;
-  document.getElementById('wn-desc').textContent = GAME_DESC;
-  document.getElementById('wn-list').innerHTML = WHATS_NEW.map(w => `<div class="wn-row"><b>${w[0]}</b><span>${w[1]}</span></div>`).join('');
+  // ACTUAL UPDATES (newest first) — not the static game goals. The top entry is THIS version's change.
+  document.getElementById('wn-desc').textContent = 'Latest in v' + CHANGELOG[0][0] + ': ' + CHANGELOG[0][1];
+  document.getElementById('wn-list').innerHTML = CHANGELOG.slice(0, 7).map(c => `<div class="wn-row"><b>v${c[0]}</b><span>${c[1]}</span></div>`).join('');
   el.classList.add('on'); el.setAttribute('aria-hidden', 'false');
 }
 function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el) { el.classList.remove('on'); el.setAttribute('aria-hidden', 'true'); } }
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['3.3',  "What's-New now shows real version updates (not static goals) · building toward pro 3D + realistic movement + unique move animations"],
   ['3.2',  'Announcer removed (plain captions) · starting REAL 3D geometry rebuild (volumetric fighters)'],
   ['3.1',  'Depth axis: move into the ring + scale by distance (still flat sprites — real 3D geometry next)'],
   ['3.0',  'Audio reliability fix · in-game UPDATE LOG · version reset to 3.0 for clarity'],
