@@ -486,6 +486,9 @@
   .combat-controls { position: relative; }
   .getup-btn { position: absolute; inset: 0; z-index: 6; border: 2px solid var(--gold); border-radius: 14px; background: linear-gradient(180deg, rgba(60,44,16,0.92), rgba(30,22,8,0.95)); color: var(--gold); font-family: inherit; font-weight: 900; font-size: 18px; letter-spacing: 2px; cursor: pointer; animation: getup-pulse 0.5s ease-in-out infinite; -webkit-appearance: none; appearance: none; touch-action: manipulation; }
   .getup-btn:active { transform: scale(0.97); }
+  /* SIGNATURE button — floats above the deck when you're HYPED (doesn't cover the controls) */
+  .sig-btn { position: absolute; left: 50%; top: -50px; transform: translateX(-50%); z-index: 7; border: 2px solid var(--gold); border-radius: 12px; padding: 9px 20px; background: linear-gradient(180deg, rgba(60,44,16,0.96), rgba(40,20,10,0.96)); color: var(--gold); font-family: inherit; font-weight: 900; font-size: 14px; letter-spacing: 2px; white-space: nowrap; cursor: pointer; box-shadow: 0 0 16px rgba(200,160,96,0.7); animation: getup-pulse 0.5s ease-in-out infinite; -webkit-appearance: none; appearance: none; touch-action: manipulation; }
+  .sig-btn:active { transform: translateX(-50%) scale(0.97); }
   @keyframes getup-pulse { 0%,100% { box-shadow: 0 0 0 rgba(200,160,96,0.0); } 50% { box-shadow: 0 0 22px rgba(200,160,96,0.55); } }
   .atk-btn { -webkit-appearance: none; appearance: none; border: 2px solid; border-radius: 12px; min-height: 46px; font-family: inherit; font-weight: 900; font-size: 13px; letter-spacing: 1px; color: var(--cream); background: linear-gradient(180deg, #26262e, #16161c); cursor: pointer; touch-action: manipulation; transition: transform 0.06s, filter 0.06s; }
   .atk-btn:active, .atk-btn.held { transform: scale(0.93); filter: brightness(1.35); }
@@ -980,7 +983,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v4.19 · build 2026-05-24·1358 · 🏆 TITLES & RANKINGS — champion + defense streak · power-ranking ladder · Hall of Fame · 🥊 DEFEND THE TITLE vs #1 contender · for AARON</div>
+  <div class="splash-foot">v4.20 · build 2026-05-24·1407 · ⚡ SIGNATURE MOVE — fill your HYPE meter, tap the glowing button for a guaranteed knockdown blow · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -1208,6 +1211,7 @@
       <button class="atk-btn fin" id="btn-fin" type="button">✝ FINISH</button>
     </div>
     <button class="getup-btn" id="btn-getup" type="button" style="display:none">⤴ GET UP — MASH!</button>
+    <button class="sig-btn" id="btn-sig" type="button" style="display:none">⚡ SIGNATURE — TAP!</button>
   </div>
 
   <div class="walkout-intro" id="walkout-intro" aria-hidden="true">
@@ -1299,7 +1303,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v4.19</div>
+    <div class="load-skip">tap to skip · v4.20</div>
   </div>
 </div>
 
@@ -2183,7 +2187,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '4.19';
+const GAME_VERSION = '4.20';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -2217,6 +2221,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['4.20', 'SIGNATURE MOVE (cooking the list): your HYPE meter finally PAYS OFF. Fill it (land hits · taunt) and a glowing ⚡ SIGNATURE button floats up over your controls — tap it to unleash a guaranteed momentum-swing blow that KNOCKS THEM DOWN (blocked, it still rocks them but they stay up). It cashes your whole meter, fires the comic cut-in + a crowd eruption, and sets up your pin/finisher. HYPE was just a passive damage buff before — now it’s a weapon.'],
   ['4.19', 'TITLES & RANKINGS (cooking the list): a new 🏆 TITLES & RANKINGS screen off the hub — see the REIGNING CHAMPION + their defense streak, a live POWER-RANKINGS ladder of the whole roster by OVR (with the #1 CONTENDER flagged), your hardware (titles won + record), and a HALL OF FAME of every past champion. NEW 🥊 DEFEND THE TITLE — the champ takes on the #1 contender; win and it’s a successful defense, lose and the belt changes hands. Career/Gauntlet wins still crown you.'],
   ['4.18', 'CROWD REACTIONS (cooking the list): 🗣️ the arena is ALIVE now — the crowd POPS on a heavy hit, ERUPTS on a finisher/KO, and BOOS if the fight stalls out (both of you standing around far apart too long). The crowd band up top glows and swells with the energy in the building, and dies down when nothing’s happening. Real filtered-noise roars, not beeps — and it all respects your Sound + Volume settings.'],
   ['4.17', 'INSTALL / OFFLINE polish: verified the whole game plays fully OFFLINE (the 3D engine, fighters, every mode — all cached, no internet needed once loaded). Fixed the iPhone home-screen icon — “Add to Home Screen” now shows a crisp SLAM CITY app icon instead of a blank one (real PNG icons at 180/192/512 instead of an SVG iOS ignored). Install + offline are solid.'],
@@ -3597,6 +3602,9 @@ function updateButtons() {
   // GET UP button — appears (over the controls) when you're knocked down + not being pinned
   const gu = document.getElementById('btn-getup');
   if (gu) gu.style.display = (!match.pAI && match.pDowned > 0 && !match.pinning) ? 'block' : 'none';
+  // SIGNATURE button — floats up when you're HYPED + on your feet (the payoff for a full meter)
+  const sg = document.getElementById('btn-sig');
+  if (sg) sg.style.display = (!match.pAI && match.pHype > 0 && match.pDowned <= 0 && !match.pinning && !match.subbing) ? 'block' : 'none';
   const finLocked = match.oHP > FIN_UNLOCK;
   const finMove = moveOf(match.player, 'finisher');
   const finBtn = document.getElementById('btn-fin');
@@ -3912,6 +3920,30 @@ function playerTaunt() {
   if (SC3D.ok && SC3D.started) set3DAnim('left', 'taunt', 720);
   flashSig('🔥 ' + match.player.name + ' CALLS IT', false);
   setStatus('🔥 TAUNT — HYPE building', 'var(--gold)', 800);
+}
+// SIGNATURE — the payoff for a full HYPE meter: a guaranteed momentum-swing blow that knocks them down.
+function playerSignature() {
+  if (!match || match.over || match.pAI || match.pHype <= 0) return;                 // only while HYPED
+  if (match.pStun > 0 || match.pAtk || match.pinning || match.subbing || match.pDowned > 0) return;
+  match.pHype = 0; match.pMo = 0;                                                    // cashes in the whole meter
+  set3DAnim('left', 'finisher', 660);
+  const sigName = (moveOf(match.player, 'finisher') || {}).name || 'SIGNATURE';
+  flashSig('⚡ SIGNATURE!', true);
+  signatureCutIn(match.player.name, sigName, 'left');
+  const fW = fighterW();
+  if (Math.abs(match.oX - match.pX) > fW * 1.1) match.pX = match.oX - Math.sign(match.oX - match.pX || 1) * fW * 0.9;   // lunge into range
+  match.pLockMove = 360; match.pInvuln = 280;
+  const blocked = !!match.oBlock && match.oStun <= 0;
+  let dmg = (blocked ? 11 : 26) + Math.round(Math.random() * 8);
+  match.oHP = Math.max(0, match.oHP - dmg);
+  triggerHitReact('right', true); flash('right', true); burst('right', dmg); shakeRing(true);
+  crowdReact('big'); playHitSound('finisher');
+  match.tally.dmgDealt += dmg; if (dmg > match.biggestHit) { match.biggestHit = dmg; match.tally.biggestHit = Math.max(match.tally.biggestHit, dmg); }
+  if (!blocked) { match.oStun = 750; match.oDowned = DOWN_MS; setDowned('right', true); setStatus('⚡ SIGNATURE LANDS — they’re DOWN!', 'var(--gold)', 1100); }
+  else { match.oStun = 300; pulseGuard('right'); setStatus('⚡ SIGNATURE — blocked, but they felt it', 'var(--gold)', 900); }
+  match.lastActionT = performance.now();
+  if (match.oHP <= 0) { endMatchBy('win', 'KO'); return; }
+  updateButtons();
 }
 
 function pulseGuard(side) {
@@ -4386,6 +4418,7 @@ function bindControls() {
   bindBtn('btn-fin', () => { if (match && match.oHP > FIN_UNLOCK) playerTaunt(); else playerAttack('finisher'); });   // FINISH when ready, else TAUNT (build hype)
   bindBtn('btn-dodge', () => playerPin());               // PIN / SUBMIT (contextual)
   bindBtn('btn-getup', () => playerGetUp());             // GET UP off the mat (mash)
+  bindBtn('btn-sig', () => playerSignature());           // ⚡ SIGNATURE — cash in a full HYPE meter
 
   const blk = document.getElementById('btn-block');      // REVERSE = guard that counters slams
   blk.addEventListener('pointerdown', e => { e.preventDefault(); setBlock(true); });
