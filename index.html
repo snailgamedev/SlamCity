@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#0a0a0d" />
-<title>SLAM CITY · v3.6 · PER-MOVE + SIGNATURE ANIMATIONS</title>
+<title>SLAM CITY · v3.7 · PROFILES + CUSTOMIZATION</title>
 <!-- retro arcade type: Press Start 2P for marquee, Oxanium for readable UI · safe fallback stack -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -203,7 +203,7 @@
 
   /* ===== FIGHT ===== */
   #fight { padding-top: max(12px, var(--safe-top)); }
-  .fight-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .fight-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-right: 74px; }   /* clear the pause/help button cluster — no overlap */
   .round-label { font-size: 10px; letter-spacing: 3px; color: var(--red); font-weight: 700; text-transform: uppercase; }
   .round-num { font-size: 12px; color: var(--cream); font-weight: 700; }
   .fighter-row { display: flex; gap: 8px; margin-bottom: 8px; }
@@ -447,8 +447,22 @@
   }
 
   /* tutorial / how-to-fight */
-  .tut-help { position: absolute; top: 8px; right: 10px; z-index: 20; width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--bg-3); background: rgba(20,20,26,0.82); color: var(--soft); font-weight: 900; font-size: 14px; cursor: pointer; line-height: 1; }
-  .tut-help:active { transform: scale(0.92); }
+  /* profile / sign-in */
+  .hub-signin { font-size: 11px; letter-spacing: 0.5px; color: var(--gold); cursor: pointer; margin-top: 10px; padding: 7px 10px; border: 1px solid var(--bg-3); border-radius: 8px; background: rgba(40,28,12,0.4); display: inline-block; }
+  .hub-signin:active { transform: scale(0.98); }
+  .prof-intro, .prof-msg { font-size: 12px; color: var(--soft); line-height: 1.6; margin-bottom: 6px; }
+  .prof-msg { min-height: 16px; font-weight: 700; }
+  .prof-claimed { font-size: 10px; letter-spacing: 1px; color: var(--muted); text-align: center; margin-top: 14px; text-transform: uppercase; }
+  .prof-signed { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; padding: 12px; border: 1px solid var(--bg-3); border-left: 3px solid var(--gold); border-radius: 10px; background: var(--bg-1); }
+  .prof-avatar { width: 76px; height: 96px; flex: 0 0 76px; }
+  .prof-avatar svg { width: 100%; height: 100%; }
+  .prof-hi { font-size: 9px; letter-spacing: 2px; color: var(--muted); }
+  .prof-name { font-size: 18px; font-weight: 900; color: var(--cream); }
+  .prof-as { font-size: 11px; color: var(--gold); }
+  .hud-btns { position: absolute; top: 6px; right: 8px; z-index: 30; display: flex; gap: 6px; }
+  .hud-btn { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--bg-3); background: rgba(20,20,26,0.9); color: var(--soft); font-weight: 900; font-size: 12px; cursor: pointer; line-height: 1; display: flex; align-items: center; justify-content: center; padding: 0; }
+  #pause-btn { font-size: 10px; letter-spacing: -1px; color: var(--cream); border-color: var(--bg-3); }
+  .hud-btn:active { transform: scale(0.92); }
   .tutorial { position: fixed; inset: 0; z-index: 200; display: none; align-items: center; justify-content: center; padding: 18px; background: rgba(5,5,8,0.9); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
   .tutorial.on { display: flex; }
   .tut-card { width: 100%; max-width: 460px; background: linear-gradient(180deg, var(--bg-2), var(--bg-1)); border: 1px solid var(--bg-3); border-top: 3px solid var(--gold); border-radius: 10px; padding: 20px 18px; box-shadow: 0 18px 50px rgba(0,0,0,0.7); max-height: 92vh; overflow-y: auto; }
@@ -742,7 +756,11 @@
   @keyframes a-knee     { 0%,100% { transform: translateZ(0) translateY(0) rotateX(0); } 42% { transform: translateY(-30px) translateZ(50px) rotateX(-11deg); } }
   .ring-fighter.hit .f3d-inner, .ring-fighter.hit-heavy .f3d-inner { animation: hit3d 0.45s ease-out; }
   @keyframes hit3d { 0%,100% { transform: translateZ(0) rotateY(0); } 30% { transform: translateZ(-24px) rotateY(-12deg); } }
-  .ring-fighter.downed .f3d-inner { animation: none !important; transform: rotateX(84deg) translateY(30px) !important; }
+  /* DOWNED — tip the whole rig backward onto the mat, pivoting at the feet (clean fall, limbs stay coherent) */
+  .ring-fighter.downed .f3d-inner { animation: none !important; transform: none !important; filter: brightness(0.8); }
+  .ring-fighter.downed .f3d { transition: transform 0.22s ease-out; }
+  .ring-fighter.left.downed .f3d  { transform: rotateX(-60deg) translateY(10px) !important; }
+  .ring-fighter.right.downed .f3d { transform: rotateX(-60deg) translateY(10px) !important; }
   .ring-fighter.hyped .f3d-inner { filter: drop-shadow(0 0 14px var(--gold)) drop-shadow(0 0 6px var(--warn)); }
   #sig-flash { position: absolute; top: 12%; left: 50%; transform: translate(-50%,-6px) scale(0.8); z-index: 40; pointer-events: none;
     font-weight: 900; font-size: clamp(15px, 4.6vw, 26px); letter-spacing: 0.06em; color: var(--warn);
@@ -767,7 +785,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v3.6 · build 2026-05-23·2150 · PER-MOVE + SIGNATURE ANIMATIONS — every move animates its own way · 8 archetype signatures (suplex·bomb·aerial·spin-kick·spear·knee·superman·flurry) · move-name flash · real 3D · realistic movement · for AARON</div>
+  <div class="splash-foot">v3.7 · build 2026-05-23·2239 · PROFILES (sign-in as a brother · PIN · customize) + 14 hairstyles + gear colors + delete customs + in-fight PAUSE + all 12 stats level + clean downed pose + no UI overlap + AI footwork · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -813,11 +831,21 @@
 <!-- ========== SETTINGS ========== -->
 <div id="settings" class="screen">
   <div class="hub-head">
-    <button class="back-btn" onclick="goto('hub')">‹ Hub</button>
+    <button class="back-btn" id="settings-back" onclick="settingsBack()">‹ Hub</button>
     <div class="set-title">SETTINGS</div>
     <span style="width:60px"></span>
   </div>
   <div class="set-list" id="set-list"></div>
+</div>
+
+<!-- ========== PROFILE (sign in as a brother) ========== -->
+<div id="profile" class="screen">
+  <div class="hub-head">
+    <button class="back-btn" onclick="goto('hub')">‹ Hub</button>
+    <div class="set-title">PROFILE</div>
+    <span style="width:60px"></span>
+  </div>
+  <div class="set-list" id="profile-body"></div>
 </div>
 
 <!-- ========== ROSTER ========== -->
@@ -874,6 +902,7 @@
     <button class="btn btn-secondary" onclick="goto('roster')">PICK ANOTHER</button>
     <button class="btn" onclick="beginMode(currentDetail)">FIGHT WITH THIS ONE</button>
   </div>
+  <button class="btn btn-secondary" id="detail-delete" style="display:none; max-width:280px; margin:8px auto 0; border-color:var(--red); color:var(--red-bright)" onclick="deleteCustomFighter(currentDetail)">🗑 DELETE THIS FIGHTER</button>
 </div>
 
 <!-- ========== FIGHT ========== -->
@@ -975,7 +1004,22 @@
     </div>
   </div>
 
-  <button class="tut-help" id="tut-help" type="button" onclick="showTutorial()" aria-label="how to play">?</button>
+  <div class="hud-btns">
+    <button class="hud-btn" id="pause-btn" type="button" onclick="openPause()" aria-label="pause">❚❚</button>
+    <button class="hud-btn" id="tut-help" type="button" onclick="showTutorial()" aria-label="how to play">?</button>
+  </div>
+
+  <!-- in-game pause menu -->
+  <div class="tutorial" id="pause-menu" aria-hidden="true">
+    <div class="tut-card" style="max-width:340px;text-align:center">
+      <div class="tut-title" style="justify-content:center">PAUSED</div>
+      <div id="pause-sub" style="font-size:11px;color:var(--soft);margin:-6px 0 16px;letter-spacing:1px"></div>
+      <button class="btn" type="button" onclick="closePause()">▶ RESUME</button>
+      <button class="btn btn-secondary" type="button" onclick="pauseToSettings()">⚙ SETTINGS</button>
+      <button class="btn btn-secondary" type="button" onclick="showTutorial()">? HOW TO PLAY</button>
+      <button class="btn btn-secondary" type="button" style="border-color:var(--red);color:var(--red-bright)" onclick="quitToHub()">✕ QUIT TO HUB</button>
+    </div>
+  </div>
 
   <div class="prefight" id="prefight" aria-hidden="true">
     <div class="pf-inner">
@@ -1031,7 +1075,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v3.6</div>
+    <div class="load-skip">tap to skip · v3.7</div>
   </div>
 </div>
 
@@ -1234,15 +1278,24 @@ const FIGHTERS = [
 
 /* ========== REAL APPEARANCES — skin tone + hairstyle per Eli's spec (applied to art) ========== */
 const SKIN = {
+  deep:  { skin:'#5a3a20', skinDark:'#33200f' },   // deep
   black: { skin:'#7a5230', skinDark:'#4a3018' },
+  brown: { skin:'#9c6a3c', skinDark:'#6a4524' },   // brown
   pr:    { skin:'#c2884e', skinDark:'#8a5c2e' },   // Puerto Rican / tan
-  white: { skin:'#e8bd92', skinDark:'#bd8a5e' }
+  olive: { skin:'#d2a878', skinDark:'#9e7848' },   // olive
+  white: { skin:'#e8bd92', skinDark:'#bd8a5e' },
+  pale:  { skin:'#f0d2b4', skinDark:'#cca684' }    // pale
 };
 const HAIRC = {
   black:    { hair:'#191410', hairLight:'#3c2c1e' },
-  blonde:   { hair:'#d8b24e', hairLight:'#eccf78' },
   brown:    { hair:'#4a3018', hairLight:'#70492a' },
-  bleached: { hair:'#e6dcb4', hairLight:'#f4eece' }
+  auburn:   { hair:'#6a2a18', hairLight:'#9c4530' },   // auburn / dark red
+  red:      { hair:'#b8442a', hairLight:'#e0694a' },   // ginger
+  blonde:   { hair:'#d8b24e', hairLight:'#eccf78' },
+  bleached: { hair:'#e6dcb4', hairLight:'#f4eece' },
+  gray:     { hair:'#8a8a90', hairLight:'#b8b8be' },   // gray
+  silver:   { hair:'#cfcfd6', hairLight:'#ececf2' },   // silver/white
+  blue:     { hair:'#2e5aa0', hairLight:'#5a86c8' }    // dyed blue
 };
 // id → [skinKey, hairColorKey, hairStyle]
 const LOOKS = {
@@ -1407,8 +1460,25 @@ function hairSVG(style, hair, hairLight) {
     return `<path d="M 122 104 Q 118 82 130 80 Q 134 72 144 78 Q 150 70 156 78 Q 166 72 170 80 Q 182 82 178 104 Q 176 90 166 86 Q 158 82 150 82 Q 142 82 134 86 Q 124 90 122 104 Z" fill="${hair}" stroke="${dk}" stroke-width="0.8"/>` + curls([[128,88],[138,79],[150,76],[162,79],[172,88],[124,98],[176,98],[134,92],[150,85],[166,92]], 4);
   if (style === 'waves')
     return cap + [88,93,98].map(y => `<path d="M 130 ${y} Q 140 ${y-4} 150 ${y-2} Q 160 ${y-4} 170 ${y}" stroke="${hairLight}" stroke-width="0.9" fill="none" opacity="0.85"/>`).join('') + `<path d="M 134 102 Q 150 104 166 102" stroke="${dk}" stroke-width="0.8" fill="none"/>`;
+  if (style === 'bald')
+    return `<path d="M 132 90 Q 150 84 168 90" stroke="${hairLight}" stroke-width="2" fill="none" opacity="0.25" stroke-linecap="round"/>`;   // just a scalp shine
+  if (style === 'buzz')
+    return `<path d="M 128 100 Q 126 86 140 82 Q 150 80 160 82 Q 174 86 172 100 Q 170 92 162 89 Q 155 87 150 87 Q 145 87 138 89 Q 130 92 128 100 Z" fill="${hair}" stroke="${dk}" stroke-width="0.8" opacity="0.92"/>` + curls([[134,92],[142,88],[150,86],[158,88],[166,92]], 1.4);
+  if (style === 'fade')
+    return `<path d="M 130 100 Q 128 82 150 79 Q 172 82 170 100 Q 169 90 160 87 Q 154 85 150 85 Q 146 85 140 87 Q 131 90 130 100 Z" fill="${hair}" stroke="${dk}" stroke-width="0.8"/><path d="M 130 100 Q 134 96 138 100" stroke="${skinFade(hair)}" stroke-width="3" fill="none" opacity="0.5"/><path d="M 162 100 Q 166 96 170 100" stroke="${skinFade(hair)}" stroke-width="3" fill="none" opacity="0.5"/>`;
+  if (style === 'mohawk')
+    return `<path d="M 144 100 Q 142 70 150 64 Q 158 70 156 100 Z" fill="${hair}" stroke="${dk}" stroke-width="0.8"/>` + [70,78,86,94].map(y=>`<path d="M 146 ${y} L 150 ${y-6} L 154 ${y} Z" fill="${hairLight}" opacity="0.6"/>`).join('') + `<path d="M 128 100 Q 130 95 136 96 M 164 96 Q 170 95 172 100" stroke="${dk}" stroke-width="2" fill="none" opacity="0.4"/>`;
+  if (style === 'spiky')
+    return cap + [[132,88],[140,80],[148,76],[156,76],[164,80],[170,88]].map(([x,y])=>`<path d="M ${x} 96 L ${x-3} ${y} L ${x+3} ${y} Z" fill="${hair}" stroke="${dk}" stroke-width="0.6"/>`).join('');
+  if (style === 'dreads')
+    return `<path d="M 126 102 Q 122 80 150 77 Q 178 80 174 102 Z" fill="${hair}" stroke="${dk}" stroke-width="0.8"/>` + [[124,105,128],[133,108,118],[150,110,112],[167,108,118],[176,105,128]].map(([x,y2,y1])=>`<rect x="${x-3}" y="${y1-30}" width="6" height="${y2-y1+30}" rx="3" fill="${hair}" stroke="${dk}" stroke-width="0.5"/><circle cx="${x}" cy="${y2}" r="3.4" fill="${dk}"/>`).join('');
+  if (style === 'manbun')
+    return cap + `<circle cx="150" cy="74" r="9" fill="${hair}" stroke="${dk}" stroke-width="0.8"/><circle cx="150" cy="74" r="9" fill="none" stroke="${hairLight}" stroke-width="0.8" opacity="0.5"/><path d="M 138 86 Q 150 81 162 86" stroke="${dk}" stroke-width="0.8" fill="none"/>`;
+  if (style === 'long')
+    return cap + `<path d="M 124 96 Q 120 130 128 165 L 138 162 Q 132 125 134 98 Z" fill="${hair}" stroke="${dk}" stroke-width="0.8"/><path d="M 176 96 Q 180 130 172 165 L 162 162 Q 168 125 166 98 Z" fill="${hair}" stroke="${dk}" stroke-width="0.8"/>` + [130,145,160].map(y=>`<path d="M 126 ${y} Q 130 ${y-3} 134 ${y}" stroke="${hairLight}" stroke-width="0.7" fill="none" opacity="0.6"/><path d="M 166 ${y} Q 170 ${y-3} 174 ${y}" stroke="${hairLight}" stroke-width="0.7" fill="none" opacity="0.6"/>`).join('');
   return cap + `<path d="M 138 86 Q 145 82 152 84 Q 159 82 165 86" stroke="${hairLight}" stroke-width="0.8" fill="none"/>`;
 }
+function skinFade(hair){ return shadeColor(hair, 40); }
 
 function shadeColor(hex, percent) {
   const n = parseInt(hex.replace('#',''), 16);
@@ -1458,6 +1528,7 @@ const SAVE_KEY = 'sc:save:v1';
 const save = loadSave();
 let currentDetail = null;
 let match = null;
+let parkFight = false;   // true while we step into SETTINGS from the pause menu, intending to resume the same match
 
 function loadSave() {
   try {
@@ -1475,11 +1546,13 @@ function loadSave() {
       if (!parsed.achievements) parsed.achievements = {};
       if (typeof parsed.belts !== 'number') parsed.belts = 0;
       if (!('champion' in parsed)) parsed.champion = null;
+      if (!parsed.profiles) parsed.profiles = {};        // brotherId → { name, pin, look }
+      if (!('activeProfile' in parsed)) parsed.activeProfile = null;
       return parsed;
     }
   } catch(e) {}
   return { wins:0, losses:0, kos:0, finishers:0, scriptureStrikes:0, picks:{}, ovrDelta:{}, abilDelta:{},
-           difficulty:2, sfxOn:true, vol:0.9, captionsOn:true, platform:null, reducedMotion:false, tutorialSeen:false, seenVersion:null, customFighters:[], achievements:{}, belts:0, champion:null };
+           difficulty:2, sfxOn:true, vol:0.9, captionsOn:true, platform:null, reducedMotion:false, tutorialSeen:false, seenVersion:null, customFighters:[], achievements:{}, belts:0, champion:null, profiles:{}, activeProfile:null };
 }
 function persistSave() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch(e) {}
@@ -1577,7 +1650,8 @@ function goto(id) {
   // Exception: 'result' — the KO/finisher victory sound is INTENDED to ride into the result screen (bug-class #5 fix, 2026-05-23).
   if (id !== 'result' && typeof clearSounds === 'function') clearSounds();
   // Leaving the ring stops the real-time loop so it can't run against a hidden screen.
-  if (id !== 'fight' && typeof rafId !== 'undefined' && rafId) { cancelAnimationFrame(rafId); rafId = null; if (match) match.over = true; }
+  if (id !== 'fight' && typeof rafId !== 'undefined' && rafId) { cancelAnimationFrame(rafId); rafId = null; if (match && !parkFight) match.over = true; }   // parkFight = visiting settings mid-fight, keep match alive
+  if (id === 'hub') parkFight = false;
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   if (id==='roster') buildRoster();
@@ -1585,6 +1659,7 @@ function goto(id) {
   if (id==='platform') renderPlatform();
   if (id==='hub') renderHub();
   if (id==='settings') renderSettings();
+  if (id==='profile') renderProfile();
   if (id==='create') renderCreate();
   window.scrollTo(0,0);
 }
@@ -1633,6 +1708,8 @@ function renderHub() {
     + (save.belts > 0 ? `<span class="hp-stat hp-belt"><b>${save.belts}</b>🏆</span>` : '')
     + `<span class="hp-stat"><b>${curDiff().name}</b></span>`
     + `</div>`
+    + (() => { const ap = save.activeProfile && save.profiles[save.activeProfile]; const f = ap && FIGHTERS.find(x => x.id === save.activeProfile);
+        return `<div class="hub-signin" onclick="goto('profile')">${ap && f ? '👤 ' + ap.name + ' · signed in as ' + f.name : '👤 SIGN IN as your brother ›'}</div>`; })()
     + `<div class="hub-ver" onclick="showUpdateLog()">✦ v${GAME_VERSION} · update log</div>`
     + `<div class="hub-ver" onclick="showAchievements()" style="margin-left:8px">🏆 achievements ${ACHIEVEMENTS.filter(a=>save.achievements[a[0]]).length}/${ACHIEVEMENTS.length}</div>`;
 }
@@ -1713,6 +1790,7 @@ function settingToggle(label, hint, key, handler) {
   return `<div class="set-row set-toggle"><div><div class="set-label">${label}</div><div class="set-hint">${hint}</div></div><div class="toggle ${save[key] ? 'on' : ''}" role="switch" onclick="${handler}(this)"></div></div>`;
 }
 function renderSettings() {
+  const back = document.getElementById('settings-back'); if (back) back.textContent = parkFight ? '‹ Resume Fight' : '‹ Hub';
   document.getElementById('set-list').innerHTML =
       settingRow('DIFFICULTY', curDiff().blurb, `<div class="seg" id="seg-diff">${DIFFICULTIES.map((d, i) => `<button class="${i === save.difficulty ? 'on' : ''}" onclick="setDifficulty(${i})">${d.name}</button>`).join('')}</div>`)
     + settingToggle('SOUND EFFECTS', 'punches, blocks, the bell', 'sfxOn', 'toggleSfx')
@@ -1777,7 +1855,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '3.6';
+const GAME_VERSION = '3.7';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -1810,6 +1888,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['3.7',  'Profiles + deeper customization — SIGN IN as your brother (PIN-secured · one profile each) and recolor him · 14 hairstyles + more skin/hair/gear colors · DELETE your customs · in-fight PAUSE menu (resume/settings/quit) · every OVR stat now levels up · downed fighters lie clean on the mat (no more jumble) · tightened UI so nothing overlaps · AI roams + does real footwork'],
   ['3.6',  'Every move animates differently — jab snaps, combo doubles up, finishers drive; each fighter’s signature throws its own way (suplex, powerbomb, aerial spin, spin-kick, spear, flying knee…) and its name flashes on the hit'],
   ['3.5',  'Realistic movement — fighters circle, approach on angles, weave + footwork-bounce (roam, not stand still); AI no longer a straight-line robot'],
   ['3.4',  'REAL 3D — fighters are now actual volumetric cuboid geometry (you can see their sides/depth), browser perspective camera · not flat sprites anymore'],
@@ -1954,12 +2033,13 @@ function buildRoster() {
 
 /* ========== CUSTOM CHARACTER CREATOR ========== */
 const ARCH_BY_DISC = { wrestling: ['BRAWLER', 'POWERHOUSE', 'WRESTLER'], boxing: ['BOXER', 'STRIKER', 'KICKBOXER'] };
-const HAIR_STYLES = ['short', 'short-afro', 'curly-afro', 'perm', 'waves', 'straight'];
-const creator = { name: 'MY FIGHTER', skin: 'white', hairColor: 'black', hairStyle: 'short', disc: 'wrestling', arch: 'BRAWLER', striking: 80, grappling: 80, stamina: 80, heart: 80, finisher: 'Custom Bomb' };
+const HAIR_STYLES = ['short', 'buzz', 'fade', 'short-afro', 'curly-afro', 'perm', 'waves', 'straight', 'spiky', 'mohawk', 'dreads', 'manbun', 'long', 'bald'];
+const GEAR_COLORS = ['#c8a060', '#e04050', '#4aa0c8', '#5ac84a', '#a04ac8', '#e0a020', '#e6dcb4', '#202028'];   // accent / trunk options
+const creator = { name: 'MY FIGHTER', skin: 'white', hairColor: 'black', hairStyle: 'short', disc: 'wrestling', arch: 'BRAWLER', striking: 80, grappling: 80, stamina: 80, heart: 80, finisher: 'Custom Bomb', accent: '#c8a060', trunks: '#26262e' };
 const FIN_SCRIPT = { text: 'I can do all things through Christ which strengtheneth me.', ref: 'Philippians 4:13' };
 
 function creatorArt() {
-  return Object.assign({ hoodie: '#1d1d24', hoodieDark: '#0a0a0d', accent: '#c8a060', shorts: '#26262e', logo: ((creator.name || 'MY').replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase() || 'MY'), build: 1.0, scriptureFinisher: FIN_SCRIPT, hairStyle: creator.hairStyle }, SKIN[creator.skin], HAIRC[creator.hairColor]);
+  return Object.assign({ hoodie: '#1d1d24', hoodieDark: '#0a0a0d', accent: creator.accent || '#c8a060', shorts: creator.trunks || '#26262e', logo: ((creator.name || 'MY').replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase() || 'MY'), build: 1.0, scriptureFinisher: FIN_SCRIPT, hairStyle: creator.hairStyle }, SKIN[creator.skin], HAIRC[creator.hairColor]);
 }
 function crSwatch(label, opts, cur, setter, colorOf) {
   return `<div class="cr-row"><div class="cr-label">${label}</div><div class="cr-opts">` + opts.map(o => `<button class="cr-sw ${o === cur ? 'on' : ''}" style="background:${colorOf(o)}" onclick="setCreator('${setter}','${o}')" title="${o}"></button>`).join('') + `</div></div>`;
@@ -1978,6 +2058,8 @@ function renderCreate() {
     + crSwatch('SKIN', Object.keys(SKIN), creator.skin, 'skin', k => SKIN[k].skin)
     + crSwatch('HAIR COLOR', Object.keys(HAIRC), creator.hairColor, 'hairColor', k => HAIRC[k].hair)
     + crChips('HAIRSTYLE', HAIR_STYLES, creator.hairStyle, 'hairStyle')
+    + crSwatch('GEAR ACCENT', GEAR_COLORS, creator.accent, 'accent', k => k)
+    + crSwatch('TRUNKS', GEAR_COLORS, creator.trunks, 'trunks', k => k)
     + crSlider('STRIKING', 'striking') + crSlider('GRAPPLING', 'grappling') + crSlider('STAMINA', 'stamina') + crSlider('HEART', 'heart')
     + `<div class="cr-row"><div class="cr-label">FINISHER</div><input id="cr-fin" class="roster-search" maxlength="20" value="${creator.finisher}" oninput="setCreator('finisher',this.value)" autocomplete="off"></div>`;
   updateCreatorPreview();
@@ -2001,19 +2083,114 @@ function customSpecToFighter(spec) {
     stats: spec.stats, finishers: [spec.finisher], vibe: 'your created fighter',
     walkout: { text: FIN_SCRIPT.text, ref: FIN_SCRIPT.ref + ' · KJV', label: 'Walkout' },
     moves: [ { name: 'Jab', type: 'jab', dmg: [8, 14], cost: 7, acc: 0.9 }, { name: 'Combo', type: 'cross', dmg: [15, 22], cost: 17, acc: 0.85 }, { name: 'Signature', type: 'power', dmg: [24, 34], cost: 31, acc: 0.77, sig: true }, { name: spec.finisher, type: 'finisher', dmg: [56, 72], cost: 56, acc: 0.9, fin: true } ],
-    art: Object.assign({ hoodie: '#1d1d24', hoodieDark: '#0a0a0d', accent: '#c8a060', shorts: '#26262e', logo: ((spec.name || 'MY').replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase() || 'MY'), build: 1.0, scriptureFinisher: FIN_SCRIPT, hairStyle: spec.hairStyle }, SKIN[spec.skin], HAIRC[spec.hairColor])
+    art: Object.assign({ hoodie: '#1d1d24', hoodieDark: '#0a0a0d', accent: spec.accent || '#c8a060', shorts: spec.trunks || '#26262e', logo: ((spec.name || 'MY').replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase() || 'MY'), build: 1.0, scriptureFinisher: FIN_SCRIPT, hairStyle: spec.hairStyle }, SKIN[spec.skin], HAIRC[spec.hairColor])
   };
 }
 function addCustomToRoster(spec) { if (!FIGHTERS.find(x => x.id === spec.id)) FIGHTERS.push(customSpecToFighter(spec)); }
 function loadCustomFighters() { (save.customFighters || []).forEach(addCustomToRoster); }
 function saveCustomFighter() {
   const id = 'custom_' + Date.now();
-  const spec = { id, name: (creator.name || 'MY FIGHTER').toUpperCase().slice(0, 14), arch: creator.arch, skin: creator.skin, hairColor: creator.hairColor, hairStyle: creator.hairStyle, stats: { striking: creator.striking, grappling: creator.grappling, stamina: creator.stamina, heart: creator.heart, charisma: 80 }, finisher: (creator.finisher || 'Custom Finish') };
+  const spec = { id, name: (creator.name || 'MY FIGHTER').toUpperCase().slice(0, 14), arch: creator.arch, skin: creator.skin, hairColor: creator.hairColor, hairStyle: creator.hairStyle, accent: creator.accent, trunks: creator.trunks, stats: { striking: creator.striking, grappling: creator.grappling, stamina: creator.stamina, heart: creator.heart, charisma: 80 }, finisher: (creator.finisher || 'Custom Finish') };
   save.customFighters.push(spec); persistSave();
   unlockAch('creator');
   addCustomToRoster(spec);
   rosterFilter.disc = 'all';
   goto('roster');
+}
+
+/* ========== PROFILE SYSTEM · sign in as your brother + customize him (one profile per brother, PIN-secured) ========== */
+function isBrother(f) { return f && !f.cpu && !f.custom; }
+function brotherByName(name) {
+  const n = (name || '').trim().toUpperCase();
+  if (!n) return null;
+  return FIGHTERS.find(f => isBrother(f) && f.name.toUpperCase() === n) || null;
+}
+// apply each profile's saved look onto its brother's art (called on load + after edits)
+function applyProfileLooks() {
+  for (const bid in (save.profiles || {})) {
+    const look = save.profiles[bid].look; if (!look) continue;
+    const f = FIGHTERS.find(x => x.id === bid); if (!f) continue;
+    Object.assign(f.art, SKIN[look.skin] || {}, HAIRC[look.hairColor] || {},
+      { hairStyle: look.hairStyle || f.art.hairStyle, accent: look.accent || f.art.accent, shorts: look.trunks || f.art.shorts });
+  }
+}
+let profileEditing = null;   // brotherId whose look is being edited
+function renderProfile() {
+  profileEditing = null;
+  const body = document.getElementById('profile-body');
+  const active = save.activeProfile, prof = active && save.profiles[active];
+  const claimed = Object.keys(save.profiles || {});
+  const claimedList = claimed.length
+    ? `<div class="prof-claimed">CLAIMED · ${claimed.map(id => { const f = FIGHTERS.find(x => x.id === id); return f ? f.name : id; }).join(' · ')}</div>`
+    : `<div class="prof-claimed">no brothers claimed yet</div>`;
+  if (prof) {
+    const f = FIGHTERS.find(x => x.id === active);
+    body.innerHTML =
+        `<div class="prof-signed"><div class="prof-avatar">${renderFighter(f.art)}</div>`
+      + `<div class="prof-who"><div class="prof-hi">SIGNED IN</div><div class="prof-name">${prof.name}</div><div class="prof-as">as ${f.name} · OVR ${getCurrentOVR(f.id)}</div></div></div>`
+      + `<button class="btn" type="button" onclick="profileEditLook('${active}')">🎨 CUSTOMIZE ${f.name}</button>`
+      + `<button class="btn btn-secondary" type="button" onclick="openDetail('${active}')">VIEW CARD</button>`
+      + `<button class="btn btn-secondary" type="button" style="border-color:var(--red);color:var(--red-bright)" onclick="profileSignOut()">SIGN OUT</button>`
+      + claimedList;
+  } else {
+    body.innerHTML =
+        `<div class="prof-intro">Sign in as your brother. Type a crew name — if it's you, claim it with a PIN and you can customize your fighter. <b>One profile per brother.</b></div>`
+      + `<div class="cr-row"><div class="cr-label">YOUR NAME</div><input id="prof-name" class="roster-search" maxlength="14" placeholder="e.g. AARON" autocomplete="off"></div>`
+      + `<div class="cr-row"><div class="cr-label">PIN (4+ digits)</div><input id="prof-pin" class="roster-search" type="password" inputmode="numeric" maxlength="8" placeholder="••••" autocomplete="off"></div>`
+      + `<div id="prof-msg" class="prof-msg"></div>`
+      + `<button class="btn" type="button" onclick="profileSignIn()">SIGN IN / CLAIM</button>`
+      + claimedList;
+  }
+}
+function profileMsg(t, ok) { const m = document.getElementById('prof-msg'); if (m) { m.textContent = t; m.style.color = ok ? '#4ad06a' : 'var(--red-bright)'; } }
+function profileSignIn() {
+  const name = (document.getElementById('prof-name').value || '').trim();
+  const pin = (document.getElementById('prof-pin').value || '').trim();
+  const bro = brotherByName(name);
+  if (!bro) { profileMsg('No brother named "' + (name || '—') + '" in the crew.', false); return; }
+  if (!/^\d{4,8}$/.test(pin)) { profileMsg('PIN must be 4–8 digits.', false); return; }
+  const existing = save.profiles[bro.id];
+  if (existing) {
+    if (existing.pin !== pin) { profileMsg('Wrong PIN for ' + bro.name + '.', false); return; }
+    save.activeProfile = bro.id; persistSave(); renderProfile();
+    setStatus && setStatus('WELCOME BACK, ' + existing.name.toUpperCase(), 'var(--gold)', 900);
+  } else {
+    // CLAIM — first to sign in as this brother owns the profile (one per brother)
+    save.profiles[bro.id] = { name: name, pin: pin, look: null };
+    save.activeProfile = bro.id; persistSave(); renderProfile();
+    setStatus && setStatus('CLAIMED ' + bro.name + '!', 'var(--gold)', 1000);
+  }
+}
+function profileSignOut() { save.activeProfile = null; persistSave(); renderProfile(); }
+// look editor — scoped swatches that write to the active profile's brother
+function profileEditLook(bid) {
+  profileEditing = bid;
+  const f = FIGHTERS.find(x => x.id === bid); if (!f) return;
+  const prof = save.profiles[bid]; const look = prof.look || {};
+  const curSkin = look.skin || matchKey(SKIN, f.art.skin, 'skin') || 'white';
+  const curHairC = look.hairColor || matchKey(HAIRC, f.art.hair, 'hair') || 'black';
+  const body = document.getElementById('profile-body');
+  body.innerHTML =
+      `<div class="prof-signed"><div class="prof-avatar" id="prof-preview">${renderFighter(f.art)}</div>`
+    + `<div class="prof-who"><div class="prof-hi">CUSTOMIZING</div><div class="prof-name">${f.name}</div></div></div>`
+    + crSwatch('SKIN', Object.keys(SKIN), curSkin, '__skin', k => SKIN[k].skin).replace(/setCreator/g, 'setProfileLook')
+    + crSwatch('HAIR COLOR', Object.keys(HAIRC), curHairC, '__hairColor', k => HAIRC[k].hair).replace(/setCreator/g, 'setProfileLook')
+    + crChips('HAIRSTYLE', HAIR_STYLES, look.hairStyle || f.art.hairStyle, '__hairStyle').replace(/setCreator/g, 'setProfileLook')
+    + crSwatch('GEAR ACCENT', GEAR_COLORS, look.accent || f.art.accent, '__accent', k => k).replace(/setCreator/g, 'setProfileLook')
+    + crSwatch('TRUNKS', GEAR_COLORS, look.trunks || f.art.shorts, '__trunks', k => k).replace(/setCreator/g, 'setProfileLook')
+    + `<button class="btn" type="button" onclick="renderProfile()">✓ DONE</button>`;
+}
+function matchKey(map, val, field) { for (const k in map) if (map[k][field] === val) return k; return null; }
+function setProfileLook(key, val) {
+  const bid = profileEditing; if (!bid) return;
+  const prof = save.profiles[bid]; if (!prof) return;
+  if (!prof.look) prof.look = {};
+  prof.look[key.replace('__', '')] = val;
+  persistSave();
+  applyProfileLooks();
+  const f = FIGHTERS.find(x => x.id === bid);
+  const pv = document.getElementById('prof-preview'); if (pv && f) pv.innerHTML = renderFighter(f.art);
+  profileEditLook(bid);   // re-render swatches to reflect selection
 }
 
 /* ========== DETAIL ========== */
@@ -2047,7 +2224,23 @@ function openDetail(id) {
     </div>
     <div class="vibe-line">${f.vibe}</div>
   `;
+  const del = document.getElementById('detail-delete');
+  if (del) del.style.display = f.custom ? 'block' : 'none';   // only YOUR created fighters can be deleted
   goto('detail');
+}
+function deleteCustomFighter(id) {
+  const f = FIGHTERS.find(x => x.id === id);
+  if (!f || !f.custom) return;                                // never delete a roster brother
+  if (!confirm('Delete "' + f.name + '" for good? This can\'t be undone.')) return;
+  save.customFighters = (save.customFighters || []).filter(s => s.id !== id);
+  if (save.abilDelta) delete save.abilDelta[id];              // clean up their living ratings
+  if (save.ovrDelta) delete save.ovrDelta[id];
+  if (save.picks) delete save.picks[id];
+  if (save.champion === id) save.champion = null;
+  persistSave();
+  const i = FIGHTERS.findIndex(x => x.id === id); if (i >= 0) FIGHTERS.splice(i, 1);
+  setStatus && setStatus('FIGHTER DELETED', 'var(--red-bright)', 800);
+  goto('roster');
 }
 function statRow(label, val, delta = 0) {
   const d = delta ? `<span style="font-size:9px; margin-left:4px; color:${delta > 0 ? '#4ad06a' : 'var(--red-bright)'}">${delta > 0 ? '▲' : '▼'}${Math.abs(delta)}</span>` : '';
@@ -2126,7 +2319,7 @@ function startMatchWith(playerId, oppId) {
     pWC: weightClassOf(player), oWC: weightClassOf(opponent),
     // per-match performance tally — feeds the end-of-match rating movement
     tally: { strikesLanded:0, strikesWhiff:0, heavyLanded:0, blocked:0, dodgedClean:0,
-             finisherLanded:false, dmgDealt:0, dmgTaken:0, gassed:false }
+             finisherLanded:false, dmgDealt:0, dmgTaken:0, gassed:false, grappleLanded:0, winMethod:null }
   };
   save.picks[playerId] = (save.picks[playerId] || 0) + 1;
   persistSave();
@@ -2487,6 +2680,7 @@ function endMatchBy(result, by) {
   if (!match || match.over) return;
   match.over = true; cancelAnimationFrame(rafId); rafId = null; setBlock(false); match.joy = 0; match.pinning = false; match.subbing = false;
   match.winBy = by;
+  if (match.tally) match.tally.winMethod = by;                       // PINFALL / SUBMISSION → feeds PIN POWER / SUBMISSION
   finishMatch(result);
 }
 // PIN the downed opponent (or, if they're gassed + caught, SUBMIT them).
@@ -2600,6 +2794,7 @@ function resolveAttack(atk) {
   if (isPlayer) {
     match.tally.strikesLanded++; match.tally.dmgDealt += dmg;
     if (heavy) match.tally.heavyLanded++;
+    if (move.type === 'power') match.tally.grappleLanded++;          // slams/grapples landed → feeds GRAPPLING
     if (move.fin && !blocked) match.tally.finisherLanded = true;
   } else {
     match.tally.dmgTaken += dmg;
@@ -2788,6 +2983,14 @@ function updateAI(dt, dtms, fW, maxX) {
     match.oX += match.ai.circleDir * spd * 0.85 * dt;
     match.oZ = Math.max(0, Math.min(1, match.oZ + match.ai.circleDir * 0.18 * dt));   // weave in depth too
   }
+
+  // PERSISTENT FOOTWORK — a real fighter keeps moving even between exchanges. Light, steady strafe
+  // whenever engaged, and BOUNCE off the ropes so the AI never gets pinned to an edge (was causing it to freeze).
+  if (mood !== 'turtle' && match.pDowned <= 0 && gap <= engage * 1.3) {
+    match.oX += match.ai.circleDir * spd * 0.5 * dt;
+  }
+  if (match.oX <= 1) { match.oX = 1; match.ai.circleDir = 1; }
+  else if (match.oX >= maxX - 1) { match.oX = maxX - 1; match.ai.circleDir = -1; }
 }
 
 function aiAttack() {
@@ -2891,6 +3094,38 @@ function showTutorial() {
   el.classList.add('on'); el.setAttribute('aria-hidden', 'false');
   if (match) match.paused = true;            // freeze the fight while the card is up
 }
+
+// ── In-game PAUSE menu ──
+function openPause() {
+  if (!match || match.over || !match.started) return;     // nothing to pause pre-fight / on result
+  if (match.pAI) return;                                   // CPU-watch uses EXIT, not pause
+  match.paused = true;
+  const sub = document.getElementById('pause-sub');
+  if (sub) sub.textContent = match.player.name + ' vs ' + match.opponent.name + ' · RD ' + match.round;
+  const el = document.getElementById('pause-menu'); el.classList.add('on'); el.setAttribute('aria-hidden', 'false');
+}
+function closePause() {
+  const el = document.getElementById('pause-menu'); el.classList.remove('on'); el.setAttribute('aria-hidden', 'true');
+  if (match && !match.over && match.started) { match.paused = false; match.lastT = performance.now(); }
+}
+function pauseToSettings() {
+  const el = document.getElementById('pause-menu'); el.classList.remove('on'); el.setAttribute('aria-hidden', 'true');
+  parkFight = true;                                        // keep the match alive; SETTINGS back-button resumes it
+  goto('settings');
+}
+function settingsBack() { if (parkFight) resumeFight(); else goto('hub'); }
+function resumeFight() {
+  parkFight = false;
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('fight').classList.add('active');
+  if (match && !match.over) { match.paused = false; match.lastT = performance.now(); if (!rafId) rafId = requestAnimationFrame(gameLoop); }
+}
+function quitToHub() {
+  const el = document.getElementById('pause-menu'); el.classList.remove('on'); el.setAttribute('aria-hidden', 'true');
+  parkFight = false;
+  if (match) { match.over = true; match.paused = true; }   // abandon the live match
+  goto('hub');
+}
 function hideTutorial() {
   const el = document.getElementById('tutorial'); if (!el) return;
   el.classList.remove('on'); el.setAttribute('aria-hidden', 'true');
@@ -2991,6 +3226,14 @@ function applyProgression(result) {
   else if (t.dmgTaken >= 80 && t.blocked <= 1) pNudge('blocking', -1);
   pNudge('stamina', t.gassed ? -1 : +1);
   if (t.dodgedClean >= 3)        pNudge('speed', +1);
+  // the wrestling + endurance abilities now have their own upgrade paths (every OVR stat can rise)
+  if (t.grappleLanded >= 3)      pNudge('grappling', +1);                 // landed slams = better mat control
+  if (t.winMethod === 'SUBMISSION') pNudge('submission', +2);            // tapped 'em out
+  if (t.winMethod === 'PINFALL')    pNudge('pinPower', +2);              // held the 3-count
+  if (result === 'win' && t.dmgTaken >= 55) pNudge('chin', +1);          // took a beating, still won = iron chin
+  else if (result !== 'win' && t.dmgTaken >= 90) pNudge('chin', -1);
+  if (!t.gassed && (t.strikesLanded + t.heavyLanded) >= 12) pNudge('conditioning', +1);  // sustained output, never gassed
+  else if (t.gassed)             pNudge('conditioning', -1);
   if (result === 'win') {
     pNudge('heart', lowHPwin ? +2 : +1);
     if (Object.keys(pCh).length === 0) pNudge('striking', +1);   // a win always teaches something
@@ -3202,6 +3445,7 @@ document.addEventListener('pointerdown', (e) => {
   if (b && !b.disabled) { ensureCtx(); playClickSound(); }
 }, true);
 loadCustomFighters();   // restore created fighters into the roster
+applyProfileLooks();    // restore each profile's custom look onto its brother
 applyReducedMotion();
 applyPlatform();
 refreshSplash();
