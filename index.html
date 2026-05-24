@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#0a0a0d" />
-<title>SLAM CITY · v2.21 · HYPE</title>
+<title>SLAM CITY · v2.22 · CHAMPION</title>
 <!-- retro arcade type: Press Start 2P for marquee, Oxanium for readable UI · safe fallback stack -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -683,6 +683,18 @@
   @keyframes hype-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
   /* hyped fighter aura (via the backlight ::before — doesn't clash with svg animation filters) */
   .ring-fighter.hyped::before { background: radial-gradient(circle at 50% 55%, rgba(200,160,96,0.5), rgba(224,64,80,0.2) 50%, transparent 68%) !important; }
+
+  /* achievements + champion */
+  .ach-toast { position: fixed; left: 50%; top: 18px; transform: translate(-50%, -80px); z-index: 320; padding: 9px 16px; border-radius: 20px; background: linear-gradient(180deg, #3a2a14, #241a0c); border: 1px solid var(--gold); color: var(--gold); font-weight: 900; font-size: 12px; letter-spacing: 1px; box-shadow: 0 6px 22px rgba(0,0,0,0.6); opacity: 0; transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), opacity 0.3s; pointer-events: none; }
+  .ach-toast.on { transform: translate(-50%, 0); opacity: 1; }
+  .ach-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; max-height: 50vh; overflow-y: auto; }
+  .ach-row { display: flex; align-items: center; gap: 11px; padding: 9px 11px; border: 1px solid var(--bg-3); border-radius: 9px; background: var(--bg-1); opacity: 0.5; }
+  .ach-row.got { opacity: 1; border-color: var(--gold); background: linear-gradient(180deg, #2a2012, var(--bg-1)); }
+  .ach-ic { font-size: 20px; }
+  .ach-row b { display: block; font-size: 12px; color: var(--cream); letter-spacing: 0.5px; }
+  .ach-row span { font-size: 10px; color: var(--muted); }
+  .hp-belt { color: var(--gold); font-weight: 900; }
+  .rc-champ { position: absolute; top: 4px; left: 6px; font-size: 13px; }
 </style>
 </head>
 <body>
@@ -700,7 +712,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v2.21 · build 2026-05-23·2001 · MOTTO PASS · MOMENTUM/HYPE meter (build → ON FIRE surge +18% dmg) + hit-stop freeze-frames · 8 modes · 90/10 wrestling · for AARON</div>
+  <div class="splash-foot">v2.22 · build 2026-05-23·2010 · MOTTO PASS · CHAMPION belt (win Gauntlet/Franchise) + 10 ACHIEVEMENTS · HYPE meter · 8 modes · 90/10 wrestling · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -964,7 +976,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v2.21</div>
+    <div class="load-skip">tap to skip · v2.22</div>
   </div>
 </div>
 
@@ -980,6 +992,18 @@
     <div id="wn-desc" style="font-size:11.5px;color:var(--soft);line-height:1.6;margin-bottom:16px"></div>
     <div class="wn-list" id="wn-list"></div>
     <button class="btn" type="button" onclick="hideWhatsNew()">LET'S GO</button>
+  </div>
+</div>
+
+<!-- achievement toast -->
+<div class="ach-toast" id="ach-toast"></div>
+
+<!-- achievements modal -->
+<div class="tutorial" id="achievements" aria-hidden="true">
+  <div class="tut-card">
+    <div class="tut-title">ACHIEVEMENTS <span id="ach-count" style="color:var(--gold);font-size:11px"></span></div>
+    <div class="ach-list" id="ach-list"></div>
+    <button class="btn" type="button" onclick="hideAchievements()">CLOSE</button>
   </div>
 </div>
 
@@ -1352,11 +1376,14 @@ function loadSave() {
       if (typeof parsed.captionsOn !== 'boolean') parsed.captionsOn = true;
       if (!('seenVersion' in parsed)) parsed.seenVersion = null;
       if (!Array.isArray(parsed.customFighters)) parsed.customFighters = [];
+      if (!parsed.achievements) parsed.achievements = {};
+      if (typeof parsed.belts !== 'number') parsed.belts = 0;
+      if (!('champion' in parsed)) parsed.champion = null;
       return parsed;
     }
   } catch(e) {}
   return { wins:0, losses:0, kos:0, finishers:0, scriptureStrikes:0, picks:{}, ovrDelta:{}, abilDelta:{},
-           difficulty:2, sfxOn:true, vol:0.9, captionsOn:true, platform:null, reducedMotion:false, tutorialSeen:false, seenVersion:null, customFighters:[] };
+           difficulty:2, sfxOn:true, vol:0.9, captionsOn:true, platform:null, reducedMotion:false, tutorialSeen:false, seenVersion:null, customFighters:[], achievements:{}, belts:0, champion:null };
 }
 function persistSave() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch(e) {}
@@ -1502,14 +1529,16 @@ function renderHub() {
   const winPct = total ? Math.round(wins / total * 100) : 0;
   document.getElementById('hub-profile').innerHTML =
       `<div class="hub-tagline">90% mat · 10% gloves — grapple, slam, pin &amp; submit the whole crew.</div>`
-    + `<div class="hp-row"><span class="hp-label">PROFILE</span><span class="hp-main">${main ? main.name + ' · OVR ' + getCurrentOVR(main.id) : 'no main yet'}</span></div>`
+    + `<div class="hp-row"><span class="hp-label">PROFILE</span><span class="hp-main">${(save.belts > 0 ? '🏆 ' : '') + (main ? main.name + ' · OVR ' + getCurrentOVR(main.id) : 'no main yet')}</span></div>`
     + `<div class="hp-stats">`
     + `<span class="hp-stat"><b>${wins}</b>W</span><span class="hp-stat"><b>${losses}</b>L</span>`
     + `<span class="hp-stat"><b>${winPct}%</b>WIN</span>`
     + `<span class="hp-stat"><b>${save.kos || 0}</b>KO</span><span class="hp-stat"><b>${save.finishers || 0}</b>FIN</span>`
+    + (save.belts > 0 ? `<span class="hp-stat hp-belt"><b>${save.belts}</b>🏆</span>` : '')
     + `<span class="hp-stat"><b>${curDiff().name}</b></span>`
     + `</div>`
-    + `<div class="hub-ver" onclick="showWhatsNew()">✦ v${GAME_VERSION} · what's new</div>`;
+    + `<div class="hub-ver" onclick="showWhatsNew()">✦ v${GAME_VERSION} · what's new</div>`
+    + `<div class="hub-ver" onclick="showAchievements()" style="margin-left:8px">🏆 achievements ${ACHIEVEMENTS.filter(a=>save.achievements[a[0]]).length}/${ACHIEVEMENTS.length}</div>`;
 }
 
 let gameMode = 'quick';
@@ -1560,7 +1589,7 @@ function beginMode(playerId) {
 function nextInMode() {
   if (gameMode === 'gauntlet') {
     modeCtx.idx++;
-    if (modeCtx.idx >= modeCtx.queue.length) { goto('hub'); return; }   // cleared the crew
+    if (modeCtx.idx >= modeCtx.queue.length) { unlockAch('gauntlet'); crownChampion(modeCtx.playerId); goto('hub'); return; }   // cleared the crew → CHAMPION
     launchFight(modeCtx.playerId, modeCtx.queue[modeCtx.idx]);
   } else if (gameMode === 'survival') {
     modeCtx.streak++;
@@ -1568,7 +1597,10 @@ function nextInMode() {
     launchFight(modeCtx.playerId);
   } else if (gameMode === 'franchise') {
     modeCtx.season.idx++;
-    if (modeCtx.season.idx >= modeCtx.season.total) { goto('hub'); return; }   // season complete
+    if (modeCtx.season.idx >= modeCtx.season.total) {   // season complete
+      if (modeCtx.season.wins > modeCtx.season.losses) { unlockAch('season'); crownChampion(modeCtx.playerId); }
+      goto('hub'); return;
+    }
     launchFight(modeCtx.playerId, modeCtx.queue[modeCtx.season.idx % modeCtx.queue.length]);
   } else if (gameMode === 'watch') {
     startMode('watch');                                         // watch another
@@ -1593,6 +1625,7 @@ function renderSettings() {
     + settingToggle('REDUCED MOTION', 'calmer animations', 'reducedMotion', 'toggleReducedMotion')
     + settingRow('CONTROLS', 'current: ' + ((save.platform || 'not set').toUpperCase()), `<button class="set-btn" onclick="goto('platform')">CHANGE PLATFORM</button>`)
     + settingRow('HOW TO PLAY', 'replay the tutorial', `<button class="set-btn" onclick="showTutorial()">VIEW TUTORIAL</button>`)
+    + settingRow('ACHIEVEMENTS', 'milestones + belts you\'ve earned', `<button class="set-btn" onclick="showAchievements()">VIEW</button>`)
     + settingRow('WHAT\'S NEW / ABOUT', 'version ' + GAME_VERSION + ' · the game + latest changes', `<button class="set-btn" onclick="showWhatsNew()">VIEW</button>`)
     + settingRow('RESET PROGRESS', 'wipes ratings, record + settings', `<button class="set-btn danger" onclick="resetProgress()">RESET EVERYTHING</button>`);
 }
@@ -1647,7 +1680,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '2.21';
+const GAME_VERSION = '2.22';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -1676,6 +1709,48 @@ function showWhatsNew() {
   el.classList.add('on'); el.setAttribute('aria-hidden', 'false');
 }
 function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el) { el.classList.remove('on'); el.setAttribute('aria-hidden', 'true'); } }
+
+/* ========== ACHIEVEMENTS + CHAMPION ========== */
+const ACHIEVEMENTS = [
+  ['firstWin', 'First Blood', 'Win your first match'],
+  ['finisher', 'Scripture Strike', 'Land a finisher'],
+  ['pin', 'One-Two-Three', 'Win by pinfall'],
+  ['sub', 'Tap Out', 'Win by submission'],
+  ['hype', 'On Fire', 'Fill a HYPE meter'],
+  ['wins10', 'Contender', 'Win 10 matches'],
+  ['gauntlet', 'Gauntlet Run', 'Clear the Gauntlet'],
+  ['season', 'Season Champ', 'Win a Franchise season'],
+  ['creator', 'The Architect', 'Create a custom fighter'],
+  ['champion', 'Belt Holder', 'Become Champion']
+];
+function unlockAch(key) {
+  if (save.achievements[key]) return;
+  save.achievements[key] = true; persistSave();
+  const a = ACHIEVEMENTS.find(x => x[0] === key);
+  if (a) showAchToast('🏆 ' + a[1]);
+}
+let achToastT = null;
+function showAchToast(msg) {
+  const t = document.getElementById('ach-toast'); if (!t) return;
+  t.textContent = msg; t.classList.add('on');
+  ensureCtx(); tone(880, 0.08, 'triangle', 0.1, 120); sfxDelay(() => tone(1320, 0.12, 'triangle', 0.08, 80), 90);
+  if (achToastT) clearTimeout(achToastT);
+  achToastT = setTimeout(() => t.classList.remove('on'), 2600);
+}
+function crownChampion(fighterId) {
+  save.champion = fighterId; save.belts = (save.belts || 0) + 1; persistSave();
+  unlockAch('champion');
+}
+function renderAchievements() {
+  const n = ACHIEVEMENTS.filter(a => save.achievements[a[0]]).length;
+  document.getElementById('ach-count').textContent = n + ' / ' + ACHIEVEMENTS.length;
+  document.getElementById('ach-list').innerHTML = ACHIEVEMENTS.map(a => {
+    const got = !!save.achievements[a[0]];
+    return `<div class="ach-row ${got ? 'got' : ''}"><span class="ach-ic">${got ? '🏆' : '🔒'}</span><div><b>${a[1]}</b><span>${a[2]}</span></div></div>`;
+  }).join('');
+}
+function showAchievements() { renderAchievements(); const el = document.getElementById('achievements'); el.classList.add('on'); el.setAttribute('aria-hidden', 'false'); }
+function hideAchievements() { const el = document.getElementById('achievements'); el.classList.remove('on'); el.setAttribute('aria-hidden', 'true'); }
 
 /* ========== SPLASH ========== */
 const SPLASH_VERSES = [
@@ -1732,6 +1807,7 @@ function buildRoster() {
     const disc = disciplineOf(f);
     card.innerHTML = `
       <div class="rc-slot">#${f.slot}</div>
+      ${save.champion === f.id ? '<div class="rc-champ">🏆</div>' : ''}
       <div class="rc-ovr">${cur}</div>
       ${deltaTxt}
       <div class="portrait">${renderFighter(f.art)}</div>
@@ -1800,6 +1876,7 @@ function saveCustomFighter() {
   const id = 'custom_' + Date.now();
   const spec = { id, name: (creator.name || 'MY FIGHTER').toUpperCase().slice(0, 14), arch: creator.arch, skin: creator.skin, hairColor: creator.hairColor, hairStyle: creator.hairStyle, stats: { striking: creator.striking, grappling: creator.grappling, stamina: creator.stamina, heart: creator.heart, charisma: 80 }, finisher: (creator.finisher || 'Custom Finish') };
   save.customFighters.push(spec); persistSave();
+  unlockAch('creator');
   addCustomToRoster(spec);
   rosterFilter.disc = 'all';
   goto('roster');
@@ -2220,6 +2297,7 @@ function addMomentum(playerSide, amt) {
   if (match[k] >= 100) {
     match[k] = 0;
     match[playerSide ? 'pHype' : 'oHype'] = 5000;
+    if (playerSide) unlockAch('hype');
     const name = playerSide ? match.player.name : match.opponent.name;
     setStatus('🔥 ' + name + ' IS HYPED!', 'var(--gold)', 1200);
     caption('🔥 ' + name + ' IS ON FIRE!', 'big');
@@ -2263,7 +2341,7 @@ function doPin(byPlayer) {
       caption((byPlayer ? match.opponent.name : match.player.name) + ' KICKS OUT!', byPlayer ? 'enemy' : 'player');
       return;
     }
-    if (n >= 3) { endMatchBy(byPlayer ? 'win' : 'loss', 'PINFALL'); return; }
+    if (n >= 3) { if (byPlayer) unlockAch('pin'); endMatchBy(byPlayer ? 'win' : 'loss', 'PINFALL'); return; }
     setTimeout(tick, 720);
   };
   setTimeout(tick, 200);
@@ -2276,6 +2354,7 @@ function doSubmission(byPlayer) {
     if (!match || match.over) { match.subbing = false; return; }
     match.subbing = false;
     caption((byPlayer ? match.opponent.name : match.player.name) + ' TAPS OUT!', byPlayer ? 'enemy' : 'player');
+    if (byPlayer) unlockAch('sub');
     endMatchBy(byPlayer ? 'win' : 'loss', 'SUBMISSION');
   }, 1100);
 }
@@ -2386,7 +2465,7 @@ function resolveAttack(atk) {
   }
 
   if (move.fin && !blocked) {
-    if (isPlayer) { save.finishers++; save.scriptureStrikes++; match.killFin = (match.oHP <= 0); }
+    if (isPlayer) { save.finishers++; save.scriptureStrikes++; match.killFin = (match.oHP <= 0); unlockAch('finisher'); }
     const sf = (isPlayer ? match.player : match.opponent).art.scriptureFinisher;
     if (sf && (isPlayer ? match.oHP : match.pHP) > 0) setStatus('✝ ' + sf.ref, 'var(--gold)', 1400);
   }
@@ -2763,7 +2842,7 @@ function finishMatch(result) {
   playKOSound();
   caption((result === 'win' ? match.player.name : match.opponent.name) + ' WINS BY KO!', 'big');
   if (!match.training && !match.pAI) {                // TRAINING + WATCH don't touch your record
-    if (result === 'win') { save.wins++; save.kos++; }
+    if (result === 'win') { save.wins++; save.kos++; unlockAch('firstWin'); if (save.wins >= 10) unlockAch('wins10'); }
     else save.losses++;
   }
   if (match.mode === 'franchise' && modeCtx.season) {  // season record
