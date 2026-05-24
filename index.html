@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#0a0a0d" />
-<title>SLAM CITY · v3.3 · WHAT'S NEW = UPDATES</title>
+<title>SLAM CITY · v3.4 · REAL 3D GEOMETRY</title>
 <!-- retro arcade type: Press Start 2P for marquee, Oxanium for readable UI · safe fallback stack -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -702,6 +702,26 @@
   .cl-row.latest { border-left-color: var(--gold); background: linear-gradient(180deg, #2a2012, var(--bg-1)); }
   .cl-v { flex: 0 0 56px; font-family: var(--font-arcade); font-size: 9px; color: var(--gold); padding-top: 2px; }
   .cl-t { font-size: 11px; color: var(--soft); line-height: 1.4; }
+
+  /* ===== REAL 3D fighters — volumetric cuboid geometry in a perspective camera ===== */
+  .ring { perspective: 1100px; perspective-origin: 50% 26%; }
+  .ring-fighter { transform-style: preserve-3d; }
+  #ring-left-svg, #ring-right-svg { width: 100%; height: 100%; transform-style: preserve-3d; }
+  .cube { position: absolute; left: 50%; top: 50%; transform-style: preserve-3d; }
+  .cf { position: absolute; left: 50%; top: 50%; }
+  .f3d { position: absolute; left: 50%; bottom: 15%; transform-style: preserve-3d; transform-origin: center bottom; }
+  .f3d-inner { position: absolute; left: 0; bottom: 0; transform-style: preserve-3d; animation: bob3d 2.4s ease-in-out infinite; }
+  .ring-fighter.left .f3d { transform: rotateY(24deg); }      /* 3/4 view, facing the opponent — shows volume */
+  .ring-fighter.right .f3d { transform: rotateY(-24deg); }
+  @keyframes bob3d { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+  .ring-fighter.attack-jab .f3d-inner, .ring-fighter.attack-cross .f3d-inner { animation: lunge3dL 0.45s ease-out; }
+  .ring-fighter.attack-power .f3d-inner, .ring-fighter.attack-finisher .f3d-inner { animation: lunge3dH 0.6s ease-out; }
+  @keyframes lunge3dL { 0%,100% { transform: translateZ(0); } 45% { transform: translateZ(36px) translateY(-2px); } }
+  @keyframes lunge3dH { 0%,100% { transform: translateZ(0) rotateX(0); } 50% { transform: translateZ(58px) rotateX(-10deg); } }
+  .ring-fighter.hit .f3d-inner, .ring-fighter.hit-heavy .f3d-inner { animation: hit3d 0.45s ease-out; }
+  @keyframes hit3d { 0%,100% { transform: translateZ(0) rotateY(0); } 30% { transform: translateZ(-24px) rotateY(-12deg); } }
+  .ring-fighter.downed .f3d-inner { animation: none !important; transform: rotateX(84deg) translateY(30px) !important; }
+  .ring-fighter.hyped .f3d-inner { filter: drop-shadow(0 0 14px var(--gold)) drop-shadow(0 0 6px var(--warn)); }
 </style>
 </head>
 <body>
@@ -719,7 +739,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v3.3 · build 2026-05-23·2116 · WHAT'S NEW = real version updates (not goals) · pro 3D + realistic movement + unique move animations incoming · for AARON</div>
+  <div class="splash-foot">v3.4 · build 2026-05-23·2127 · REAL 3D — volumetric cuboid fighters (actual geometry · browser perspective) · realistic movement + per-move animations incoming · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -983,7 +1003,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v3.3</div>
+    <div class="load-skip">tap to skip · v3.4</div>
   </div>
 </div>
 
@@ -1373,6 +1393,38 @@ function shadeColor(hex, percent) {
   return '#' + ((r<<16)|(g<<8)|b).toString(16).padStart(6,'0');
 }
 
+/* ========== REAL 3D FIGHTER — actual CSS-3D cuboid geometry (volume, not a sprite) ========== */
+function cuboid(w, h, d, color, posTf) {
+  const dk = shadeColor(color, -34), md = shadeColor(color, -16), lt = shadeColor(color, 16);
+  const F = (fw, fh, bg, tf) => `<div class="cf" style="width:${fw}px;height:${fh}px;background:${bg};margin-left:${-fw / 2}px;margin-top:${-fh / 2}px;transform:${tf}"></div>`;
+  return `<div class="cube" style="transform:translate(-50%,-50%) ${posTf || ''}">`
+    + F(w, h, color, `translateZ(${d / 2}px)`)
+    + F(w, h, dk, `rotateY(180deg) translateZ(${d / 2}px)`)
+    + F(d, h, md, `rotateY(90deg) translateZ(${w / 2}px)`)
+    + F(d, h, md, `rotateY(-90deg) translateZ(${w / 2}px)`)
+    + F(w, d, lt, `rotateX(90deg) translateZ(${h / 2}px)`)
+    + F(w, d, dk, `rotateX(-90deg) translateZ(${h / 2}px)`)
+    + `</div>`;
+}
+// Blocky humanoid built from cuboids, using the fighter's colors. Origin = hip center; up = -y.
+function make3DFighter(art) {
+  const skin = art.skin || '#c8956a', hood = art.hoodie || '#1a1a1f', sh = art.shorts || '#2a2a30', hair = art.hair || '#3a2418', acc = art.accent || '#e04050';
+  return `<div class="f3d"><div class="f3d-inner">`
+    + cuboid(30, 28, 27, skin, 'translateY(-66px)')                 // head
+    + cuboid(33, 13, 30, hair, 'translateY(-82px)')                 // hair
+    + cuboid(46, 58, 30, hood, 'translateY(-14px)')                 // torso
+    + cuboid(6, 6, 30, acc, 'translateY(-14px) translateZ(15px)')   // chest accent stripe
+    + cuboid(13, 30, 15, hood, 'translate3d(-30px,-26px,0)')        // L upper arm
+    + cuboid(13, 30, 15, hood, 'translate3d(30px,-26px,0)')         // R upper arm
+    + cuboid(12, 26, 14, skin, 'translate3d(-31px,2px,0)')          // L forearm
+    + cuboid(12, 26, 14, skin, 'translate3d(31px,2px,0)')           // R forearm
+    + cuboid(19, 40, 22, sh, 'translate3d(-11px,38px,0)')           // L leg
+    + cuboid(19, 40, 22, sh, 'translate3d(11px,38px,0)')            // R leg
+    + cuboid(21, 9, 26, '#1a1a1f', 'translate3d(-11px,62px,4px)')   // L foot
+    + cuboid(21, 9, 26, '#1a1a1f', 'translate3d(11px,62px,4px)')    // R foot
+    + `</div></div>`;
+}
+
 /* ========== STATE ========== */
 const SAVE_KEY = 'sc:save:v1';
 const save = loadSave();
@@ -1697,7 +1749,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '3.3';
+const GAME_VERSION = '3.4';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -1730,6 +1782,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['3.4',  'REAL 3D — fighters are now actual volumetric cuboid geometry (you can see their sides/depth), browser perspective camera · not flat sprites anymore'],
   ['3.3',  "What's-New now shows real version updates (not static goals) · building toward pro 3D + realistic movement + unique move animations"],
   ['3.2',  'Announcer removed (plain captions) · starting REAL 3D geometry rebuild (volumetric fighters)'],
   ['3.1',  'Depth axis: move into the ring + scale by distance (still flat sprites — real 3D geometry next)'],
@@ -2076,8 +2129,8 @@ function initFightVisuals() {
   document.getElementById('left-name').textContent = player.name;
   document.getElementById('right-name').textContent = opponent.name;
   document.getElementById('fight-round').textContent = match.round;
-  document.getElementById('ring-left-svg').innerHTML = renderFighter(player.art);
-  document.getElementById('ring-right-svg').innerHTML = renderFighter(opponent.art);
+  document.getElementById('ring-left-svg').innerHTML = make3DFighter(player.art);   // real 3D geometry in the ring
+  document.getElementById('ring-right-svg').innerHTML = make3DFighter(opponent.art);
   // Clear any transient combat classes left over from the PREVIOUS match — otherwise a
   // KO'd fighter (the 'ko' class) stays collapsed/dead into the next fight ("die and stay dead").
   ['ring-left', 'ring-right'].forEach(id => {
@@ -2114,17 +2167,11 @@ function initFightVisuals() {
 // Perspective projection: a fighter at (X lateral, Z depth) → screen transform.
 // Z=1 near/front (bigger, lower, full width), Z=0 far/back (smaller, lifted up, compressed toward center).
 function projectFighter(side, x, z) {
-  const ring = document.getElementById('ring');
+  // REAL 3D: place the fighter in 3D space (lateral X + real depth Z) and let the browser's
+  // perspective do the projection — far = genuinely smaller/higher, near = bigger/lower.
   const el = document.getElementById('ring-' + side);
-  const ringW = ring.clientWidth, ringH = ring.clientHeight || 320;
-  const fW = el.offsetWidth || ringW * 0.42;
-  const sc = 0.72 + z * 0.42;                          // depth scale
-  const rise = (1 - z) * ringH * 0.40;                 // back is lifted up the floor
-  const center = ringW / 2;
-  const compress = 0.55 + z * 0.45;                    // back compresses toward center (perspective)
-  const cx = x + fW / 2;
-  const projLeft = (center + (cx - center) * compress) - fW / 2;
-  el.style.transform = 'translate(' + projLeft + 'px,' + (-rise) + 'px) scale(' + sc + ')';
+  const depthZ = -300 + z * 420;                       // z:0 far(-300) … z:1 near(+120)
+  el.style.transform = 'translate3d(' + x + 'px, 0px, ' + depthZ + 'px)';
   el.style.zIndex = 1 + Math.round(z * 6);             // nearer fighter draws in front
 }
 function applyPositions() {
