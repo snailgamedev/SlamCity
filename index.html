@@ -679,6 +679,23 @@
   .motd-banner .motd-by { font-size: 10px; letter-spacing: 1px; color: var(--gold); font-weight: 800; }
   @keyframes motd-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
   .adm-log-by { color: var(--gold); font-size: 10px; font-weight: 700; }
+  /* TITLES & RANKINGS screen */
+  .rank-body { padding: 10px 14px 30px; max-width: 480px; margin: 0 auto; }
+  .rank-champ { text-align: center; border: 1px solid var(--gold); border-radius: 14px; padding: 16px; margin-bottom: 12px; background: linear-gradient(180deg, rgba(200,160,96,0.14), rgba(200,160,96,0.03)); }
+  .rank-champ .rc-belt { font-size: 38px; line-height: 1; }
+  .rank-champ .rc-title { font-size: 10px; letter-spacing: 3px; color: var(--gold); font-weight: 800; margin-top: 4px; }
+  .rank-champ .rc-name { font-size: 24px; font-weight: 900; color: #fff; margin: 2px 0; }
+  .rank-champ .rc-meta { font-size: 11px; color: var(--soft); }
+  .rank-sec { font-size: 11px; letter-spacing: 2px; color: var(--gold); font-weight: 800; margin: 16px 0 8px; }
+  .rank-ladder { border: 1px solid var(--bg-3); border-radius: 10px; overflow: hidden; }
+  .rank-row { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); background: var(--bg-1); }
+  .rank-row:last-child { border-bottom: none; }
+  .rank-row.champ { background: rgba(40,28,12,0.55); box-shadow: inset 3px 0 0 var(--gold); }
+  .rank-row .rank-pos { flex: 0 0 34px; font-weight: 900; color: var(--gold); font-size: 13px; }
+  .rank-row .rank-name { flex: 1 1 auto; font-weight: 700; color: var(--soft); font-size: 13px; }
+  .rank-row .rank-tag { font-size: 9px; letter-spacing: 1px; color: var(--red-bright); font-weight: 800; }
+  .rank-row .rank-ovr { flex: 0 0 auto; font-weight: 900; color: #fff; }
+  .rank-stat { font-size: 12px; color: var(--soft); padding: 4px 2px; }
   .hub-modes + .hub-grp-label { margin-top: 18px; }
   .hub-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .mode-card { display: flex; align-items: center; gap: 10px; text-align: left; padding: 14px 12px; border: 1px solid var(--bg-3); border-radius: 12px; background: linear-gradient(180deg, var(--bg-2), var(--bg-1)); color: var(--cream); cursor: pointer; transition: transform 0.08s, border-color 0.12s; min-height: 62px; }
@@ -963,7 +980,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v4.18 · build 2026-05-24·1346 · 🗣️ CROWD REACTIONS — pops on big hits · erupts on finishers · boos on stalling · reactive crowd that swells with the energy · for AARON</div>
+  <div class="splash-foot">v4.19 · build 2026-05-24·1358 · 🏆 TITLES & RANKINGS — champion + defense streak · power-ranking ladder · Hall of Fame · 🥊 DEFEND THE TITLE vs #1 contender · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -1023,6 +1040,16 @@
     <span style="width:60px"></span>
   </div>
   <div class="set-list" id="set-list"></div>
+</div>
+
+<!-- ========== TITLES & RANKINGS (champion · contender ladder · Hall of Fame) ========== -->
+<div id="rankings" class="screen">
+  <div class="hub-head">
+    <button class="back-btn" onclick="goto('hub')">‹ Hub</button>
+    <div class="set-title">🏆 TITLES &amp; RANKINGS</div>
+    <span style="width:60px"></span>
+  </div>
+  <div class="rank-body" id="rank-body"></div>
 </div>
 
 <!-- ========== PROFILE (sign in as a brother) ========== -->
@@ -1272,7 +1299,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v4.18</div>
+    <div class="load-skip">tap to skip · v4.19</div>
   </div>
 </div>
 
@@ -1767,7 +1794,7 @@ function loadSave() {
     }
   } catch(e) {}
   return { wins:0, losses:0, kos:0, finishers:0, scriptureStrikes:0, picks:{}, ovrDelta:{}, abilDelta:{},
-           difficulty:2, sfxOn:true, vol:0.9, captionsOn:true, platform:null, reducedMotion:false, tutorialSeen:false, seenVersion:null, customFighters:[], achievements:{}, belts:0, champion:null, profiles:{}, activeProfile:null, admin:null, adminLog:[], adminInbox:{}, changeFeed:[], bans:{}, feedback:[], adminPins:{}, undo:[], wcOverride:{}, motd:null };
+           difficulty:2, sfxOn:true, vol:0.9, captionsOn:true, platform:null, reducedMotion:false, tutorialSeen:false, seenVersion:null, customFighters:[], achievements:{}, belts:0, champion:null, profiles:{}, activeProfile:null, admin:null, adminLog:[], adminInbox:{}, changeFeed:[], bans:{}, feedback:[], adminPins:{}, undo:[], wcOverride:{}, motd:null, titleHistory:[], titleDefenses:0 };
 }
 function persistSave() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch(e) {}
@@ -1878,6 +1905,7 @@ function goto(id) {
   if (id==='settings') renderSettings();
   if (id==='profile') renderProfile();
   if (id==='create') renderCreate();
+  if (id==='rankings') renderRankings();
   window.scrollTo(0,0);
 }
 
@@ -1932,7 +1960,8 @@ function renderHub() {
         const ap = save.activeProfile && save.profiles[save.activeProfile]; const f = ap && FIGHTERS.find(x => x.id === save.activeProfile);
         return `<div class="hub-signin" onclick="goto('profile')">${ap && f ? '👤 ' + ap.name + ' · ' + f.name + ' ' + badge : '👤 SIGN IN / CREATE your fighter ›'}</div>`; })()
     + `<div class="hub-ver" onclick="showUpdateLog()">✦ v${GAME_VERSION} · update log</div>`
-    + `<div class="hub-ver" onclick="showAchievements()" style="margin-left:8px">🏆 ${ACHIEVEMENTS.filter(a=>save.achievements[a[0]]).length}/${ACHIEVEMENTS.length}</div>`
+    + `<div class="hub-ver" onclick="goto('rankings')" style="margin-left:8px">🏆 titles &amp; rankings</div>`
+    + `<div class="hub-ver" onclick="showAchievements()" style="margin-left:8px">⭐ ${ACHIEVEMENTS.filter(a=>save.achievements[a[0]]).length}/${ACHIEVEMENTS.length}</div>`
     + `<div class="hub-ver" onclick="openFeedback()" style="margin-left:8px">✍️ feedback</div>`
     + `<div class="hub-ver" onclick="openInstall()" style="margin-left:8px">⬇ install</div>`
     + changeFeedHTML();
@@ -1957,7 +1986,7 @@ function changeFeedHTML() {
 }
 
 let gameMode = 'quick';
-const MODE_LABEL = { quick:'QUICK FIGHT', career:'CAREER', gauntlet:'GAUNTLET', survival:'SURVIVAL', rumble:'ROYAL RUMBLE', versus:'VERSUS', training:'TRAINING', franchise:'FRANCHISE', watch:'WATCH', tournament:'CPU TOURNAMENT' };
+const MODE_LABEL = { quick:'QUICK FIGHT', career:'CAREER', gauntlet:'GAUNTLET', survival:'SURVIVAL', rumble:'ROYAL RUMBLE', title:'TITLE DEFENSE', versus:'VERSUS', training:'TRAINING', franchise:'FRANCHISE', watch:'WATCH', tournament:'CPU TOURNAMENT' };
 const modeCtx = { queue: [], idx: 0, streak: 0, playerId: null, pickingOpponent: false, season: null };
 function shuffled(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
@@ -2154,7 +2183,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '4.18';
+const GAME_VERSION = '4.19';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -2188,6 +2217,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['4.19', 'TITLES & RANKINGS (cooking the list): a new 🏆 TITLES & RANKINGS screen off the hub — see the REIGNING CHAMPION + their defense streak, a live POWER-RANKINGS ladder of the whole roster by OVR (with the #1 CONTENDER flagged), your hardware (titles won + record), and a HALL OF FAME of every past champion. NEW 🥊 DEFEND THE TITLE — the champ takes on the #1 contender; win and it’s a successful defense, lose and the belt changes hands. Career/Gauntlet wins still crown you.'],
   ['4.18', 'CROWD REACTIONS (cooking the list): 🗣️ the arena is ALIVE now — the crowd POPS on a heavy hit, ERUPTS on a finisher/KO, and BOOS if the fight stalls out (both of you standing around far apart too long). The crowd band up top glows and swells with the energy in the building, and dies down when nothing’s happening. Real filtered-noise roars, not beeps — and it all respects your Sound + Volume settings.'],
   ['4.17', 'INSTALL / OFFLINE polish: verified the whole game plays fully OFFLINE (the 3D engine, fighters, every mode — all cached, no internet needed once loaded). Fixed the iPhone home-screen icon — “Add to Home Screen” now shows a crisp SLAM CITY app icon instead of a blank one (real PNG icons at 180/192/512 instead of an SVG iOS ignored). Install + offline are solid.'],
   ['4.16', 'FIGHT CLARITY OVERHAUL (you said it was hard to tell what’s happening — fixed): 🎥 NEW CAMERA — pulled in close at near eye-level so the fighters FILL the screen instead of being tiny specks in a sea of black, and the constant floaty sway is gone — it’s a stable broadcast angle that keeps BOTH fighters framed whether they’re close or far · 🔵🔴 WHO’S WHO — a blue ring under YOU, a red ring under your FOE, so you never lose track of yourself · ⚠️ ATTACK TELEGRAPH — a fighter’s ring flashes bright the instant they commit an attack, so you can SEE the hit coming and time your REVERSE/BLOCK · fighters no longer fully overlap at contact so you can read the action. The whole fight is way easier to follow now.'],
@@ -2272,8 +2302,53 @@ function showAchToast(msg) {
   achToastT = setTimeout(() => t.classList.remove('on'), 2600);
 }
 function crownChampion(fighterId) {
-  save.champion = fighterId; save.belts = (save.belts || 0) + 1; persistSave();
+  const changed = save.champion !== fighterId;
+  save.champion = fighterId; save.belts = (save.belts || 0) + 1;
+  // HALL OF FAME — record every title win (new champ resets the defense streak)
+  save.titleHistory = save.titleHistory || [];
+  const f = FIGHTERS.find(x => x.id === fighterId);
+  save.titleHistory.unshift({ id: fighterId, name: (f ? f.name : fighterId), t: Date.now() });
+  if (save.titleHistory.length > 30) save.titleHistory.length = 30;
+  if (changed) save.titleDefenses = 0;
+  persistSave();
   unlockAch('champion');
+}
+// the #1 contender = highest-OVR fighter who ISN'T the champ (the natural title challenger)
+function topContender() {
+  const pool = FIGHTERS.filter(f => f.id !== save.champion && !f.admin);
+  if (!pool.length) return null;
+  return pool.reduce((best, f) => getCurrentOVR(f.id) > getCurrentOVR(best.id) ? f : best);
+}
+// DEFEND THE TITLE — the champion takes on the #1 contender; a win is a successful defense
+function defendTitle() {
+  if (!save.champion) { setStatus && setStatus('NO CHAMPION YET — win a Career or Gauntlet first', 'var(--muted)', 1600); return; }
+  const c = topContender(); if (!c) return;
+  gameMode = 'title'; modeCtx.queue = []; modeCtx.idx = 0; modeCtx.playerId = save.champion;
+  launchFight(save.champion, c.id);
+}
+function renderRankings() {
+  const body = document.getElementById('rank-body'); if (!body) return;
+  const champ = save.champion ? FIGHTERS.find(f => f.id === save.champion) : null;
+  const cont = topContender();
+  const ladder = FIGHTERS.filter(f => !f.admin).sort((a, b) => getCurrentOVR(b.id) - getCurrentOVR(a.id));
+  let html = `<div class="rank-champ">`;
+  if (champ) html += `<div class="rc-belt">🏆</div><div class="rc-title">REIGNING CHAMPION</div><div class="rc-name">${champ.name}</div><div class="rc-meta">OVR ${getCurrentOVR(champ.id)} · ${save.titleDefenses || 0} successful defense${(save.titleDefenses || 0) !== 1 ? 's' : ''}</div>`;
+  else html += `<div class="rc-belt">🏆</div><div class="rc-title">VACANT TITLE</div><div class="rc-meta">win a Career or Gauntlet run to be crowned</div>`;
+  html += `</div>`;
+  if (champ && cont) html += `<button class="btn" type="button" style="border-color:var(--gold);color:var(--gold)" onclick="defendTitle()">🥊 DEFEND THE TITLE · vs ${cont.name} (#1 contender)</button>`;
+  html += `<div class="rank-sec">📊 POWER RANKINGS</div><div class="rank-ladder">`;
+  ladder.slice(0, 12).forEach((f, i) => {
+    const isChamp = f.id === save.champion, isCont = cont && f.id === cont.id;
+    html += `<div class="rank-row${isChamp ? ' champ' : ''}"><span class="rank-pos">${isChamp ? '🏆' : '#' + (i + 1)}</span><span class="rank-name">${f.name}${isCont ? ' <span class="rank-tag">#1 contender</span>' : ''}</span><span class="rank-ovr">${getCurrentOVR(f.id)}</span></div>`;
+  });
+  html += `</div>`;
+  html += `<div class="rank-sec">🏅 YOUR HARDWARE</div><div class="rank-stat">${save.belts || 0} title${(save.belts || 0) !== 1 ? 's' : ''} won · record ${save.wins || 0}W–${save.losses || 0}L</div>`;
+  const hof = save.titleHistory || [];
+  html += `<div class="rank-sec">👑 HALL OF FAME</div>`;
+  html += hof.length
+    ? `<div class="rank-ladder">` + hof.slice(0, 12).map(h => `<div class="rank-row"><span class="rank-pos">🏆</span><span class="rank-name">${escapeHTML(h.name)}</span><span class="rank-ovr" style="font-size:10px">${adminTimeAgo(h.t)} ago</span></div>`).join('') + `</div>`
+    : `<div class="rank-stat">no champions crowned yet — go win a belt</div>`;
+  body.innerHTML = html;
 }
 function renderAchievements() {
   const n = ACHIEVEMENTS.filter(a => save.achievements[a[0]]).length;
@@ -4609,6 +4684,10 @@ function finishMatch(result) {
   }
   if (match.mode === 'franchise' && modeCtx.season) {  // season record
     if (result === 'win') modeCtx.season.wins++; else modeCtx.season.losses++;
+  }
+  if (match.mode === 'title') {                        // TITLE DEFENSE — champ retains on a win, belt changes hands on a loss
+    if (result === 'win') { save.titleDefenses = (save.titleDefenses || 0) + 1; persistSave(); }
+    else { crownChampion(match.opponent.id); }
   }
 
   // Living ability progression — abilities move by how the player performed; OVR = their average.
