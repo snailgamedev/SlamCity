@@ -388,6 +388,22 @@
   /* ====================================================================== */
   /* mobile-first game framed as a centered column on desktop (stops the stretched/sparse wide look) */
   .screen { max-width: 540px; margin-inline: auto; }
+  /* ===== RESPONSIVE FILL: on tablet/desktop the game fills the screen — wider menus, more roster columns, a BIG immersive ring ===== */
+  @media (min-width: 720px) {
+    .screen { max-width: 860px; }
+    #fight.screen { max-width: 1180px; }
+    #fight .fight-head, #fight .combat-controls { max-width: 760px; margin-inline: auto; width: 100%; }
+    .ring { min-height: 58vh; }
+    .roster-grid { grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); }
+    .hub-modes { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (min-width: 1200px) {
+    .screen { max-width: 1040px; }
+    #fight.screen { max-width: 1440px; }
+    .ring { min-height: 66vh; }
+    .roster-grid { grid-template-columns: repeat(auto-fill, minmax(184px, 1fr)); }
+    .name { font-size: clamp(56px, 6vw, 92px); }
+  }
   /* labeled HP + Stamina bars so it's clear what each is */
   .bar-line { display: flex; align-items: center; gap: 5px; margin-top: 4px; }
   .bar-line .hp-bar-outer, .bar-line .st-bar-outer { flex: 1; margin-top: 0; }
@@ -637,6 +653,8 @@
   .hp-stat { font-size: 11px; color: var(--soft); }
   .hp-stat b { color: var(--gold); font-size: 15px; font-family: var(--font-arcade); margin-right: 4px; }
   .hub-modes-label { font-size: 10px; letter-spacing: 3px; color: var(--muted); margin-bottom: 10px; }
+  .hub-grp-label { font-size: 11px; letter-spacing: 2.5px; color: var(--gold); font-weight: 800; margin: 16px 0 9px; text-transform: uppercase; }
+  .hub-modes + .hub-grp-label { margin-top: 18px; }
   .hub-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .mode-card { display: flex; align-items: center; gap: 10px; text-align: left; padding: 14px 12px; border: 1px solid var(--bg-3); border-radius: 12px; background: linear-gradient(180deg, var(--bg-2), var(--bg-1)); color: var(--cream); cursor: pointer; transition: transform 0.08s, border-color 0.12s; min-height: 62px; }
   .mode-card:hover { border-color: var(--red); }
@@ -886,7 +904,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v4.4 · build 2026-05-24·1042 · SPRINT + move BEHIND your opponent · pause + how-to-play freeze the action · ALL modes build your overall (training counts, watch evolves CPUs) · pick BOTH fighters in CPU-vs-CPU · UNDO any admin action (not just last) + admin ranking list for all admins · auto-updates on open · for AARON</div>
+  <div class="splash-foot">v4.5 · build 2026-05-24·1057 · RESPONSIVE — fills the whole screen on desktop (big immersive ring) + tablet/phone · MODES now play DIFFERENTLY — Career ladder, Survival scales foes + wears you down, Gauntlet full-heal escalation, Training dummy · grouped main menu · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -915,16 +933,22 @@
 
   <div class="hub-profile" id="hub-profile"></div>
 
-  <div class="hub-modes-label">CHOOSE A MODE</div>
-  <div class="hub-modes" id="hub-modes">
-    <button class="mode-card" onclick="startMode('quick')"><span class="mode-ic">⚡</span><span class="mode-txt"><b>QUICK FIGHT</b><i>jump into a random matchup</i></span></button>
-    <button class="mode-card" onclick="startMode('career')"><span class="mode-ic">📈</span><span class="mode-txt"><b>CAREER</b><i>climb the roster · ratings track</i></span></button>
-    <button class="mode-card" onclick="startMode('gauntlet')"><span class="mode-ic">🏆</span><span class="mode-txt"><b>GAUNTLET</b><i>beat all 11 brothers in a row</i></span></button>
-    <button class="mode-card" onclick="startMode('survival')"><span class="mode-ic">💀</span><span class="mode-txt"><b>SURVIVAL</b><i>endless · how far can you go</i></span></button>
-    <button class="mode-card" onclick="startMode('versus')"><span class="mode-ic">⚔️</span><span class="mode-txt"><b>VERSUS</b><i>pick both fighters</i></span></button>
-    <button class="mode-card" onclick="startMode('training')"><span class="mode-ic">🥊</span><span class="mode-txt"><b>TRAINING</b><i>no-stakes practice</i></span></button>
-    <button class="mode-card" onclick="startMode('franchise')"><span class="mode-ic">📅</span><span class="mode-txt"><b>FRANCHISE</b><i>8-match season · track your record</i></span></button>
-    <button class="mode-card" onclick="startMode('watch')"><span class="mode-ic">👁</span><span class="mode-txt"><b>WATCH</b><i>CPU vs CPU · spectate</i></span></button>
+  <div class="hub-grp-label">⚡ QUICK PLAY</div>
+  <div class="hub-modes">
+    <button class="mode-card" onclick="startMode('quick')"><span class="mode-ic">⚡</span><span class="mode-txt"><b>QUICK FIGHT</b><i>one fight, random matchup</i></span></button>
+    <button class="mode-card" onclick="startMode('versus')"><span class="mode-ic">⚔️</span><span class="mode-txt"><b>VERSUS</b><i>pick both fighters · 1v1</i></span></button>
+  </div>
+  <div class="hub-grp-label">🏆 RUN THE GAUNTLET</div>
+  <div class="hub-modes">
+    <button class="mode-card" onclick="startMode('career')"><span class="mode-ic">📈</span><span class="mode-txt"><b>CAREER</b><i>ranked ladder · climb to the title</i></span></button>
+    <button class="mode-card" onclick="startMode('gauntlet')"><span class="mode-ic">🏆</span><span class="mode-txt"><b>GAUNTLET</b><i>whole crew in a row · full heal between</i></span></button>
+    <button class="mode-card" onclick="startMode('survival')"><span class="mode-ic">💀</span><span class="mode-txt"><b>SURVIVAL</b><i>endless · foes scale up, you stay worn</i></span></button>
+    <button class="mode-card" onclick="startMode('franchise')"><span class="mode-ic">📅</span><span class="mode-txt"><b>FRANCHISE</b><i>8-match season · win or lose, you advance</i></span></button>
+  </div>
+  <div class="hub-grp-label">🥊 PRACTICE & SPECTATE</div>
+  <div class="hub-modes">
+    <button class="mode-card" onclick="startMode('training')"><span class="mode-ic">🥊</span><span class="mode-txt"><b>TRAINING</b><i>dummy opponent · gains-only practice</i></span></button>
+    <button class="mode-card" onclick="startMode('watch')"><span class="mode-ic">👁</span><span class="mode-txt"><b>WATCH</b><i>CPU vs CPU · pick both</i></span></button>
   </div>
   <button class="btn btn-secondary" type="button" onclick="goto('create')" style="margin-top:12px">＋ CREATE A FIGHTER</button>
 </div>
@@ -1178,7 +1202,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v4.4</div>
+    <div class="load-skip">tap to skip · v4.5</div>
   </div>
 </div>
 
@@ -1885,6 +1909,11 @@ function beginMode(playerId) {
       .sort((a, b) => getCurrentOVR(a.id) - getCurrentOVR(b.id)).map(f => f.id);  // easiest → hardest
     modeCtx.idx = 0;
     launchFight(playerId, modeCtx.queue[0]);
+  } else if (gameMode === 'career') {        // CAREER — climb a ranked ladder (toughest at the top), title at the end
+    modeCtx.queue = FIGHTERS.filter(f => f.id !== playerId && !f.admin)
+      .sort((a, b) => getCurrentOVR(a.id) - getCurrentOVR(b.id)).map(f => f.id);
+    modeCtx.idx = 0; modeCtx.rung = 0;
+    launchFight(playerId, modeCtx.queue[0]);
   } else if (gameMode === 'survival') {
     modeCtx.streak = 0;
     launchFight(playerId);
@@ -1901,6 +1930,10 @@ function nextInMode() {
   if (gameMode === 'gauntlet') {
     modeCtx.idx++;
     if (modeCtx.idx >= modeCtx.queue.length) { unlockAch('gauntlet'); crownChampion(modeCtx.playerId); goto('hub'); return; }   // cleared the crew → CHAMPION
+    launchFight(modeCtx.playerId, modeCtx.queue[modeCtx.idx]);
+  } else if (gameMode === 'career') {        // advance up the ladder on a win (rung++)
+    modeCtx.idx++; modeCtx.rung = (modeCtx.rung || 0) + 1;
+    if (modeCtx.idx >= modeCtx.queue.length) { unlockAch('gauntlet'); crownChampion(modeCtx.playerId); goto('hub'); return; }  // topped the ladder → CHAMPION
     launchFight(modeCtx.playerId, modeCtx.queue[modeCtx.idx]);
   } else if (gameMode === 'survival') {
     modeCtx.streak++;
@@ -1993,7 +2026,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '4.4';
+const GAME_VERSION = '4.5';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -2027,6 +2060,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['4.5',  'RESPONSIVE — the game now fills your whole screen (a big immersive ring on desktop, wider menus + more roster columns) instead of a phone-width strip; still clean on mobile · MODES finally play DIFFERENTLY: CAREER is a ranked ladder you climb to a title, SURVIVAL scales the opponents up each round AND leaves you worn down, GAUNTLET keeps full-heal escalation, TRAINING gives you a passive dummy to practice on · the main menu is grouped (Quick Play · Run the Gauntlet · Practice & Spectate)'],
   ['4.4',  'Movement upgrade — push the stick to SPRINT, and change depth (W/S) to circle BEHIND your opponent (bodies only collide on the same plane) · PAUSE and HOW-TO-PLAY now truly freeze the action · EVERY mode builds your overall now (Training counts as gains-only practice; Watch evolves both CPUs) · CPU-vs-CPU lets you pick BOTH fighters · ADMIN: undo ANY past action (not just the last) + an admin ranking list every admin can see · the game auto-checks for updates each time you open it'],
   ['4.3',  'CINEMATIC 3D progress — real cast shadows, a dramatic ring spotlight, filmic tone-mapping, and a camera that slowly drifts + punches in on big hits / hype · OVERALL now MATTERS: a higher-OVR fighter hits harder and absorbs more (up to ±18% on the gap) · all 12 ratings can rise AND fall from how you fight · your progress (ratings + record) is saved across sign-out → sign-in · every admin command — bans, timeouts, all of it — is undoable for 90 days'],
   ['4.2',  'Fixed "fighting backwards" — fighters now face each other + a living camera that tracks the action for a more 3D feel · ALL 14 hairstyles render distinctly in 3D (afro, mohawk, dreads, man-bun, spiky, long…) · ADMIN: a searchable/sortable FIGHTERS screen where you can change ANYTHING about any fighter (rename, weight class, archetype, every 1–99 rating, moves, finisher, look) + 90-DAY UNDO on admin commands + UNCROWN · you can only message a CLAIMED fighter · creator now sets weight class + your move names + full 1–99 stats & OVR · ratings now move UP and DOWN from how you fight (not just a couple) · everything capped 1–99'],
@@ -3050,6 +3084,24 @@ const DIFFICULTIES = [
 ];
 function curDiff() { return DIFFICULTIES[Math.max(0, Math.min(4, save.difficulty ?? 2))]; }
 
+// Each mode plays differently — this is applied to the live match.
+function applyModeRules(m) {
+  m.oPassive = (m.mode === 'training');                 // TRAINING: opponent is a chill dummy → practice freely
+  if (m.mode === 'survival') {
+    const s = modeCtx.streak || 0;
+    const boost = s * 7;                                // SURVIVAL: each round the opponent gets +7 effective OVR
+    if (boost) for (const k in m.oAb) m.oAb[k] = Math.min(99, m.oAb[k] + boost);
+    m.pHP = Math.max(45, 100 - s * 6);                  // …and you carry the wear (start progressively hurt)
+    m.survRound = s + 1;
+  } else if (m.mode === 'career') {
+    const r = modeCtx.rung || 0;
+    const boost = r * 4;                                // CAREER: climb the ladder — each rung is tougher
+    if (boost) for (const k in m.oAb) m.oAb[k] = Math.min(99, m.oAb[k] + boost);
+    m.careerRung = r + 1;
+  } else if (m.mode === 'gauntlet') {
+    m.gauntletNum = (modeCtx.idx || 0) + 1;             // GAUNTLET: full HP each round but the crew gets harder
+  }
+}
 function startMatchWith(playerId, oppId) {
   const player = FIGHTERS.find(f => f.id === playerId);
   const pool = FIGHTERS.filter(f => f.id !== playerId);
@@ -3089,6 +3141,7 @@ function startMatchWith(playerId, oppId) {
     tally: { strikesLanded:0, strikesWhiff:0, heavyLanded:0, blocked:0, dodgedClean:0,
              finisherLanded:false, dmgDealt:0, dmgTaken:0, gassed:false, grappleLanded:0, winMethod:null }
   };
+  applyModeRules(match);                 // per-mode feel: scaling, worn HP, training dummy
   save.picks[playerId] = (save.picks[playerId] || 0) + 1;
   persistSave();
   goto('fight');
@@ -3714,6 +3767,12 @@ function updateWatchAI(dt, dtms, fW) {
 
 function updateAI(dt, dtms, fW, maxX) {
   if (!match || match.over) return;
+  // TRAINING dummy — the opponent just shuffles + sometimes guards, never pressures you (practice mode).
+  if (match.oPassive) {
+    match.oX += Math.sin(performance.now() * 0.0011) * 9 * dt;        // light idle shuffle
+    match.oBlock = (Math.abs(match.oX - match.pX) < fW * 0.55) && (Math.floor(performance.now() / 1500) % 3 === 0);
+    return;
+  }
   // Mood keeps evolving every frame — even mid-grapple — so the AI stays unpredictable.
   match.ai.moodT -= dtms;
   if (match.ai.moodT <= 0) pickMood();
@@ -4180,10 +4239,15 @@ function setResultButtons(result) {
   const sec = document.getElementById('result-secondary');
   const m = match.mode;
   const won = result === 'win';
-  const chainWin = (m === 'gauntlet' || m === 'survival') && won;
+  const chainWin = (m === 'gauntlet' || m === 'survival' || m === 'career') && won;
   if (m === 'watch') {
     prim.textContent = 'WATCH ANOTHER'; prim.onclick = () => startMode('watch');
     sec.textContent = 'HOME / MODES'; sec.onclick = () => goto('hub');
+  } else if (m === 'career' && won) {
+    const last = modeCtx.idx + 1 >= modeCtx.queue.length;
+    prim.textContent = last ? '🏆 CLAIM THE TITLE' : 'NEXT RUNG (' + (modeCtx.idx + 2) + '/' + modeCtx.queue.length + ')';
+    prim.onclick = nextInMode;
+    sec.textContent = 'RETIRE (HOME)'; sec.onclick = () => goto('hub');
   } else if (m === 'franchise' && modeCtx.season) {
     const s = modeCtx.season, last = s.idx + 1 >= s.total;
     prim.textContent = last ? `SEASON DONE · ${s.wins}-${s.losses}` : `NEXT MATCH (${s.idx + 2}/${s.total}) · ${s.wins}-${s.losses}`;
@@ -4193,7 +4257,7 @@ function setResultButtons(result) {
     prim.textContent = 'KEEP TRAINING'; prim.onclick = nextInMode;
     sec.textContent = 'HOME / MODES'; sec.onclick = () => goto('hub');
   } else if (chainWin) {
-    prim.textContent = m === 'gauntlet' ? 'NEXT OPPONENT (' + (modeCtx.idx + 2) + '/' + (modeCtx.queue.length) + ')' : 'NEXT FIGHT · STREAK ' + (modeCtx.streak + 1);
+    prim.textContent = m === 'gauntlet' ? 'NEXT OPPONENT (' + (modeCtx.idx + 2) + '/' + (modeCtx.queue.length) + ')' : 'NEXT ROUND · STREAK ' + (modeCtx.streak + 1) + ' · +' + ((modeCtx.streak + 1) * 7) + ' OVR';
     prim.onclick = nextInMode;
     sec.textContent = 'HOME / MODES'; sec.onclick = () => goto('hub');
   } else {

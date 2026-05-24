@@ -36,11 +36,13 @@ try {
   // 2 · OVERALL MATTERS — same move, bigger OVR advantage = more damage
   const dmgWith = await page.evaluate(() => {
     function oneHit() {
-      match.oHP = 100; match.oStun = 9000; match.oAtk = null; match.oBlock = false; match.oInvuln = 0;
-      match.pZ = match.oZ; match.pX = Math.max(0, match.oX - 38); match.pStun = 0; match.pCool = 0; match.pLockMove = 0; match.pAtk = null;
+      // fully reset so the strike always lands at point-blank, same plane
+      match.oHP = 100; match.oStun = 9000; match.oCool = 9000; match.oAtk = null; match.oBlock = false; match.oInvuln = 0;
+      match.pAtk = null; match.pBlock = false; match.pDowned = 0; match.oDowned = 0; match.pinning = false; match.subbing = false;
+      match.pStun = 0; match.pCool = 0; match.pLockMove = 0; match.pInvuln = 0; match.pST = 100; match.pHype = 0; match.oHype = 0;
+      match.pZ = 0.5; match.oZ = 0.5; match.oX = 200; match.pX = 175;   // 25px apart, same depth = well in reach
       const before = match.oHP;
       playerAttack('strike');
-      // resolve immediately
       if (match.pAtk) { match.pAtk.hitAt = performance.now() - 1; resolveAttack(match.pAtk); }
       return Math.round(before - match.oHP);
     }
