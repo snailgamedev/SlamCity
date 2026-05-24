@@ -682,6 +682,15 @@
   .motd-banner .motd-by { font-size: 10px; letter-spacing: 1px; color: var(--gold); font-weight: 800; }
   @keyframes motd-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
   .adm-log-by { color: var(--gold); font-size: 10px; font-weight: 700; }
+  /* YOUR RANK · powers grid (granted vs locked) + protected marker */
+  .adm-powers { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 8px; margin-bottom: 8px; }
+  .pow-row { display: flex; align-items: center; gap: 6px; font-size: 11px; padding: 5px 8px; border-radius: 7px; border: 1px solid var(--bg-3); }
+  .pow-row.on { color: var(--soft); background: rgba(74,208,106,0.07); border-color: rgba(74,208,106,0.3); }
+  .pow-row.off { color: var(--muted); opacity: 0.65; }
+  .pow-row .pow-ic { flex: 0 0 auto; font-size: 12px; }
+  .pow-row.on .pow-ic { color: #4ad06a; }
+  .adm-note { font-size: 10.5px; color: var(--gold); line-height: 1.5; margin: 2px 2px 10px; font-style: italic; }
+  .adm-protect { font-size: 10px; letter-spacing: 0.5px; color: var(--muted); font-weight: 800; padding: 3px 7px; border: 1px dashed var(--bg-3); border-radius: 6px; }
   /* TITLES & RANKINGS screen */
   .rank-body { padding: 10px 14px 30px; max-width: 480px; margin: 0 auto; }
   .rank-champ { text-align: center; border: 1px solid var(--gold); border-radius: 14px; padding: 16px; margin-bottom: 12px; background: linear-gradient(180deg, rgba(200,160,96,0.14), rgba(200,160,96,0.03)); }
@@ -983,7 +992,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v4.20 · build 2026-05-24·1407 · ⚡ SIGNATURE MOVE — fill your HYPE meter, tap the glowing button for a guaranteed knockdown blow · for AARON</div>
+  <div class="splash-foot">v4.21 · build 2026-05-24·1425 · 🔑 ADMIN RANKS MEAN SOMETHING — chain of command enforced (only moderate who you outrank) + a YOUR RANK powers panel · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -1303,7 +1312,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v4.20</div>
+    <div class="load-skip">tap to skip · v4.21</div>
   </div>
 </div>
 
@@ -2187,7 +2196,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '4.20';
+const GAME_VERSION = '4.21';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -2221,6 +2230,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['4.21', 'ADMIN RANKS NOW MEAN SOMETHING: enforced a real chain of command — you can only moderate (kick · ban · timeout · reset · restyle · message) fighters you OUTRANK. A Crew admin can’t touch Aaron or Old Man Eli; Aaron can’t touch Eli; nobody reaches up the chain (protected fighters show a 🛡 marker). Plus a new 🔑 YOUR RANK panel at the top of every admin’s screen spells out exactly which powers your tier grants ✓ and which are locked 🔒 — so Supreme vs Senior vs Crew is crystal clear. Crowning a champion stays open to all admins (it’s a blessing, not a punishment).'],
   ['4.20', 'SIGNATURE MOVE (cooking the list): your HYPE meter finally PAYS OFF. Fill it (land hits · taunt) and a glowing ⚡ SIGNATURE button floats up over your controls — tap it to unleash a guaranteed momentum-swing blow that KNOCKS THEM DOWN (blocked, it still rocks them but they stay up). It cashes your whole meter, fires the comic cut-in + a crowd eruption, and sets up your pin/finisher. HYPE was just a passive damage buff before — now it’s a weapon.'],
   ['4.19', 'TITLES & RANKINGS (cooking the list): a new 🏆 TITLES & RANKINGS screen off the hub — see the REIGNING CHAMPION + their defense streak, a live POWER-RANKINGS ladder of the whole roster by OVR (with the #1 CONTENDER flagged), your hardware (titles won + record), and a HALL OF FAME of every past champion. NEW 🥊 DEFEND THE TITLE — the champ takes on the #1 contender; win and it’s a successful defense, lose and the belt changes hands. Career/Gauntlet wins still crown you.'],
   ['4.18', 'CROWD REACTIONS (cooking the list): 🗣️ the arena is ALIVE now — the crowd POPS on a heavy hit, ERUPTS on a finisher/KO, and BOOS if the fight stalls out (both of you standing around far apart too long). The crowd band up top glows and swells with the energy in the building, and dies down when nothing’s happening. Real filtered-noise roars, not beeps — and it all respects your Sound + Volume settings.'],
@@ -2572,6 +2582,33 @@ function can(action) {
   if (t === 2 || t === 3) return (PERM[t] || []).includes(action);
   return false;
 }
+// RANK HIERARCHY — you can only moderate fighters you OUTRANK (lower tier #) or regular fighters.
+// Nobody reaches up the chain: a CREW admin can't touch Aaron or Eli; Aaron can't touch Eli.
+function canActOn(targetId) {
+  const at = curAdminTier(); if (at === 0) return false;
+  const tt = adminTierOf(targetId);
+  return tt === 0 || tt > at;               // target is a regular fighter, or ranks strictly below me
+}
+// a plain-language list of what the CURRENT rank can + can't do (so every tier's powers are explicit)
+const POWER_LIST = [
+  ['message', '✉ Message a fighter'], ['kick', '⏏ Kick / sign out a fighter'], ['feedback', '✍ Read player feedback'],
+  ['timeout', '⏳ Time out a fighter'], ['crown', '👑 Crown a champion'], ['create', '➕ Create a fighter'],
+  ['edit', '🎨 Restyle any fighter'], ['announce', '📣 Announce + Message of the Day'], ['viewlog', '📋 See the audit log'],
+  ['reset', '♻ Reset / delete fighters'], ['ban', '⛔ Ban a fighter'], ['managepins', '🔑 Hold the master key (PIN + master resets)']
+];
+function adminPowersHTML() {
+  const t = curAdminTier(); if (!t) return '';
+  const note = t === 1 ? 'You outrank everyone — nothing is off-limits.'
+    : t === 2 ? 'You can moderate Crew admins + regular fighters — but you can’t touch Old Man Eli.'
+    : 'You can moderate regular fighters — but not other admins (Aaron + the crew are off-limits).';
+  const rows = POWER_LIST.map(([a, label]) => {
+    const ok = (a === 'managepins') ? (t === 1) : can(a);
+    return `<div class="pow-row ${ok ? 'on' : 'off'}"><span class="pow-ic">${ok ? '✓' : '🔒'}</span><span class="pow-lbl">${label}</span></div>`;
+  }).join('');
+  return `<div class="adm-sec-label">🔑 YOUR RANK · TIER ${t} · ${TIER_NAME[t]}</div>`
+    + `<div class="adm-powers">${rows}</div>`
+    + `<div class="adm-note">${note}</div>`;
+}
 // ===== NAME SAFETY: reject clearly inappropriate / profane names when making an account =====
 const BAD_WORDS = ['fuck', 'shit', 'bitch', 'cunt', 'nigg', 'fag', 'retard', 'whore', 'slut', 'rape', 'nazi', 'penis', 'vagina', 'cock', 'dick', 'pussy', 'asshole', 'bastard', 'damn', 'hitler', 'kkk', 'sex', 'porn', 'pedo', 'molest'];
 function cleanName(name) {
@@ -2761,6 +2798,8 @@ function renderAdmin() {
     + `<div class="adm-sub">${tier === 1 ? 'master key to the whole crew' : tier === 2 ? 'second-in-command — full mod powers' : 'crew moderator — message + kick'}</div></div>`;
   if (adminPanelOpen && tier > 0 && save.activeProfile !== ADMIN_KEY)
     html += `<button class="adm-mini" type="button" style="margin-bottom:10px" onclick="closeAdminPanel()">‹ back to my profile</button>`;
+  // ── what THIS rank can/can't do (so every rank's powers are explicit) ──
+  html += adminPowersHTML();
   // ── tier-1 only: edit MY (Old Man Eli) fighter + change PIN ──
   if (tier === 1) {
     html += `<div class="adm-sec-label">👑 MY FIGHTER</div>`
@@ -2835,16 +2874,22 @@ function adminCrewRow(f) {
   const status = ban ? `<span class="adm-open" style="color:var(--red-bright)">${ban.type === 'ban' ? '⛔' : '⏳'}</span>`
     : claimed ? `<span class="adm-lock">🔒 ${(save.profiles[f.id].name || '').toUpperCase()}</span>` : `<span class="adm-open">🔓 open</span>`;
   const og = adminTierOf(f.id);
+  const mod = canActOn(f.id);               // am I allowed to moderate this fighter? (rank hierarchy)
   let acts = '';
-  if (can('edit')) acts += `<button class="adm-mini" type="button" title="customize" onclick="adminEditBrother('${f.id}')">🎨</button>`;
-  if (claimed && can('message')) acts += `<button class="adm-mini" type="button" title="message (claimed only)" onclick="adminMsgTo('${f.id}')">✉</button>`;
-  if (can('crown')) acts += `<button class="adm-mini" type="button" title="crown champion" onclick="adminCrown('${f.id}')">👑</button>`;
-  if (claimed && can('kick')) acts += `<button class="adm-mini" type="button" title="kick (sign out)" onclick="adminSignOutBrother('${f.id}')">⏏</button>`;
-  if (can('timeout')) acts += `<button class="adm-mini" type="button" title="timeout" onclick="adminTimeout('${f.id}')">⏳</button>`;
-  if (can('ban') && !og) acts += `<button class="adm-mini danger" type="button" title="ban" onclick="adminBan('${f.id}')">⛔</button>`;
-  if (claimed && can('reset')) acts += `<button class="adm-mini danger" type="button" title="reset to default" onclick="adminResetBrother('${f.id}')">RST</button>`;
-  if (f.custom && can('reset')) acts += `<button class="adm-mini danger" type="button" title="delete" onclick="adminDeleteCustom('${f.id}')">🗑</button>`;
-  return `<div class="adm-row"><span class="adm-rname">${isChamp ? '🏆 ' : ''}${og ? '⭐ ' : ''}${f.name}${f.custom ? ' <span class="adm-tag">made</span>' : ''}</span>${status}<span class="adm-acts">${acts}</span></div>`;
+  if (can('crown')) acts += `<button class="adm-mini" type="button" title="crown champion" onclick="adminCrown('${f.id}')">👑</button>`;   // crowning isn't moderation → always allowed
+  if (mod) {                                // moderation buttons ONLY for fighters you outrank
+    if (can('edit')) acts += `<button class="adm-mini" type="button" title="customize" onclick="adminEditBrother('${f.id}')">🎨</button>`;
+    if (claimed && can('message')) acts += `<button class="adm-mini" type="button" title="message (claimed only)" onclick="adminMsgTo('${f.id}')">✉</button>`;
+    if (claimed && can('kick')) acts += `<button class="adm-mini" type="button" title="kick (sign out)" onclick="adminSignOutBrother('${f.id}')">⏏</button>`;
+    if (can('timeout')) acts += `<button class="adm-mini" type="button" title="timeout" onclick="adminTimeout('${f.id}')">⏳</button>`;
+    if (can('ban') && !og) acts += `<button class="adm-mini danger" type="button" title="ban" onclick="adminBan('${f.id}')">⛔</button>`;
+    if (claimed && can('reset')) acts += `<button class="adm-mini danger" type="button" title="reset to default" onclick="adminResetBrother('${f.id}')">RST</button>`;
+    if (f.custom && can('reset')) acts += `<button class="adm-mini danger" type="button" title="delete" onclick="adminDeleteCustom('${f.id}')">🗑</button>`;
+  } else if (og > 0 && og < curAdminTier() + 1 && f.id !== save.activeProfile) {
+    acts += `<span class="adm-protect" title="outranks you — TIER ${og}">🛡 ${TIER_NAME[og].split(' ')[0]}</span>`;   // they rank at/above you → hands off
+  }
+  const badge = og === 1 ? '👑 ' : og === 2 ? '🥈 ' : og === 3 ? '🛡 ' : (isChamp ? '' : '');
+  return `<div class="adm-row"><span class="adm-rname">${isChamp ? '🏆 ' : ''}${badge}${f.name}${f.custom ? ' <span class="adm-tag">made</span>' : ''}</span>${status}<span class="adm-acts">${acts}</span></div>`;
 }
 // who is acting (for logs + inbox text)
 function adminWho() { return save.activeProfile === ADMIN_KEY ? 'Old Man Eli' : ((FIGHTERS.find(f => f.id === save.activeProfile) || {}).name || 'an admin'); }
@@ -2934,7 +2979,7 @@ function adminChangePin() {
 }
 // ── moderation: timeout / ban / unban ──
 function adminTimeout(bid) {
-  if (!can('timeout')) return;
+  if (!can('timeout') || !canActOn(bid)) return;   // can't time out someone who outranks you
   const f = FIGHTERS.find(x => x.id === bid); if (!f) return;
   const name = (isClaimed(bid) ? save.profiles[bid].name : f.name) || f.name;
   const mins = parseInt(prompt('Timeout ' + name + ' for how many minutes?', '10') || '0', 10);
@@ -2949,7 +2994,7 @@ function adminTimeout(bid) {
   setStatus && setStatus(name + ' TIMED OUT', 'var(--gold)', 1000);
 }
 function adminBan(bid) {
-  if (!can('ban')) return;   // tier-1 only
+  if (!can('ban') || !canActOn(bid)) return;   // tier-1 only · never a fellow/higher admin
   const f = FIGHTERS.find(x => x.id === bid); if (!f) return;
   const name = (isClaimed(bid) ? save.profiles[bid].name : f.name) || f.name;
   if (!confirm('BAN "' + name + '" permanently? They can’t sign in or be re-created until you lift it.')) return;
@@ -3190,9 +3235,9 @@ function logChange(text, key) {
 function inboxPush(fid, text) { save.adminInbox = save.adminInbox || {}; (save.adminInbox[fid] = save.adminInbox[fid] || []).unshift({ t: Date.now(), text }); }
 function adminTimeAgo(t) { const s = Math.max(0, Math.round((Date.now() - t) / 1000)); if (s < 60) return s + 's'; if (s < 3600) return Math.round(s / 60) + 'm'; if (s < 86400) return Math.round(s / 3600) + 'h'; return Math.round(s / 86400) + 'd'; }
 function escapeHTML(s) { return (s == null ? '' : String(s)).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
-function adminEditBrother(bid) { if (!can('edit')) return; profileEditLook(bid); }
+function adminEditBrother(bid) { if (!can('edit') || !canActOn(bid)) return; profileEditLook(bid); }
 function adminMsgTo(bid) {
-  if (!can('message')) return;
+  if (!can('message') || !canActOn(bid)) return;
   const f = FIGHTERS.find(x => x.id === bid); if (!f) return;
   if (!isClaimed(bid)) { setStatus && setStatus('CAN ONLY MESSAGE A CLAIMED FIGHTER', 'var(--muted)', 1300); return; }   // no real person on an unclaimed/made fighter
   const text = (prompt('Message to ' + f.name + ' (they\'ll see it next time they sign in):') || '').trim();
@@ -3203,7 +3248,7 @@ function adminMsgTo(bid) {
   setStatus && setStatus('MESSAGE SENT TO ' + f.name, 'var(--gold)', 900);
 }
 function adminSignOutBrother(bid) {
-  if (!can('kick')) return;
+  if (!can('kick') || !canActOn(bid)) return;
   const f = FIGHTERS.find(x => x.id === bid); if (!f || !isClaimed(bid)) return;
   if (!confirm('Kick (sign out) ' + f.name + '? Releases the claim — look is kept, they can sign in again.')) return;
   snapshotForUndo('kick ' + f.name);
@@ -3215,7 +3260,7 @@ function adminSignOutBrother(bid) {
   setStatus && setStatus(f.name + ' SIGNED OUT', 'var(--gold)', 900);
 }
 function adminResetBrother(bid) {
-  if (!can('reset')) return;
+  if (!can('reset') || !canActOn(bid)) return;
   const f = FIGHTERS.find(x => x.id === bid); if (!f) return;
   if (!confirm('Reset ' + f.name + '? Unclaims the profile + restores the default look.')) return;
   snapshotForUndo('reset ' + f.name);
@@ -3227,7 +3272,7 @@ function adminResetBrother(bid) {
   setStatus && setStatus(f.name + ' RESET', 'var(--gold)', 800);
 }
 function adminDeleteCustom(id) {
-  if (!can('reset')) return;
+  if (!can('reset') || !canActOn(id)) return;
   const f = FIGHTERS.find(x => x.id === id); if (f) { snapshotForUndo('delete ' + f.name); adminLogPush('🗑 ' + adminWho() + ' deleted ' + f.name); }
   deleteCustomFighter(id);   // shared deleter (confirms, persists, → roster)
 }
