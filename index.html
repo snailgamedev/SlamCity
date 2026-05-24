@@ -834,6 +834,16 @@
   #sig-cutin .sc-move { font-size: clamp(26px, 8.5vw, 56px); font-weight: 900; letter-spacing: 1px; color: #fff; line-height: 1.02; text-shadow: 0 0 20px rgba(255,196,64,0.9), 3px 3px 0 #b8002e, 0 5px 12px #000; -webkit-text-stroke: 1px rgba(0,0,0,0.4); }
   #sig-cutin .sc-by { font-size: 13px; letter-spacing: 2px; font-weight: 800; color: var(--gold); margin-top: 2px; text-shadow: 0 2px 6px #000; }
   @keyframes sig-cut { 0% { opacity: 0; transform: scale(1.5) rotate(-4deg); } 14% { opacity: 1; transform: scale(1) rotate(-4deg); } 78% { opacity: 1; transform: scale(1) rotate(-4deg); } 100% { opacity: 0; transform: scale(1.08) rotate(-4deg); } }
+  /* PYRO — corner jets + flash on the walk-in entrance */
+  #pyro { position: absolute; inset: 0; z-index: 29; pointer-events: none; opacity: 0; }
+  #pyro.on { opacity: 1; }
+  #pyro .pyro-jet { position: absolute; bottom: 6%; width: 26px; height: 0; border-radius: 50% 50% 6px 6px; background: linear-gradient(to top, rgba(255,90,20,0.95), rgba(255,200,80,0.9) 40%, rgba(255,250,210,0.6) 70%, transparent); filter: blur(0.5px) drop-shadow(0 0 14px rgba(255,170,40,0.9)); transform-origin: bottom center; }
+  #pyro .pyro-jet.l { left: 12%; } #pyro .pyro-jet.r { right: 12%; }
+  #pyro.on .pyro-jet { animation: pyro-jet 1.05s cubic-bezier(.2,.7,.3,1) forwards; }
+  #pyro .pyro-flash { position: absolute; inset: 0; background: radial-gradient(circle at 50% 80%, rgba(255,220,150,0.5), transparent 60%); opacity: 0; }
+  #pyro.on .pyro-flash { animation: pyro-flash 0.6s ease forwards; }
+  @keyframes pyro-jet { 0% { height: 0; opacity: 0; } 18% { height: 62%; opacity: 1; } 55% { height: 70%; opacity: 0.95; } 100% { height: 24%; opacity: 0; } }
+  @keyframes pyro-flash { 0% { opacity: 0; } 15% { opacity: 1; } 100% { opacity: 0; } }
   /* COMBO popup */
   #combo-pop { position: absolute; right: 12px; top: 24%; z-index: 31; pointer-events: none; font-weight: 900; font-size: clamp(18px, 5.5vw, 30px); letter-spacing: 1px; color: var(--gold); text-shadow: 2px 2px 0 #b8002e, 0 3px 8px #000; opacity: 0; }
   #combo-pop.on { animation: combo-pop 0.9s ease forwards; }
@@ -946,7 +956,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v4.12 · build 2026-05-24·1237 · ⭐ SIGNATURE FINISHERS announced by name · 🔢 COMBO COUNTER · 📊 TALE OF THE TAPE post-match breakdown · for AARON</div>
+  <div class="splash-foot">v4.13 · build 2026-05-24·1244 · 🎵 WALKOUT THEMES (a riff per fighter) · 🎆 PYRO jets on the ring walk-in · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -1254,7 +1264,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v4.12</div>
+    <div class="load-skip">tap to skip · v4.13</div>
   </div>
 </div>
 
@@ -2126,7 +2136,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '4.12';
+const GAME_VERSION = '4.13';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -2160,6 +2170,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['4.13', 'ENTRANCES go big (cooking the list): 🎵 WALKOUT THEMES — every fighter gets a short synth walkout riff that plays on the pre-fight card, seeded from who they are so the crew sounds a little different from each other · 🎆 PYRO — gold pyro jets blast up from the corners (with a sizzle) the moment the bell rings and the fighters stride into the ring. Pairs with the v4.10 walk-in entrances for a real big-stage feel. All audio respects your Sound Effects + Volume settings.'],
   ['4.12', 'Make wins feel EARNED (cooking the idea list): ⭐ SIGNATURE FINISHERS — land your finisher and a comic-book stamp announces it BY NAME (RKO · Phoenix Splash · Last Ride · Suplex City · Ancient Landmark…) with your name under it · 🔢 COMBO COUNTER — chain hits and a “COMBO ×N” pops on screen, your top combo is tracked · 📊 TALE OF THE TAPE — the result screen now breaks down how the fight actually went: strikes, slams, big hits, blocks, reversals, top combo, biggest hit, and whether you hit the finisher'],
   ['4.11', 'NEW MODE — 🔔 ROYAL RUMBLE: the whole crew, drawn in random order, one at a time against the clock. No pins here — you WIN by tossing them OVER THE TOP ROPE, but a toss only sticks once you’ve worn them down (otherwise they “skin the cat” and hang on). Your wear CARRIES between entrants (only a small breather, never a full heal), and every fighter you dump makes the next one a touch meaner. Outlast the entire field to be the LAST ONE STANDING. They can dump you too — get knocked down while worn and you’re gone.'],
   ['4.10', 'Cinematic + photoreal step (creative green-light): 👤 FACES — every fighter now has eyes, brows, and a nose (no more faceless heads — shows in the ring, on roster cards, and the customizer) · 🚶 WALK-IN ENTRANCES — fighters stride in from the ropes as the bell rings instead of just appearing · 🎬 SLOW-MO FINISH CAM — end a match and a cinematic letterbox + “★ FINISH ★” stamp drops while the camera orbits low and slow around the fallen fighter before the result screen'],
@@ -3665,6 +3676,30 @@ function showCombo(n) {
   el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
   clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('on'), 900);
 }
+// ENTRANCE THEME — a short synth walkout riff, seeded from the fighter so each crew member sounds a little different
+function playEntranceTheme(fighter) {
+  if (!save.sfxOn) return;
+  ensureCtx();
+  const id = (fighter && fighter.id) ? fighter.id : 'sc';
+  const seed = id.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  const scale = [196, 220, 247, 262, 294, 330, 392, 440];      // a bright pentatonic-ish run
+  const root = scale[seed % scale.length];
+  const pattern = [0, 2, 4, 5, 4, 7];                          // rising walkout lick
+  tone(root / 2, 0.55, 'sawtooth', 0.15, -20);                // bass thump on the bell
+  pattern.forEach((step, i) => {
+    const f = scale[(seed + step) % scale.length] * (i >= 4 ? 2 : 1);
+    sfxDelay(() => tone(f, 0.2, (i % 2) ? 'square' : 'triangle', 0.11, 18), 110 + i * 140);
+  });
+  sfxDelay(() => tone(root * 2, 0.5, 'sine', 0.11, 90), 110 + pattern.length * 140);   // ring-out
+}
+// PYRO — corner jets + a flash when the fighters stride in
+function firePyro() {
+  let el = document.getElementById('pyro');
+  if (!el) { el = document.createElement('div'); el.id = 'pyro'; el.innerHTML = '<i class="pyro-jet l"></i><i class="pyro-jet r"></i><i class="pyro-flash"></i>'; (document.getElementById('ring') || document.body).appendChild(el); }
+  el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
+  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('on'), 1100);
+  if (save.sfxOn) { tone(2200, 0.18, 'sawtooth', 0.06, -1700); sfxDelay(() => tone(1500, 0.2, 'square', 0.05, -1100), 70); }   // sizzle
+}
 
 function triggerHitReact(side, heavy) {
   if (SC3D.ok && SC3D.started) set3DAnim(side, 'hit', heavy ? 440 : 320);   // REAL 3D recoil
@@ -4286,6 +4321,7 @@ function beginPrefight() {
   document.getElementById('pf-verse').innerHTML = w ? '<span style="color:var(--gold)">✝</span> "' + w.text + '" — ' + w.ref : '';
   document.getElementById('pf-diff').textContent = curDiff().name;
   el.classList.add('on'); el.setAttribute('aria-hidden', 'false');
+  playEntranceTheme(match.player);                 // walkout riff as the VS card shows
   const cd = document.getElementById('pf-count');
   let n = 3; cd.textContent = n; cd.className = 'pf-count';
   const tick = () => {
@@ -4302,6 +4338,7 @@ function endPrefight() {
   match.paused = false;
   match.lastT = performance.now();
   SC3D.entranceT0 = performance.now();   // fighters stride in from the ropes as the bell rings (walk-in entrance)
+  firePyro();                            // 🎆 pyro jets fire as they hit the ring
   setStatus('FIGHT!', 'var(--gold)', 900);
   // cinematic "news" beat per mode
   const m = match.mode;
