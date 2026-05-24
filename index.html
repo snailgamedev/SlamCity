@@ -342,6 +342,13 @@
   .result-avatar canvas, .result-avatar svg { width: 100%; height: 100%; display: block; }
   @keyframes result-pop { 0% { transform: scale(0.6); opacity: 0; } 60% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); } }
   .result-detail { font-size: 13px; color: var(--soft); max-width: 320px; line-height: 1.6; }
+  /* POST-MATCH BREAKDOWN — tale of the tape */
+  .match-breakdown { margin: 16px auto 4px; max-width: 320px; border: 1px solid rgba(200,160,96,0.3); border-radius: 10px; padding: 10px 12px 12px; background: rgba(200,160,96,0.05); }
+  .match-breakdown .bd-title { font-size: 10px; letter-spacing: 2px; font-weight: 800; color: var(--gold); margin-bottom: 8px; }
+  .match-breakdown .bd-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px 4px; }
+  .match-breakdown .bd-cell { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+  .match-breakdown .bd-v { font-size: 17px; font-weight: 900; color: #fff; line-height: 1; }
+  .match-breakdown .bd-l { font-size: 8px; letter-spacing: 0.5px; color: var(--muted); font-weight: 700; }
   .result-scripture { max-width: 380px; padding: 16px 20px; border-left: 3px solid var(--gold); background: rgba(200,160,96,0.06); border-radius: 4px; text-align: left; margin: 8px 0 20px; }
   .result-scripture-text { font-style: italic; color: var(--cream); font-size: 13px; line-height: 1.55; }
   .result-scripture-ref { display: block; color: var(--gold); font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-top: 8px; font-size: 10px; }
@@ -819,6 +826,18 @@
   @keyframes cine-fade { 0% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
   @keyframes cine-bar-in { 0% { height: 0; } 22% { height: 13%; } 82% { height: 13%; } 100% { height: 0; } }
   @keyframes cine-stamp-in { 0% { opacity: 0; transform: translateY(-50%) scale(1.7); letter-spacing: 22px; } 18% { opacity: 1; transform: translateY(-50%) scale(1); letter-spacing: 4px; } 78% { opacity: 1; } 100% { opacity: 0; transform: translateY(-50%) scale(1.05); } }
+  /* SIGNATURE FINISHER cut-in — comic stamp announcing the named finisher */
+  #sig-cutin { position: absolute; left: 0; right: 0; top: 34%; z-index: 32; pointer-events: none; text-align: center; opacity: 0; transform: scale(0.6) rotate(-4deg); }
+  #sig-cutin.on { animation: sig-cut 1.5s cubic-bezier(.18,.9,.2,1) forwards; }
+  #sig-cutin.from-r { text-align: center; }
+  #sig-cutin .sc-tag { font-size: 11px; letter-spacing: 3px; font-weight: 800; color: var(--gold); opacity: 0.9; }
+  #sig-cutin .sc-move { font-size: clamp(26px, 8.5vw, 56px); font-weight: 900; letter-spacing: 1px; color: #fff; line-height: 1.02; text-shadow: 0 0 20px rgba(255,196,64,0.9), 3px 3px 0 #b8002e, 0 5px 12px #000; -webkit-text-stroke: 1px rgba(0,0,0,0.4); }
+  #sig-cutin .sc-by { font-size: 13px; letter-spacing: 2px; font-weight: 800; color: var(--gold); margin-top: 2px; text-shadow: 0 2px 6px #000; }
+  @keyframes sig-cut { 0% { opacity: 0; transform: scale(1.5) rotate(-4deg); } 14% { opacity: 1; transform: scale(1) rotate(-4deg); } 78% { opacity: 1; transform: scale(1) rotate(-4deg); } 100% { opacity: 0; transform: scale(1.08) rotate(-4deg); } }
+  /* COMBO popup */
+  #combo-pop { position: absolute; right: 12px; top: 24%; z-index: 31; pointer-events: none; font-weight: 900; font-size: clamp(18px, 5.5vw, 30px); letter-spacing: 1px; color: var(--gold); text-shadow: 2px 2px 0 #b8002e, 0 3px 8px #000; opacity: 0; }
+  #combo-pop.on { animation: combo-pop 0.9s ease forwards; }
+  @keyframes combo-pop { 0% { opacity: 0; transform: scale(1.6) translateY(8px); } 20% { opacity: 1; transform: scale(1) translateY(0); } 70% { opacity: 1; } 100% { opacity: 0; transform: scale(1.1) translateY(-10px); } }
   .watch-badge { display: none; align-items: center; justify-content: space-between; gap: 10px; margin: 6px 8px; padding: 8px 14px; border-radius: 12px; border: 1px solid var(--gold); background: rgba(40,28,12,0.85); }
   .watch-badge.on { display: flex; }
   .watch-badge span { font-size: 11px; letter-spacing: 1px; color: var(--gold); font-weight: 800; }
@@ -927,7 +946,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v4.11 · build 2026-05-24·1227 · 🔔 NEW: ROYAL RUMBLE — whole crew, random draw · TOSS them over the top (wear them down first) · your damage carries · last one standing wins · for AARON</div>
+  <div class="splash-foot">v4.12 · build 2026-05-24·1237 · ⭐ SIGNATURE FINISHERS announced by name · 🔢 COMBO COUNTER · 📊 TALE OF THE TAPE post-match breakdown · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -1235,7 +1254,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v4.11</div>
+    <div class="load-skip">tap to skip · v4.12</div>
   </div>
 </div>
 
@@ -2107,7 +2126,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '4.11';
+const GAME_VERSION = '4.12';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -2141,6 +2160,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['4.12', 'Make wins feel EARNED (cooking the idea list): ⭐ SIGNATURE FINISHERS — land your finisher and a comic-book stamp announces it BY NAME (RKO · Phoenix Splash · Last Ride · Suplex City · Ancient Landmark…) with your name under it · 🔢 COMBO COUNTER — chain hits and a “COMBO ×N” pops on screen, your top combo is tracked · 📊 TALE OF THE TAPE — the result screen now breaks down how the fight actually went: strikes, slams, big hits, blocks, reversals, top combo, biggest hit, and whether you hit the finisher'],
   ['4.11', 'NEW MODE — 🔔 ROYAL RUMBLE: the whole crew, drawn in random order, one at a time against the clock. No pins here — you WIN by tossing them OVER THE TOP ROPE, but a toss only sticks once you’ve worn them down (otherwise they “skin the cat” and hang on). Your wear CARRIES between entrants (only a small breather, never a full heal), and every fighter you dump makes the next one a touch meaner. Outlast the entire field to be the LAST ONE STANDING. They can dump you too — get knocked down while worn and you’re gone.'],
   ['4.10', 'Cinematic + photoreal step (creative green-light): 👤 FACES — every fighter now has eyes, brows, and a nose (no more faceless heads — shows in the ring, on roster cards, and the customizer) · 🚶 WALK-IN ENTRANCES — fighters stride in from the ropes as the bell rings instead of just appearing · 🎬 SLOW-MO FINISH CAM — end a match and a cinematic letterbox + “★ FINISH ★” stamp drops while the camera orbits low and slow around the fallen fighter before the result screen'],
   ['4.9',  'Combat depth (built on the creative green-light): 🔄 REVERSALS — tap REVERSE right as the opponent’s attack is about to land and you COUNTER it, negating the hit and stunning them wide open · 🔥 TAUNT — the FINISH button becomes a TAUNT while your finisher is locked; call them on to pump your HYPE meter (leaves you briefly open, so pick your moment) · both moves have their own 3D animations + on-screen callouts'],
@@ -3258,7 +3278,9 @@ function startMatchWith(playerId, oppId) {
     pWC: weightClassOf(player), oWC: weightClassOf(opponent),
     // per-match performance tally — feeds the end-of-match rating movement
     tally: { strikesLanded:0, strikesWhiff:0, heavyLanded:0, blocked:0, dodgedClean:0,
-             finisherLanded:false, dmgDealt:0, dmgTaken:0, gassed:false, grappleLanded:0, winMethod:null }
+             finisherLanded:false, dmgDealt:0, dmgTaken:0, gassed:false, grappleLanded:0, winMethod:null,
+             biggestHit:0, reversals:0, comboMax:0 },   // feed the post-match breakdown + combo HUD
+    comboCount: 0, comboUntil: 0, comboHitUntil: 0, biggestHit: 0
   };
   applyModeRules(match);                 // per-mode feel: scaling, worn HP, training dummy
   save.picks[playerId] = (save.picks[playerId] || 0) + 1;
@@ -3626,6 +3648,23 @@ function flashSig(name, isFin) {
   el.classList.add('on');
   clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('on'), 950);
 }
+// SIGNATURE FINISHER cut-in — a comic-style stamp announcing the fighter's NAMED finisher when it lands
+function signatureCutIn(fighterName, moveName, side) {
+  let el = document.getElementById('sig-cutin');
+  if (!el) { el = document.createElement('div'); el.id = 'sig-cutin'; (document.getElementById('ring') || document.body).appendChild(el); }
+  el.innerHTML = '<div class="sc-tag">★ SIGNATURE FINISHER ★</div><div class="sc-move">' + ((moveName || 'FINISHER') + '').toUpperCase() + '</div><div class="sc-by">— ' + fighterName + ' —</div>';
+  el.className = 'sig-cutin ' + (side === 'left' ? 'from-l' : 'from-r');
+  void el.offsetWidth; el.classList.add('on');
+  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('on'), 1500);
+}
+// COMBO popup — pops the running combo count on consecutive landed hits
+function showCombo(n) {
+  let el = document.getElementById('combo-pop');
+  if (!el) { el = document.createElement('div'); el.id = 'combo-pop'; (document.getElementById('ring') || document.body).appendChild(el); }
+  el.textContent = 'COMBO ×' + n;
+  el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
+  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('on'), 900);
+}
 
 function triggerHitReact(side, heavy) {
   if (SC3D.ok && SC3D.started) set3DAnim(side, 'hit', heavy ? 440 : 320);   // REAL 3D recoil
@@ -3661,6 +3700,7 @@ function tryReverse() {
   const gap = Math.abs(match.oX - match.pX);
   if (tLeft > -50 && tLeft < 230 && gap < fighterW() * 1.4) {   // tight timing window
     match.oAtk = null; match.oStun = 750; match.oCool = 650; match.pInvuln = 220;
+    if (match.tally) match.tally.reversals++;
     addMomentum(true, 20);
     if (SC3D.ok && SC3D.started) { set3DAnim('left', 'grapple', 360); set3DAnim('right', 'hit', 420); }
     triggerHitReact('right', false); flash('right', false);
@@ -3866,10 +3906,23 @@ function resolveAttack(atk) {
     if (heavy) match.tally.heavyLanded++;
     if (move.type === 'power') match.tally.grappleLanded++;          // slams/grapples landed → feeds GRAPPLING
     if (move.fin && !blocked) match.tally.finisherLanded = true;
-    // COMBO window: a landed STRIKE opens a quick follow-up; a thrown combo closes the chain
+    if (!blocked && dmg > match.biggestHit) { match.biggestHit = dmg; if (dmg > match.tally.biggestHit) match.tally.biggestHit = dmg; }
+    // COMBO COUNTER — consecutive landed hits before the chain breaks (own window, separate from the combo-attack trigger)
+    if (!blocked) {
+      const now = performance.now();
+      match.comboCount = (now < (match.comboHitUntil || 0)) ? match.comboCount + 1 : 1;
+      match.comboHitUntil = now + 1400;
+      if (match.comboCount > match.tally.comboMax) match.tally.comboMax = match.comboCount;
+      if (match.comboCount >= 2) showCombo(match.comboCount);
+    }
+    // SIGNATURE FINISHER cut-in — announce the named move with a comic stamp
+    if (move.fin && !blocked) signatureCutIn(match.player.name, move.name, 'left');
+    // COMBO-ATTACK window: a landed STRIKE opens a quick 1-2 follow-up; a thrown combo closes the chain
     if (atk.kind === 'strike' && !blocked) { match.comboUntil = performance.now() + 700; setStatus('COMBO READY — tap STRIKE', 'var(--gold)', 600); }
     else if (atk.kind === 'combo') match.comboUntil = 0;
   } else {
+    if (move.fin && !blocked) signatureCutIn(match.opponent.name, move.name, 'right');
+    if (!blocked) match.comboCount = 0;                              // your chain breaks when YOU get hit
     match.tally.dmgTaken += dmg;
     if (blocked) match.tally.blocked++;
     if (!blocked) match.comboUntil = 0;                              // getting hit breaks your combo chain
@@ -4364,6 +4417,21 @@ function applyProgression(result) {
   persistSave();
   return { pCh, oCh, pBefore, pAfter: getCurrentOVR(pid), oBefore, oAfter: getCurrentOVR(oid), lowHPwin };
 }
+// POST-MATCH BREAKDOWN — a tale-of-the-tape of how the fight actually went
+function matchBreakdownHTML(t) {
+  if (!t) return '';
+  const cell = (label, val, hot) => `<div class="bd-cell"><span class="bd-v"${hot ? ' style="color:var(--gold)"' : ''}>${val}</span><span class="bd-l">${label}</span></div>`;
+  return `<div class="match-breakdown"><div class="bd-title">📊 TALE OF THE TAPE</div><div class="bd-grid">`
+    + cell('STRIKES', t.strikesLanded)
+    + cell('SLAMS', t.grappleLanded)
+    + cell('BIG HITS', t.heavyLanded)
+    + cell('BLOCKS', t.blocked)
+    + cell('REVERSALS', t.reversals, t.reversals > 0)
+    + cell('TOP COMBO', '×' + (t.comboMax || 0), t.comboMax >= 3)
+    + cell('BIGGEST HIT', '−' + (t.biggestHit || 0), t.biggestHit >= 45)
+    + cell('FINISHER', t.finisherLanded ? '✓' : '—', t.finisherLanded)
+    + `</div></div>`;
+}
 function fmtChanges(ch) {
   const keys = Object.keys(ch).filter(k => ch[k] !== 0);
   if (!keys.length) return '<span style="color:var(--muted)">ratings held steady</span>';
@@ -4441,7 +4509,8 @@ function finishMatch(result) {
       + `<div>${match.player.name} OVR: ${playerBefore} → <strong style="color:${colorP}">${playerAfter} ${arrowP}${Math.abs(playerChange)}</strong></div>`
       + `<div>${match.opponent.name} OVR: ${oppBefore} → <strong style="color:${colorO}">${oppAfter} ${arrowO}${Math.abs(oppChange)}</strong></div>`
       + `<div style="margin-top:8px; font-size:11px; line-height:1.7;">${fmtChanges(prog.pCh)}</div>`
-      + `</div>`;
+      + `</div>`
+      + matchBreakdownHTML(match.tally);
 
     const sf = result === 'win' ? match.player.art.scriptureFinisher : null;
     const sb = document.getElementById('result-scripture-block');
