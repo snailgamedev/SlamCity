@@ -963,7 +963,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v4.15 · build 2026-05-24·1301 · 🛠 ADMIN TOOLS — 📢 Message of the Day banner · 🏆 admin activity ranking · 🔍 audit-log search (+ who did each action) · for AARON</div>
+  <div class="splash-foot">v4.16 · build 2026-05-24·1317 · 🎥 FIGHT CLARITY — close eye-level camera (no more tiny fighters) · 🔵🔴 blue=YOU / red=FOE rings · ⚠️ attack telegraph · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -1272,7 +1272,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v4.15</div>
+    <div class="load-skip">tap to skip · v4.16</div>
   </div>
 </div>
 
@@ -2154,7 +2154,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '4.15';
+const GAME_VERSION = '4.16';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -2188,6 +2188,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['4.16', 'FIGHT CLARITY OVERHAUL (you said it was hard to tell what’s happening — fixed): 🎥 NEW CAMERA — pulled in close at near eye-level so the fighters FILL the screen instead of being tiny specks in a sea of black, and the constant floaty sway is gone — it’s a stable broadcast angle that keeps BOTH fighters framed whether they’re close or far · 🔵🔴 WHO’S WHO — a blue ring under YOU, a red ring under your FOE, so you never lose track of yourself · ⚠️ ATTACK TELEGRAPH — a fighter’s ring flashes bright the instant they commit an attack, so you can SEE the hit coming and time your REVERSE/BLOCK · fighters no longer fully overlap at contact so you can read the action. The whole fight is way easier to follow now.'],
   ['4.15', 'ADMIN TOOLS cluster (cooking the list · you flagged this one): 📢 MESSAGE OF THE DAY — an admin posts a banner that stays on the hub for EVERYONE until changed (separate from the one-shot announce) · 🏆 ADMIN ACTIVITY — the panel now ranks who’s been moderating, tallied from the audit log · 🔍 LOG SEARCH — filter the admin log by action or by which admin did it. Every logged action now records WHO did it.'],
   ['4.14', 'FACE CUSTOMIZATION (cooking the list): now that every fighter has a face, you can shape it — 🧔 BEARD (none · stubble · goatee · full) and 👁 EYE COLOR (dark · brown · hazel · amber · blue · green · ruby), both in the CREATE-A-FIGHTER screen AND the per-fighter look editor, so you can give anyone in the crew a beard. Eyes now have pupils so the color reads. Live 3D preview updates instantly and it saves with the fighter.'],
   ['4.13', 'ENTRANCES go big (cooking the list): 🎵 WALKOUT THEMES — every fighter gets a short synth walkout riff that plays on the pre-fight card, seeded from who they are so the crew sounds a little different from each other · 🎆 PYRO — gold pyro jets blast up from the corners (with a sizzle) the moment the bell rings and the fighters stride into the ring. Pairs with the v4.10 walk-in entrances for a real big-stage feel. All audio respects your Sound Effects + Volume settings.'],
@@ -3555,7 +3556,7 @@ function gameLoop(t) {
   const arenaW = ring.clientWidth;
   const fW = fighterW();
   const maxX = Math.max(0, arenaW - fW);
-  const minGap = fW * 0.60;                  // bodies crowd close at contact (the "collide" feel)
+  const minGap = fW * 0.72;                  // bodies crowd close at contact, but stay readable (not fully overlapping)
 
   match.pStun = Math.max(0, match.pStun - dtms);
   match.oStun = Math.max(0, match.oStun - dtms);
@@ -4783,8 +4784,8 @@ function init3D() {
   const scene = new THREE.Scene();
   scene.fog = new THREE.Fog(0x07070c, 7, 17);
   const camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 100);
-  camera.position.set(0.9, 1.7, 5.3);   // lower + slightly off-axis = more dimensional / 3D
-  camera.lookAt(0, 1.05, 0);
+  camera.position.set(0, 1.28, 3.4);   // close, near eye-level broadcast angle (fighters fill the frame)
+  camera.lookAt(0, 1.02, 0);
   // CINEMATIC lighting — dim arena + a dramatic spotlight over the ring + warm key + red rim
   scene.add(new THREE.HemisphereLight(0xaeb6d8, 0x161620, 0.55));
   const key = new THREE.DirectionalLight(0xfff2e0, 0.75); key.position.set(3.5, 8, 4.5);
@@ -4927,8 +4928,32 @@ function mountFighters(pArt, oArt) {
   ['left', 'right'].forEach(s => { if (SC3D.fighters[s]) { SC3D.scene.remove(SC3D.fighters[s].group); } });
   SC3D.fighters.left = build3DFighter(pArt);
   SC3D.fighters.right = build3DFighter(oArt);
+  SC3D.fighters.left.marker = addFootMarker(SC3D.fighters.left.group, 0x4ea0ff);   // YOU = blue ring
+  SC3D.fighters.right.marker = addFootMarker(SC3D.fighters.right.group, 0xff5440);  // FOE = red ring
   SC3D.scene.add(SC3D.fighters.left.group);
   SC3D.scene.add(SC3D.fighters.right.group);
+}
+// a flat glowing ring under each fighter → you always know which is YOU vs the FOE + it telegraphs attacks
+function addFootMarker(group, color) {
+  const mat = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.7, side: THREE.DoubleSide });
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.2, 0.34, 28), mat);
+  ring.rotation.x = -Math.PI / 2; ring.position.y = 0.02;
+  ring._baseColor = new THREE.Color(color);
+  group.add(ring);
+  return ring;
+}
+function pulseMarker(mk, winding, now) {
+  if (!mk) return;
+  if (winding) {                                   // an attack is committed → flash the ring bright/white as a telegraph
+    const f = 0.5 + 0.5 * Math.sin(now * 0.03);
+    mk.material.color.copy(mk._baseColor).lerp(new THREE.Color(0xffffff), 0.4 + f * 0.5);
+    mk.material.opacity = 0.85;
+    mk.scale.setScalar(1.15 + f * 0.3);
+  } else {
+    mk.material.color.copy(mk._baseColor);
+    mk.material.opacity = 0.6;
+    mk.scale.setScalar(1);
+  }
 }
 function refresh3DLook(side, art) { if (!SC3D.ok || !SC3D.fighters[side]) return; SC3D.scene.remove(SC3D.fighters[side].group); SC3D.fighters[side] = build3DFighter(art); SC3D.scene.add(SC3D.fighters[side].group); }
 function set3DAnim(side, name, dur) {
@@ -5095,6 +5120,9 @@ function update3D(now) {
     // SLOW-MO on the finisher cam — the KO collapse plays in dramatic slow motion
     const poseDt = SC3D.finishCam ? dt * 0.32 : dt;
     poseFighter(L, poseDt, now, lMoving || enWalk); poseFighter(R, poseDt, now, rMoving || enWalk);
+    // FOOT-MARKER TELEGRAPH — the ring flashes when that fighter has committed an attack (read it / reverse it)
+    pulseMarker(L.marker, match.pAtk && match.pAtk.hitAt > now, now);
+    pulseMarker(R.marker, match.oAtk && match.oAtk.hitAt > now, now);
     // a small step-forward on attacks, in facing direction
     const lStep = (L._step || 0) * (leftFacesRight ? 1 : -1);
     const rStep = (R._step || 0) * (leftFacesRight ? -1 : 1);
@@ -5118,18 +5146,17 @@ function update3D(now) {
       SC3D.camera.position.y = 1.35 + Math.sin(p * Math.PI) * 0.55 - p * 0.55;   // dip to a low hero angle
       SC3D.camera.lookAt(midX * 0.5, 0.75, 0);                        // look low — at the fallen fighter
     } else {
-      // CINEMATIC CAMERA — track the action midpoint + a slow orbital drift + a punch-in on big hits
-      const orbit = Math.sin(now * 0.00016) * 0.55;                   // gentle dolly across
-      const punch = (match.hitStop > 0 || match.pHype > 0 || match.oHype > 0) ? 0.55 : 0;   // zoom in on freeze-frames / hype
-      const entWide = enWalk ? 0.7 : 0;                               // pull back for the establishing entrance shot
-      const camTX = 0.9 + midX * 0.32 + orbit;
-      const camTZ = 4.6 + Math.min(1.0, sep * 0.45) - punch + entWide;
-      const camTY = 1.7 + Math.sin(now * 0.00011) * 0.12 - punch * 0.1 + entWide * 0.15;
-      SC3D.camera.position.x = damp(SC3D.camera.position.x, camTX, dt, punch ? 9 : 2.6);
-      SC3D.camera.position.z = damp(SC3D.camera.position.z, camTZ, dt, punch ? 9 : 2.6);
-      SC3D.camera.position.y = damp(SC3D.camera.position.y, camTY, dt, 2.2);
-      SC3D._lookX = damp(SC3D._lookX || 0, midX * 0.5, dt, 3);
-      SC3D.camera.lookAt(SC3D._lookX, 1.05, 0);
+      // BROADCAST CAMERA — close, near eye-level, STABLE: fighters fill the frame & the action reads clearly
+      const punch = (match.hitStop > 0 || match.pHype > 0 || match.oHype > 0) ? 0.4 : 0;   // small punch-in on freeze-frames / hype
+      const entWide = enWalk ? 1.2 : 0;                               // pull back for the establishing entrance shot
+      const camTX = midX * 0.55;                                      // centered on the action — no constant sway/bias
+      const camTZ = 3.15 + Math.min(1.7, sep * 0.72) - punch + entWide;   // closer base; pulls back only when they’re far apart so BOTH stay framed
+      const camTY = 1.28 - punch * 0.05 + entWide * 0.22;             // near eye-level → you watch the fight, not the floor
+      SC3D.camera.position.x = damp(SC3D.camera.position.x, camTX, dt, punch ? 8 : 3.6);
+      SC3D.camera.position.z = damp(SC3D.camera.position.z, camTZ, dt, punch ? 8 : 3.6);
+      SC3D.camera.position.y = damp(SC3D.camera.position.y, camTY, dt, 3);
+      SC3D._lookX = damp(SC3D._lookX || 0, midX * 0.55, dt, 4.5);
+      SC3D.camera.lookAt(SC3D._lookX, 1.02, 0);
     }
   }
   SC3D.renderer.render(SC3D.scene, SC3D.camera);

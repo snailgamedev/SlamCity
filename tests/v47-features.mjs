@@ -39,8 +39,10 @@ try {
   // 2 · DEEPER ANIMATIONS — different moves produce different limb rotations (not just a body lean)
   const poses = await page.evaluate(() => {
     const f = SC3D.fighters.left; const cap = () => ({ shR: +f.parts.armR.shoulder.rotation.x.toFixed(2), elR: +f.parts.armR.elbow.rotation.x.toFixed(2), ty: +f.parts.torso.rotation.y.toFixed(2) });
-    function poseFor(name, ms) { f.anim = { name, t0: performance.now() - ms, dur: 400 }; for (let i = 0; i < 8; i++) poseFighter(f, 0.05, performance.now(), false); return cap(); }
-    const idle = (() => { f.anim = { name: 'idle', t0: 0, dur: 0 }; for (let i = 0; i < 8; i++) poseFighter(f, 0.05, performance.now(), false); return cap(); })();
+    // FIXED time base → deterministic (the strike alternates the striking hand by `now`; sampling at real time made this flaky)
+    const T = 60000;
+    function poseFor(name, ms) { f.anim = { name, t0: T - ms, dur: 400 }; for (let i = 0; i < 8; i++) poseFighter(f, 0.05, T, false); return cap(); }
+    const idle = (() => { f.anim = { name: 'idle', t0: 0, dur: 0 }; for (let i = 0; i < 8; i++) poseFighter(f, 0.05, T, false); return cap(); })();
     const strike = poseFor('strike', 130);   // mid-extend
     const grapple = poseFor('grapple', 350);  // lift phase
     return { idle, strike, grapple };
