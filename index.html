@@ -727,6 +727,7 @@
   .adm-dash .dash-v { font-size: 18px; font-weight: 900; color: #fff; line-height: 1; }
   .adm-dash .dash-l { font-size: 8px; letter-spacing: 0.5px; color: var(--muted); font-weight: 800; }
   .adm-mini.has-note { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 6px rgba(200,160,96,0.5); }
+  .adm-owner { font-size: 10px; font-weight: 800; letter-spacing: 0.5px; color: #7fd0ff; margin-left: 6px; }
   .adm-noteline { font-size: 10.5px; color: var(--gold); background: rgba(200,160,96,0.08); border-left: 2px solid var(--gold); padding: 4px 8px; margin: -2px 0 6px; border-radius: 0 6px 6px 0; line-height: 1.4; }
   /* TITLES & RANKINGS screen */
   .rank-body { padding: 10px 14px 30px; max-width: 480px; margin: 0 auto; }
@@ -1029,7 +1030,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v4.23 · build 2026-05-24·1644 · ✨ premium polish on every screen (fades · ambient glow · button sheen) · 🛡 deeper admin (dashboard · 📝 staff notes · ⎘ export log) · for AARON</div>
+  <div class="splash-foot">v4.24 · build 2026-05-24·1713 · 🐛 search-typing + tutorial-button fixed · 🎥 consistent close camera · 🥊 bigger ring + full roam · ⚡ lag fixed · 🛡 admin sees owners · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -1119,7 +1120,7 @@
     <div style="width:60px"></div>
   </div>
   <div class="roster-filter">
-    <input id="roster-search" class="roster-search" placeholder="🔎 search fighter…" oninput="buildRoster()" autocomplete="off">
+    <input id="roster-search" class="roster-search" placeholder="🔎 search fighter…" oninput="rosterSearchInput()" autocomplete="off">
     <button class="btn" type="button" id="roster-random" onclick="pickRandomFighter()" style="margin:8px 0 2px">🎲 RANDOM — surprise me</button>
     <div class="roster-chips" id="roster-chips">
       <button class="rchip on" data-f="all" onclick="setRosterFilter('all')">ALL</button>
@@ -1306,20 +1307,6 @@
     </div>
   </div>
 
-  <div class="tutorial" id="tutorial" aria-hidden="true">
-    <div class="tut-card">
-      <div class="tut-title">HOW TO FIGHT</div>
-      <div class="tut-grid">
-        <div class="tut-row"><span class="tut-ic">🕹️</span><div><b>MOVE</b> — left stick. It's real-time: walk in to land hits, back off to breathe.</div></div>
-        <div class="tut-row"><span class="tut-ic">👊</span><div><b>JAB</b> fast &amp; cheap · <b>POWER</b> heavy &amp; slow · <b>✝ FINISH</b> unlocks when they're low.</div></div>
-        <div class="tut-row"><span class="tut-ic">🛡️</span><div><b>BLOCK</b> (hold) soaks damage · <b>DODGE</b> (tap) i-frames you through a shot.</div></div>
-        <div class="tut-row"><span class="tut-ic">🎯</span><div>Hits land by <b>distance + timing</b>, not luck — out of reach = a whiff.</div></div>
-        <div class="tut-row"><span class="tut-bars"><i class="hp"></i><i class="st"></i></span><div><b>HP</b> = health (top bar) · <b>STAMINA</b> = powers your attacks, drains when you block, refills over time.</div></div>
-        <div class="tut-row"><span class="tut-ic">📈</span><div>Every fighter has living ratings — <b>Striking · Power · Finisher · Blocking · Stamina · Speed · Heart</b> — that rise &amp; fall by how you fight. Weight class &amp; style matter.</div></div>
-      </div>
-      <button class="btn" type="button" onclick="hideTutorial()">GOT IT — LET'S GO</button>
-    </div>
-  </div>
 </div>
 
 <!-- ========== RESULT ========== -->
@@ -1349,13 +1336,29 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v4.23</div>
+    <div class="load-skip">tap to skip · v4.24</div>
   </div>
 </div>
 
 <!-- update toast (shows after the build changes) -->
 <div class="update-toast" id="update-toast" onclick="showWhatsNew()">
   <span class="ut-badge">UPDATED</span><span class="ut-v">v2.10</span><span class="ut-cta">· what's new ›</span>
+</div>
+
+<!-- HOW TO FIGHT tutorial (top-level overlay so it opens from settings/hub too, not just mid-fight) -->
+<div class="tutorial" id="tutorial" aria-hidden="true">
+  <div class="tut-card">
+    <div class="tut-title">HOW TO FIGHT</div>
+    <div class="tut-grid">
+      <div class="tut-row"><span class="tut-ic">🕹️</span><div><b>MOVE</b> — left stick. It's real-time: walk in to land hits, back off to breathe. You can roam the whole ring.</div></div>
+      <div class="tut-row"><span class="tut-ic">👊</span><div><b>JAB</b> fast &amp; cheap · <b>POWER</b> heavy &amp; slow · <b>✝ FINISH</b> unlocks when they're low.</div></div>
+      <div class="tut-row"><span class="tut-ic">🛡️</span><div><b>BLOCK</b> (hold) soaks damage · <b>REVERSE</b> times a counter · <b>PIN</b> when they're down.</div></div>
+      <div class="tut-row"><span class="tut-ic">⚡</span><div>Fill your <b>HYPE</b> meter and a <b>SIGNATURE</b> button pops — a guaranteed knockdown blow.</div></div>
+      <div class="tut-row"><span class="tut-ic">🎯</span><div>Hits land by <b>distance + timing</b>, not luck — out of reach = a whiff. The chip by each name shows what they're doing.</div></div>
+      <div class="tut-row"><span class="tut-ic">📈</span><div>Every fighter has living ratings that rise &amp; fall by how you fight. Weight class &amp; style matter.</div></div>
+    </div>
+    <button class="btn" type="button" onclick="hideTutorial()">GOT IT — LET'S GO</button>
+  </div>
 </div>
 
 <!-- what's-new / about modal -->
@@ -2233,7 +2236,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '4.23';
+const GAME_VERSION = '4.24';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -2267,6 +2270,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['4.24', 'BIG FIX-IT + GAMEPLAY PASS (no sandbagging): 🐛 the search bar no longer stops you from typing (admin + roster). 🐛 the VIEW TUTORIAL / HOW TO PLAY button now actually opens (it was trapped inside the fight screen). 🎥 the camera stays a CONSISTENT close front view — no more drifting to a sideview. 🥊 bigger ring + you can roam the whole mat (way more front↔back room). ⚡ fight lag fixed (lighter render + one shadow caster + fewer per-frame repaints). 🛡 the admin “all fighters” page now shows WHO is using each fighter (owner name) and lists created fighters. 🖼 roster/detail avatars now refresh the moment an owner changes their look. (Next drop: more move/customization options + a batch of fresh ideas.)'],
   ['4.23', 'POLISH PASS + DEEPER ADMIN: ✨ every screen now fades in smoothly, a slow living glow drifts behind the menus, and the buttons catch a sheen — the whole app feels more premium (all of it respects reduced-motion). 🛡 ADMIN got deeper: a 📊 at-a-glance dashboard (claimed · bans · made · logged · notes), 📝 STAFF NOTES you can pin to any fighter (collaborative mod memory, shows right on their row), and ⎘ EXPORT the audit log to your clipboard as a real paper-trail.'],
   ['4.22', 'FIGHT READABILITY (you said you still couldn’t tell what’s happening): 🎥 the camera now stays CLOSE the WHOLE time — before, it zoomed back out whenever you drifted apart (which is most of a fight), so it felt like nothing changed. Now it stays tight and PANS to follow, with a wider lens so BOTH fighters always fill the frame, near or far. 📛 LIVE ACTION READOUT — a chip next to each fighter’s name calls out exactly what they’re doing every moment: ▶ their move, ◆ BLOCKING, ● STUNNED, ● DOWN, 🔥 HYPED. No more guessing what just happened.'],
   ['4.21', 'ADMIN RANKS NOW MEAN SOMETHING: enforced a real chain of command — you can only moderate (kick · ban · timeout · reset · restyle · message) fighters you OUTRANK. A Crew admin can’t touch Aaron or Old Man Eli; Aaron can’t touch Eli; nobody reaches up the chain (protected fighters show a 🛡 marker). Plus a new 🔑 YOUR RANK panel at the top of every admin’s screen spells out exactly which powers your tier grants ✓ and which are locked 🔒 — so Supreme vs Senior vs Crew is crystal clear. Crowning a champion stays open to all admins (it’s a blessing, not a punishment).'],
@@ -2469,6 +2473,8 @@ function setRosterFilter(f) {
   });
   buildRoster();
 }
+let _rosterSearchT;
+function rosterSearchInput() { clearTimeout(_rosterSearchT); _rosterSearchT = setTimeout(buildRoster, 130); }   // debounce → typing never blocks on a grid rebuild
 function buildRoster() {
   const grid = document.getElementById('roster-grid');
   grid.innerHTML = '';
@@ -3152,7 +3158,10 @@ let adminSort = 'ovr';
 let editingFighter = null;
 function openAdminFighters() { adminView = 'fighters'; renderAdmin(); }
 function backToPanel() { adminView = 'panel'; editingFighter = null; renderAdmin(); }
-function adminSetSearch(v) { adminSearch = v; renderAdminFighters(); }
+function adminSetSearch(v) {
+  adminSearch = v; renderAdminFighters();
+  const el = document.getElementById('adm-search'); if (el) { el.focus(); const n = el.value.length; try { el.setSelectionRange(n, n); } catch (e) {} }   // keep typing (re-render recreated the input)
+}
 function adminSetSort(v) { adminSort = v; renderAdminFighters(); }
 function allManageableFighters() { return FIGHTERS.filter(f => !f.cpu); }   // brothers + Old Man Eli + customs
 function renderAdminFighters() {
@@ -3170,10 +3179,11 @@ function renderAdminFighters() {
     + `<div class="seg adm-sortseg">` + [['ovr', 'OVR ↓'], ['ovrasc', 'OVR ↑'], ['name', 'A–Z']].map(s => `<button class="${adminSort === s[0] ? 'on' : ''}" type="button" onclick="adminSetSort('${s[0]}')">${s[1]}</button>`).join('') + `</div>`;
   html += list.map(f => {
     const claimed = isClaimed(f.id), champ = save.champion === f.id, tier = adminTierOf(f.id);
+    const owner = claimed ? ((save.profiles[f.id] || {}).name || '') : '';   // WHO is using this fighter
     return `<div class="adm-row adm-frow" onclick="openFighterEditor('${f.id}')">`
-      + `<span class="adm-rname">${champ ? '🏆 ' : ''}${f.admin ? '👑 ' : tier ? '⭐ ' : ''}${f.name}${f.custom ? ' <span class="adm-tag">made</span>' : ''}</span>`
+      + `<span class="adm-rname">${champ ? '🏆 ' : ''}${f.admin ? '👑 ' : tier ? '⭐ ' : ''}${f.name}${f.custom ? ' <span class="adm-tag">made</span>' : ''}${owner ? ` <span class="adm-owner">👤 ${escapeHTML(owner)}</span>` : ''}</span>`
       + `<span class="adm-fovr">OVR ${getCurrentOVR(f.id)}</span>`
-      + `<span class="adm-open">${claimed ? '🔒' : '›'}</span></div>`;
+      + `<span class="adm-open">${claimed ? '🔒 in use' : '🔓 open'}</span></div>`;
   }).join('');
   body.innerHTML = html;
   body.scrollTop = 0;
@@ -3406,6 +3416,7 @@ function setProfileLook(key, val) {
   prof.look[key.replace('__', '')] = val;
   persistSave();
   applyProfileLooks();
+  clearThumbs();   // a look change must re-snapshot this fighter's roster/detail avatar everywhere
   const who = save.activeProfile === ADMIN_KEY ? '👑 Old Man Eli' : ((save.profiles[bid] && save.profiles[bid].name) || 'Someone');
   const whom = (FIGHTERS.find(x => x.id === bid) || {}).name || 'a fighter';
   logChange(who + ' recolored ' + whom, 'look:' + bid);   // universal-changes feed (deduped)
@@ -3703,7 +3714,12 @@ function fightStateOf(p) {
 }
 function updateFightState() {
   if (!match) return;
-  const set = (side, p) => { const el = document.getElementById(side + '-state'); if (!el) return; const s = fightStateOf(p); el.textContent = s[0] ? ' ' + s[0] : ''; el.className = 'fs-state ' + s[1]; };
+  const set = (side, p) => {
+    const el = document.getElementById(side + '-state'); if (!el) return;
+    const s = fightStateOf(p); const t = s[0] ? ' ' + s[0] : '';
+    if (el._t === t) return; el._t = t;                   // dirty-check → no per-frame layout thrash (perf)
+    el.textContent = t; el.className = 'fs-state ' + s[1] + (side === 'right' ? ' right' : '');
+  };
   set('left', true); set('right', false);
 }
 
@@ -5049,8 +5065,11 @@ function crowdReact(kind) {
   else { crowdNoise(0.55, 0.13, 720, 0.6, 0.07); bumpCrowd(0.55); }   // pop on a solid hit
 }
 function bumpCrowd(amt) { crowdEnergy = Math.max(0, Math.min(1.4, crowdEnergy + amt)); }
+let _lastCrowdQ = -1;
 function updateCrowdVisual(dt) {
   crowdEnergy = Math.max(0, crowdEnergy - dt * 0.5);
+  const q = Math.round(crowdEnergy * 16);                 // quantize → only REPAINT the crowd when the glow really changes (perf)
+  if (q === _lastCrowdQ) return; _lastCrowdQ = q;
   const el = document.querySelector('.arena-crowd'); if (!el) return;
   el.style.filter = 'brightness(' + (1 + crowdEnergy * 1.1).toFixed(2) + ') saturate(' + (1 + crowdEnergy * 0.6).toFixed(2) + ')';
   el.style.transform = 'scaleY(' + (1 + crowdEnergy * 0.04).toFixed(3) + ')';
@@ -5073,7 +5092,7 @@ window.addEventListener('orientationchange', () => setTimeout(fitViewport, 120))
    perspective ring. Driven by the existing combat state (match.pX/oX/pZ/oZ,
    HP, attacks). Falls back to the CSS-cuboid renderer if THREE didn't load.
    ====================================================================== */
-const SC3D = { ok: false, started: false, raf: null, last: 0, fighters: { left: null, right: null }, ringHalfX: 1.45, ringHalfZ: 0.85, entranceT0: 0, finishCam: null };
+const SC3D = { ok: false, started: false, raf: null, last: 0, fighters: { left: null, right: null }, ringHalfX: 1.62, ringHalfZ: 1.15, entranceT0: 0, finishCam: null };   // bigger ring → roam the whole mat (esp. front↔back depth)
 function has3D() { return typeof THREE !== 'undefined'; }
 
 function init3D() {
@@ -5081,8 +5100,8 @@ function init3D() {
   const canvas = document.getElementById('ring3d'); if (!canvas) return false;
   const ring = document.getElementById('ring');
   const w = ring.clientWidth || 360, h = ring.clientHeight || 480;
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));   // cap retina 2×→1.5× : ~40% less fragment work, big perf win, barely visible
   renderer.setSize(w, h, false);
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;   // CINEMATIC shadows
   if (THREE.ACESFilmicToneMapping) renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -5103,7 +5122,7 @@ function init3D() {
   const rim = new THREE.DirectionalLight(0xff4858, 0.5); rim.position.set(-4.5, 3, -3.5); scene.add(rim);
   const spot = new THREE.SpotLight(0xffffff, 1.5, 22, Math.PI / 5, 0.45, 1.2);
   spot.position.set(0, 7.5, 1.5); spot.target.position.set(0, 0.6, 0);
-  spot.castShadow = true; spot.shadow.mapSize.set(1024, 1024); spot.shadow.bias = -0.0006;
+  spot.castShadow = false;   // one shadow caster (the key light) is enough — halves shadow cost, kills the fight-loop lag
   scene.add(spot); scene.add(spot.target);
   SC3D.spot = spot;
   // ring mat
@@ -5457,13 +5476,15 @@ function update3D(now) {
       // BROADCAST CAMERA — close, near eye-level, STABLE: fighters fill the frame & the action reads clearly
       const punch = (match.hitStop > 0 || match.pHype > 0 || match.oHype > 0) ? 0.4 : 0;   // small punch-in on freeze-frames / hype
       const entWide = enWalk ? 1.2 : 0;                               // pull back for the establishing entrance shot
-      const camTX = midX * 0.62;                                      // PAN to follow the action (stay tight on it, don't zoom out)
-      const camTZ = 3.0 + Math.min(0.6, sep * 0.28) - punch + entWide;    // stays CLOSE always (wide FOV keeps both framed) — fixes "cam pulled back out when they drift apart"
-      const camTY = 1.22 - punch * 0.05 + entWide * 0.22;            // near eye-level → you watch the fight, not the floor
-      SC3D.camera.position.x = damp(SC3D.camera.position.x, camTX, dt, punch ? 8 : 3.6);
-      SC3D.camera.position.z = damp(SC3D.camera.position.z, camTZ, dt, punch ? 8 : 3.6);
+      // CONSISTENT front broadcast cam — only a gentle pan (clamped) so it NEVER swings to an oblique sideview
+      const pan = Math.max(-0.5, Math.min(0.5, midX * 0.28));
+      const camTX = pan;
+      const camTZ = 3.0 + Math.min(0.6, sep * 0.28) - punch + entWide;    // stays CLOSE always (wide FOV keeps both framed)
+      const camTY = 1.22 - punch * 0.05 + entWide * 0.22;            // near eye-level
+      SC3D.camera.position.x = damp(SC3D.camera.position.x, camTX, dt, punch ? 8 : 3.2);
+      SC3D.camera.position.z = damp(SC3D.camera.position.z, camTZ, dt, punch ? 8 : 3.2);
       SC3D.camera.position.y = damp(SC3D.camera.position.y, camTY, dt, 3);
-      SC3D._lookX = damp(SC3D._lookX || 0, midX * 0.55, dt, 4.5);
+      SC3D._lookX = damp(SC3D._lookX || 0, pan, dt, 4);              // look where the cam sits → square-on, consistent
       SC3D.camera.lookAt(SC3D._lookX, 1.02, 0);
     }
   }
@@ -5519,6 +5540,7 @@ function stopPortrait() { SC3DP.started = false; if (SC3DP.raf) cancelAnimationF
 /* ---- 3D THUMBNAILS — snapshot each fighter from the SAME 3D model so roster/cards MATCH the ring ---- */
 const SC3DT = { ok: false };
 const THUMB_CACHE = {};
+function clearThumbs() { for (const k in THUMB_CACHE) delete THUMB_CACHE[k]; }   // force roster/detail avatars to re-snapshot after a look change
 function artSig(a) { return [a.skin, a.skinDark, a.hoodie, a.shorts, a.hair, a.accent, a.hairStyle, a.build, a.beard, a.eyeColor].join('|'); }
 function ensureThumbRenderer() {
   if (SC3DT.ok) return true; if (!has3D()) return false;
