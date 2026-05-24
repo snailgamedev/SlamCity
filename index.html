@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#0a0a0d" />
-<title>SLAM CITY · v3.4 · REAL 3D GEOMETRY</title>
+<title>SLAM CITY · v3.5 · REALISTIC MOVEMENT</title>
 <!-- retro arcade type: Press Start 2P for marquee, Oxanium for readable UI · safe fallback stack -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -713,7 +713,7 @@
   .f3d-inner { position: absolute; left: 0; bottom: 0; transform-style: preserve-3d; animation: bob3d 2.4s ease-in-out infinite; }
   .ring-fighter.left .f3d { transform: rotateY(24deg); }      /* 3/4 view, facing the opponent — shows volume */
   .ring-fighter.right .f3d { transform: rotateY(-24deg); }
-  @keyframes bob3d { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+  @keyframes bob3d { 0% { transform: translateY(0) translateX(0); } 25% { transform: translateY(-3px) translateX(-2px); } 50% { transform: translateY(-5px) translateX(0); } 75% { transform: translateY(-3px) translateX(2px); } 100% { transform: translateY(0) translateX(0); } }
   .ring-fighter.attack-jab .f3d-inner, .ring-fighter.attack-cross .f3d-inner { animation: lunge3dL 0.45s ease-out; }
   .ring-fighter.attack-power .f3d-inner, .ring-fighter.attack-finisher .f3d-inner { animation: lunge3dH 0.6s ease-out; }
   @keyframes lunge3dL { 0%,100% { transform: translateZ(0); } 45% { transform: translateZ(36px) translateY(-2px); } }
@@ -739,7 +739,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v3.4 · build 2026-05-23·2127 · REAL 3D — volumetric cuboid fighters (actual geometry · browser perspective) · realistic movement + per-move animations incoming · for AARON</div>
+  <div class="splash-foot">v3.5 · build 2026-05-23·2136 · REALISTIC MOVEMENT (circle·angle-approach·footwork·depth-weave) · real 3D · per-move + signature animations incoming · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -1003,7 +1003,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v3.4</div>
+    <div class="load-skip">tap to skip · v3.5</div>
   </div>
 </div>
 
@@ -1749,7 +1749,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '3.4';
+const GAME_VERSION = '3.5';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -1782,6 +1782,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['3.5',  'Realistic movement — fighters circle, approach on angles, weave + footwork-bounce (roam, not stand still); AI no longer a straight-line robot'],
   ['3.4',  'REAL 3D — fighters are now actual volumetric cuboid geometry (you can see their sides/depth), browser perspective camera · not flat sprites anymore'],
   ['3.3',  "What's-New now shows real version updates (not static goals) · building toward pro 3D + realistic movement + unique move animations"],
   ['3.2',  'Announcer removed (plain captions) · starting REAL 3D geometry rebuild (volumetric fighters)'],
@@ -2089,7 +2090,7 @@ function startMatchWith(playerId, oppId) {
     hitStop: 0,              // brief freeze-frame on heavy impact
     verse: SPLASH_VERSES[Math.floor(Math.random() * SPLASH_VERSES.length)], verseShown: false,
     killFin: false,
-    ai: { decision: 0, blockCD: 0, mood: 'neutral', moodT: 0, burst: 0, feintCD: 0, jukeDir: 0 },
+    ai: { decision: 0, blockCD: 0, mood: 'neutral', moodT: 0, burst: 0, feintCD: 0, jukeDir: 0, circleDir: 0 },
     lastT: 0,
     // live ability ratings drive the combat math (computed once per match)
     pAb: getAbilities(player), oAb: getAbilities(opponent),
@@ -2716,8 +2717,12 @@ function updateAI(dt, dtms, fW, maxX) {
   else if (mood === 'turtle') engage = reachPx * 1.15;
   else if (mood === 'rush') engage = reachPx * 0.8;
 
+  // REALISTIC FOOTWORK: pick a way to circle + occasionally switch it (no straight-line robot)
+  if (!match.ai.circleDir) match.ai.circleDir = Math.random() < 0.5 ? -1 : 1;
+  if (Math.random() < 0.008) match.ai.circleDir = -match.ai.circleDir;   // commit to a direction longer → wider arcs
   if (gap > engage) {
-    match.oX -= spd * dt;                                         // approach
+    match.oX -= spd * dt;                                         // close the distance…
+    match.oX += match.ai.circleDir * spd * 0.42 * dt;            // …on an angle, not straight in
   } else if (mood === 'turtle' && gap < reachPx * 0.85) {
     match.oX = Math.min(maxX, match.oX + spd * 0.6 * dt);         // too close → back up
   } else if (match.oCool <= 0 && match.ai.decision <= 0) {
@@ -2730,6 +2735,10 @@ function updateAI(dt, dtms, fW, maxX) {
       if (match.ai.burst > 0) match.ai.burst--;
       match.ai.decision = delay * d.react;
     }
+  } else {
+    // in range but reloading → CIRCLE the opponent (footwork), don't just stand there
+    match.oX += match.ai.circleDir * spd * 0.85 * dt;
+    match.oZ = Math.max(0, Math.min(1, match.oZ + match.ai.circleDir * 0.18 * dt));   // weave in depth too
   }
 }
 
