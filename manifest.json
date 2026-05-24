@@ -1,0 +1,14 @@
+{
+  "name": "Slam City",
+  "short_name": "Slam City",
+  "description": "90% wrestling / 10% boxing — grapple, slam, pin & submit the whole crew. Real 3D.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0a0d",
+  "theme_color": "#0a0a0d",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

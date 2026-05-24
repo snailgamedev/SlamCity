@@ -10,7 +10,18 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#0a0a0d" />
-<title>SLAM CITY · v4.0 · REAL 3D</title>
+<title>SLAM CITY · v4.1 · REAL 3D</title>
+<!-- PWA: installable on phone/desktop + offline -->
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icon.svg" />
+<meta name="mobile-web-app-capable" content="yes" />
+<script>
+  // capture the install prompt (Android / desktop Chrome) for the in-game INSTALL button
+  window.__installPrompt = null;
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); window.__installPrompt = e; });
+  // register the service worker (https only; silently no-ops on file:// / unsupported)
+  if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('sc-sw.js').catch(function () {}); }); }
+</script>
 <!-- Three.js (r128, vendored local · global THREE) powers the real-3D ring + jointed fighters (v4.0). Falls back to the CSS renderer if it fails to load. -->
 <script src="three.min.js"></script>
 <!-- retro arcade type: Press Start 2P for marquee, Oxanium for readable UI · safe fallback stack -->
@@ -309,6 +320,8 @@
   #result { justify-content: center; align-items: center; text-align: center; gap: 24px; }
   .result-banner { font-size: clamp(40px, 12vw, 80px); font-weight: 900; letter-spacing: 3px; color: var(--cream); text-shadow: 0 4px 0 #000, 0 6px 16px var(--red); animation: result-pop 0.6s ease-out; }
   .result-banner.loss { color: var(--soft); text-shadow: 0 2px 0 #000; }
+  .result-avatar { width: 150px; height: 180px; margin: 0 auto 4px; filter: drop-shadow(0 8px 24px rgba(0,0,0,0.6)); animation: result-rise 0.6s cubic-bezier(0.16,1,0.3,1) both; }
+  .result-avatar canvas, .result-avatar svg { width: 100%; height: 100%; display: block; }
   @keyframes result-pop { 0% { transform: scale(0.6); opacity: 0; } 60% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); } }
   .result-detail { font-size: 13px; color: var(--soft); max-width: 320px; line-height: 1.6; }
   .result-scripture { max-width: 380px; padding: 16px 20px; border-left: 3px solid var(--gold); background: rgba(200,160,96,0.06); border-radius: 4px; text-align: left; margin: 8px 0 20px; }
@@ -500,6 +513,15 @@
   .chg-head { font-size: 9px; letter-spacing: 1.5px; color: var(--gold); font-weight: 800; margin-bottom: 6px; }
   .chg-row { font-size: 11px; color: var(--soft); line-height: 1.55; }
   .chg-t { color: var(--muted); font-size: 9px; font-weight: 700; margin-right: 4px; }
+  .msg-badge { display: inline-block; background: var(--gold); color: #1a1208; font-weight: 900; font-size: 10px; border-radius: 10px; padding: 1px 7px; margin-left: 4px; vertical-align: middle; }
+  /* install / download modal */
+  .install-lead { font-size: 12.5px; color: var(--soft); line-height: 1.6; margin-bottom: 14px; }
+  .install-steps { display: flex; flex-direction: column; gap: 8px; margin: 12px 0 14px; }
+  .ins-row { display: flex; flex-direction: column; gap: 2px; padding: 9px 11px; border: 1px solid var(--bg-3); border-radius: 8px; background: var(--bg-1); text-align: left; }
+  .ins-row b { color: var(--cream); font-size: 12px; }
+  .ins-row span { font-size: 11.5px; color: var(--soft); line-height: 1.5; }
+  .ins-row.hot { border-color: var(--gold); box-shadow: 0 0 12px rgba(200,160,96,0.18); }
+  .ins-row.hot b:first-child { color: var(--gold); }
   .hud-btns { position: absolute; top: 6px; right: 8px; z-index: 30; display: flex; gap: 6px; }
   .hud-btn { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--bg-3); background: rgba(20,20,26,0.9); color: var(--soft); font-weight: 900; font-size: 12px; cursor: pointer; line-height: 1; display: flex; align-items: center; justify-content: center; padding: 0; }
   #pause-btn { font-size: 10px; letter-spacing: -1px; color: var(--cream); border-color: var(--bg-3); }
@@ -831,7 +853,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v4.0 · build 2026-05-24·0924 · REAL 3D — jointed humanoid fighters (head/arms/legs/joints) in a perspective ring, animations that connect · 3D customization preview · universal-changes feed (everyone sees edits) · more admin (announce/create/crown) · for AARON</div>
+  <div class="splash-foot">v4.1 · build 2026-05-24·0944 · rounder 3D fighters + snappier combat · ADMIN TIERS (Eli▸Aaron▸OG) + timeout/kick/ban + feedback inbox · profanity filter · new fighters random 60–80 · installable (all devices) + downloadable · revamped victory screen · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -1099,6 +1121,7 @@
 
 <!-- ========== RESULT ========== -->
 <div id="result" class="screen">
+  <div class="result-avatar" id="result-avatar"></div>
   <div class="result-banner" id="result-banner">VICTORY</div>
   <div class="result-detail" id="result-detail"></div>
   <div class="result-scripture" id="result-scripture-block" style="display:none">
@@ -1122,7 +1145,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v4.0</div>
+    <div class="load-skip">tap to skip · v4.1</div>
   </div>
 </div>
 
@@ -1608,11 +1631,14 @@ function loadSave() {
       if (!Array.isArray(parsed.adminLog)) parsed.adminLog = [];   // admin's audit log [{t,text}]
       if (!parsed.adminInbox) parsed.adminInbox = {};    // fighterId → [{t,text}] messages the affected person sees
       if (!Array.isArray(parsed.changeFeed)) parsed.changeFeed = [];   // public "recent changes" feed [{t,text,key}] — everyone sees universal edits
+      if (!parsed.bans) parsed.bans = {};        // UPPERCASE name → { type:'ban'|'timeout', until, reason }
+      if (!Array.isArray(parsed.feedback)) parsed.feedback = [];   // player feedback [{t,from,text}] — admin reads it
+      if (!parsed.adminPins) parsed.adminPins = {};   // fighterId → pin for tier-2/3 admins (Aaron + OG brothers); Eli uses save.admin.pin
       return parsed;
     }
   } catch(e) {}
   return { wins:0, losses:0, kos:0, finishers:0, scriptureStrikes:0, picks:{}, ovrDelta:{}, abilDelta:{},
-           difficulty:2, sfxOn:true, vol:0.9, captionsOn:true, platform:null, reducedMotion:false, tutorialSeen:false, seenVersion:null, customFighters:[], achievements:{}, belts:0, champion:null, profiles:{}, activeProfile:null, admin:null, adminLog:[], adminInbox:{}, changeFeed:[] };
+           difficulty:2, sfxOn:true, vol:0.9, captionsOn:true, platform:null, reducedMotion:false, tutorialSeen:false, seenVersion:null, customFighters:[], achievements:{}, belts:0, champion:null, profiles:{}, activeProfile:null, admin:null, adminLog:[], adminInbox:{}, changeFeed:[], bans:{}, feedback:[], adminPins:{} };
 }
 function persistSave() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch(e) {}
@@ -1712,7 +1738,7 @@ function goto(id) {
   // Leaving the ring stops the real-time loop so it can't run against a hidden screen.
   if (id !== 'fight' && typeof rafId !== 'undefined' && rafId) { cancelAnimationFrame(rafId); rafId = null; if (match && !parkFight) match.over = true; }   // parkFight = visiting settings mid-fight, keep match alive
   if (id !== 'fight' && typeof stop3DLoop === 'function' && !parkFight) stop3DLoop();   // pause the WebGL render loop when leaving the ring
-  if (id !== 'create' && id !== 'profile' && typeof stopPortrait === 'function') stopPortrait();   // pause the customization 3D preview
+  if (id !== 'create' && id !== 'profile' && id !== 'result' && typeof stopPortrait === 'function') stopPortrait();   // pause the customization/result 3D preview
   if (id === 'hub') parkFight = false;
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -1771,11 +1797,15 @@ function renderHub() {
     + `<span class="hp-stat"><b>${curDiff().name}</b></span>`
     + `</div>`
     + (() => {
+        const unread = myUnreadCount();
+        const badge = unread ? `<span class="msg-badge">📬 ${unread}</span>` : '';
         if (save.activeProfile === ADMIN_KEY) return `<div class="hub-signin admin-chip" onclick="goto('profile')">👑 OLD MAN ELI · ADMIN ›</div>`;
         const ap = save.activeProfile && save.profiles[save.activeProfile]; const f = ap && FIGHTERS.find(x => x.id === save.activeProfile);
-        return `<div class="hub-signin" onclick="goto('profile')">${ap && f ? '👤 ' + ap.name + ' · signed in as ' + f.name : '👤 SIGN IN as your brother ›'}</div>`; })()
+        return `<div class="hub-signin" onclick="goto('profile')">${ap && f ? '👤 ' + ap.name + ' · ' + f.name + ' ' + badge : '👤 SIGN IN / CREATE your fighter ›'}</div>`; })()
     + `<div class="hub-ver" onclick="showUpdateLog()">✦ v${GAME_VERSION} · update log</div>`
-    + `<div class="hub-ver" onclick="showAchievements()" style="margin-left:8px">🏆 achievements ${ACHIEVEMENTS.filter(a=>save.achievements[a[0]]).length}/${ACHIEVEMENTS.length}</div>`
+    + `<div class="hub-ver" onclick="showAchievements()" style="margin-left:8px">🏆 ${ACHIEVEMENTS.filter(a=>save.achievements[a[0]]).length}/${ACHIEVEMENTS.length}</div>`
+    + `<div class="hub-ver" onclick="openFeedback()" style="margin-left:8px">✍️ feedback</div>`
+    + `<div class="hub-ver" onclick="openInstall()" style="margin-left:8px">⬇ install</div>`
     + changeFeedHTML();
 }
 // PUBLIC changes feed — everyone sees who created/claimed/recolored a fighter (universal-changes visibility)
@@ -1928,7 +1958,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '4.0';
+const GAME_VERSION = '4.1';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -1962,6 +1992,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['4.1',  'Rounder 3D fighters (no more boxy limbs — same model in the ring + customizer) · SNAPPIER combat (windups/cooldowns cut, hits land crisp, clear red flash on contact) · ADMIN TIERS — Eli (supreme) ▸ Aaron (senior) ▸ OG crew (mod), each with the right powers · moderation: timeout, kick, ban + a ban list · profanity filter on new names · new fighters start RANDOM 60–80 OVR (everything still capped 1–99) · feedback system (send from your profile/hub → admins read it) · clearer messages (📬 badge) · INSTALLABLE app + downloadable file on every device · revamped victory screen with a 3D winner · Old Man Eli is your PIN-locked account + you can recolor him from the panel'],
   ['4.0',  'REAL 3D — fighters are now jointed humanoid bodies (head, arms, legs, hands, joints) in a true perspective ring with posts + ropes; attack animations actually connect (strike, combo, grapple, finisher) · the customization menu shows your fighter in 3D too · NEW universal-changes feed on the hub so EVERYONE sees who recolored/created/claimed a fighter · more admin: announce to everyone, create a fighter, crown a champion · (changes were already universal — now they’re visible)'],
   ['3.9',  'Sign in with ANY name and it spins up your OWN fighter (not just the crew) · 👑 OLD MAN ELI joins the roster — the Architect · admin can now sign-out + message any fighter, so everyone sees what happened (admin log + your inbox) · roster trimmed to the OG crew (filler CPUs removed) · more moves + finishers (COMBO chain · 2nd signatures) · update log fixed (it was stuck on v3.7)'],
   ['3.8',  'ADMIN — sign in as "Old Man Eli" (master key): edit / reset / message any fighter · names are case-insensitive (aaron = AARON) · claimed brothers LOCK so only admin can reset them · recolors are now UNIVERSAL — everyone sees your look on the roster + in the ring'],
@@ -2189,6 +2220,53 @@ function saveCustomFighter() {
    ("Old Man Eli") can reset a brother. Admin = master key over the whole crew. */
 const ADMIN_NAME = 'OLD MAN ELI';
 const ADMIN_KEY  = '__admin';
+// ===== ADMIN TIERS: 1 = Old Man Eli (Eli, top) · 2 = AARON · 3 = the rest of the OG crew =====
+const OG_IDS = ['aaron', 'azriel', 'vlad', 'luke', 'cannon', 'lee', 'ashton', 'kale', 'tucker', 'ryan', 'caleb'];
+function adminTierOf(key) {
+  if (key === ADMIN_KEY) return 1;
+  if (key === 'aaron') return 2;
+  if (OG_IDS.includes(key)) return 3;
+  return 0;
+}
+function curAdminTier() { return adminTierOf(save.activeProfile); }
+const TIER_NAME = { 1: 'SUPREME ADMIN', 2: 'SENIOR ADMIN', 3: 'CREW ADMIN' };
+// per-action permission. Tier 1 = everything. Tier 2 (Aaron) = strong mod powers. Tier 3 (OG) = light.
+const PERM = {
+  2: ['edit', 'message', 'announce', 'create', 'crown', 'kick', 'signout', 'timeout', 'reset', 'feedback', 'viewfeed', 'viewlog'],
+  3: ['message', 'kick', 'feedback', 'viewfeed']
+};
+function can(action) {
+  const t = curAdminTier();
+  if (t === 1) return true;                 // Eli can do EVERYTHING (incl. ban, resetall, editme, managepins, clearfeedback)
+  if (t === 2 || t === 3) return (PERM[t] || []).includes(action);
+  return false;
+}
+// ===== NAME SAFETY: reject clearly inappropriate / profane names when making an account =====
+const BAD_WORDS = ['fuck', 'shit', 'bitch', 'cunt', 'nigg', 'fag', 'retard', 'whore', 'slut', 'rape', 'nazi', 'penis', 'vagina', 'cock', 'dick', 'pussy', 'asshole', 'bastard', 'damn', 'hitler', 'kkk', 'sex', 'porn', 'pedo', 'molest'];
+function cleanName(name) {
+  const raw = (name || '').trim();
+  if (!raw) return { ok: false, why: 'Type a name first.' };
+  if (raw.length < 2) return { ok: false, why: 'Name too short.' };
+  const lower = raw.toLowerCase();
+  const squished = lower.replace(/[^a-z]/g, '');
+  // catch l33t-ish swaps: substitute digits/symbols BEFORE stripping, so "sh1t" / "f4g" / "a$$" are caught
+  const leet = lower.replace(/0/g, 'o').replace(/1/g, 'i').replace(/3/g, 'e').replace(/4/g, 'a').replace(/5/g, 's').replace(/7/g, 't').replace(/@/g, 'a').replace(/\$/g, 's').replace(/[^a-z]/g, '');
+  if (BAD_WORDS.some(w => squished.includes(w) || leet.includes(w))) return { ok: false, why: 'Keep it clean — that name isn’t allowed.' };
+  return { ok: true };
+}
+// ===== BANS / TIMEOUTS (keyed by UPPERCASE name) =====
+function banStatus(name) {
+  const key = (name || '').trim().toUpperCase();
+  const b = save.bans && save.bans[key];
+  if (!b) return null;
+  if (b.type === 'ban') return { type: 'ban', reason: b.reason };
+  if (b.type === 'timeout') {
+    if (Date.now() >= b.until) { delete save.bans[key]; persistSave(); return null; }   // expired → auto-lift
+    return { type: 'timeout', until: b.until, reason: b.reason };
+  }
+  return null;
+}
+function fmtLeft(until) { const s = Math.max(0, Math.round((until - Date.now()) / 1000)); if (s < 60) return s + 's'; if (s < 3600) return Math.ceil(s / 60) + ' min'; return Math.ceil(s / 3600) + ' hr'; }
 const ORIGINAL_ART = {};   // pristine brother art snapshotted at boot (before any look applies) so admin can RESET to default
 function snapshotOriginalArt() {
   FIGHTERS.forEach(f => { if (!f.cpu && !f.admin && !ORIGINAL_ART[f.id]) ORIGINAL_ART[f.id] = JSON.parse(JSON.stringify(f.art)); });  // brothers + customs
@@ -2220,8 +2298,10 @@ function applyProfileLooks() {
   }
 }
 let profileEditing = null;   // brotherId whose look is being edited
+let adminPanelOpen = false;  // tier-2/3 (Aaron / OG) opened the admin panel from their profile
 function renderProfile() {
   if (save.activeProfile === ADMIN_KEY) return renderAdmin();
+  if (adminPanelOpen && curAdminTier() > 0) return renderAdmin();
   profileEditing = null;
   const body = document.getElementById('profile-body');
   const active = save.activeProfile, prof = active && save.profiles[active];
@@ -2242,7 +2322,9 @@ function renderProfile() {
       + `<div class="prof-signed"><div class="prof-avatar">${renderFighter(f.art)}</div>`
       + `<div class="prof-who"><div class="prof-hi">SIGNED IN</div><div class="prof-name">${prof.name}</div><div class="prof-as">as ${f.name} · OVR ${getCurrentOVR(f.id)}</div></div></div>`
       + `<button class="btn" type="button" onclick="profileEditLook('${active}')">🎨 CUSTOMIZE ${f.name}</button>`
+      + (adminTierOf(active) > 0 ? `<button class="btn" type="button" style="border-color:var(--gold);color:var(--gold);background:rgba(40,28,12,0.4)" onclick="openAdminPanel()">🛡 ADMIN PANEL · ${TIER_NAME[adminTierOf(active)]}</button>` : '')
       + `<button class="btn btn-secondary" type="button" onclick="openDetail('${active}')">VIEW CARD</button>`
+      + `<button class="btn btn-secondary" type="button" onclick="openFeedback()">✍️ SEND FEEDBACK</button>`
       + `<button class="btn btn-secondary" type="button" style="border-color:var(--red);color:var(--red-bright)" onclick="profileSignOut()">SIGN OUT</button>`
       + claimedList;
   } else {
@@ -2260,17 +2342,20 @@ function profileSignIn() {
   const rawName = (document.getElementById('prof-name').value || '').trim();
   const pin = (document.getElementById('prof-pin').value || '').trim();
   if (!/^\d{4,8}$/.test(pin)) { profileMsg('PIN must be 4–8 digits.', false); return; }
-  // ===== ADMIN PATH — "Old Man Eli" (case-insensitive) =====
+  // ===== ADMIN PATH — "Old Man Eli" = Eli's account, PIN-LOCKED to him (Tier-1) =====
   if (rawName.toUpperCase() === ADMIN_NAME) {
     if (save.admin && save.admin.pin) {
-      if (save.admin.pin !== pin) { profileMsg('Wrong admin PIN.', false); return; }
+      if (save.admin.pin !== pin) { profileMsg('🔒 Wrong admin PIN. This account belongs to Old Man Eli.', false); return; }
     } else {
-      save.admin = { pin: pin };   // first sign-in claims the throne + sets the master PIN
+      save.admin = { pin: pin };   // first sign-in on THIS device claims the throne + locks the master PIN
     }
-    save.activeProfile = ADMIN_KEY; persistSave(); renderProfile();
-    setStatus && setStatus('👑 ADMIN · OLD MAN ELI', 'var(--gold)', 1100);
+    save.activeProfile = ADMIN_KEY; adminPanelOpen = false; persistSave(); renderProfile();
+    setStatus && setStatus('👑 SUPREME ADMIN · OLD MAN ELI', 'var(--gold)', 1100);
     return;
   }
+  // ===== BAN / TIMEOUT gate (created accounts) =====
+  const bs = banStatus(rawName);
+  if (bs) { profileMsg(bs.type === 'ban' ? ('⛔ "' + rawName + '" is banned' + (bs.reason ? ' (' + bs.reason + ')' : '') + '.') : ('⏳ "' + rawName + '" is timed out — ' + fmtLeft(bs.until) + ' left.'), false); return; }
   // ===== EXISTING FIGHTER (a crew brother OR an already-created fighter) =====
   const f = fighterByName(rawName);
   if (f) {
@@ -2283,25 +2368,35 @@ function profileSignIn() {
     save.activeProfile = f.id; persistSave();
     logChange(rawName + ' claimed ' + f.name, 'claim:' + f.id);
     renderProfile();
-    setStatus && setStatus('CLAIMED ' + f.name + '!', 'var(--gold)', 1000);
+    const t = adminTierOf(f.id);
+    setStatus && setStatus(t ? ('CLAIMED ' + f.name + ' · ' + TIER_NAME[t]) : ('CLAIMED ' + f.name + '!'), 'var(--gold)', 1100);
     return;
   }
-  // ===== NEW NAME → CREATE a fighter for them, then claim it =====
+  // ===== NEW NAME → must be CLEAN, then CREATE a fighter (random 60–80 OVR) + claim it =====
+  const clean = cleanName(rawName);
+  if (!clean.ok) { profileMsg('🚫 ' + clean.why, false); return; }
   const nf = createFighterForName(rawName);
   save.profiles[nf.id] = { name: rawName, pin: pin, look: null };
   save.activeProfile = nf.id; persistSave();
-  logChange('🆕 ' + rawName + ' joined the roster (new fighter)', 'create:' + nf.id);
+  logChange('🆕 ' + rawName + ' joined the roster (new fighter · OVR ' + getCurrentOVR(nf.id) + ')', 'create:' + nf.id);
   renderProfile();
-  setStatus && setStatus('CREATED + CLAIMED ' + nf.name + '!', 'var(--gold)', 1300);
+  setStatus && setStatus('CREATED + CLAIMED ' + nf.name + ' · OVR ' + getCurrentOVR(nf.id), 'var(--gold)', 1400);
 }
 // spin up a brand-new fighter from just a name (defaults; the owner customizes after) — used by sign-in
 function createFighterForName(name) {
   const id = 'custom_' + Date.now();
   const clean = (name || 'NEW FIGHTER').toUpperCase().slice(0, 14);
+  // non-OG / non-admin fighters START randomly assigned so OVR lands 60–80 (clamped 1–99 by the rating system)
+  const target = 60 + Math.floor(Math.random() * 21);                 // 60..80
+  const rs = () => Math.max(1, Math.min(99, target + Math.floor(Math.random() * 17) - 8));   // each stat ~ target ±8
+  const archPool = ['BRAWLER', 'BOXER', 'WRESTLER', 'STRIKER', 'KICKBOXER', 'POWERHOUSE', 'HIGHFLYER', 'MMA'];
+  const skins = Object.keys(SKIN), hairs = Object.keys(HAIRC);
   const spec = {
-    id, name: clean, arch: 'BRAWLER', skin: 'white', hairColor: 'black', hairStyle: 'short',
-    accent: '#c8a060', trunks: '#26262e',
-    stats: { striking: 80, grappling: 80, stamina: 80, heart: 82, charisma: 80 },
+    id, name: clean, arch: archPool[Math.floor(Math.random() * archPool.length)],
+    skin: skins[Math.floor(Math.random() * skins.length)], hairColor: hairs[Math.floor(Math.random() * hairs.length)],
+    hairStyle: HAIR_STYLES[Math.floor(Math.random() * HAIR_STYLES.length)],
+    accent: GEAR_COLORS[Math.floor(Math.random() * GEAR_COLORS.length)], trunks: GEAR_COLORS[Math.floor(Math.random() * GEAR_COLORS.length)],
+    stats: { striking: rs(), grappling: rs(), stamina: rs(), heart: rs(), charisma: rs() },
     finisher: 'Slam City Special'
   };
   save.customFighters = save.customFighters || [];
@@ -2312,80 +2407,225 @@ function createFighterForName(name) {
 function profileSignOut() { save.activeProfile = null; persistSave(); renderProfile(); }
 function dismissInbox(fid) { if (save.adminInbox) delete save.adminInbox[fid]; persistSave(); renderProfile(); }
 
-/* ---------- ADMIN PANEL · "Old Man Eli" — master control over the whole crew ---------- */
-function adminGuard() { return save.activeProfile === ADMIN_KEY; }
+/* ---------- TIERED ADMIN PANEL · T1 Old Man Eli · T2 Aaron · T3 OG crew ---------- */
+function adminGuard() { return curAdminTier() > 0; }
+function openAdminPanel() { adminPanelOpen = true; renderProfile(); }
+function closeAdminPanel() { adminPanelOpen = false; renderProfile(); }
 function renderAdmin() {
   profileEditing = null;
+  const tier = curAdminTier();
   const body = document.getElementById('profile-body');
-  const brothers = FIGHTERS.filter(isBrother);
-  const customs  = FIGHTERS.filter(f => f.custom);
-  let html =
-      `<div class="adm-crown">👑</div>`
-    + `<div class="adm-hero"><div class="adm-hi">ADMIN · THE ARCHITECT</div><div class="adm-name">OLD MAN ELI</div><div class="adm-sub">master key to the whole crew</div></div>`;
-  const roster = [...brothers, ...customs];
+  const me = save.activeProfile === ADMIN_KEY ? null : FIGHTERS.find(f => f.id === save.activeProfile);
+  const roster = [...FIGHTERS.filter(isBrother), ...FIGHTERS.filter(f => f.custom)];
+  let html = `<div class="adm-crown">${tier === 1 ? '👑' : tier === 2 ? '🥈' : '🛡'}</div>`
+    + `<div class="adm-hero"><div class="adm-hi">${TIER_NAME[tier] || 'ADMIN'} · TIER ${tier}</div>`
+    + `<div class="adm-name">${tier === 1 ? 'OLD MAN ELI' : (me ? me.name : 'ADMIN')}</div>`
+    + `<div class="adm-sub">${tier === 1 ? 'master key to the whole crew' : tier === 2 ? 'second-in-command — full mod powers' : 'crew moderator — message + kick'}</div></div>`;
+  if (adminPanelOpen && tier > 0 && save.activeProfile !== ADMIN_KEY)
+    html += `<button class="adm-mini" type="button" style="margin-bottom:10px" onclick="closeAdminPanel()">‹ back to my profile</button>`;
+  // ── tier-1 only: edit MY (Old Man Eli) fighter + change PIN ──
+  if (tier === 1) {
+    html += `<div class="adm-sec-label">👑 MY FIGHTER</div>`
+      + `<button class="btn btn-secondary" type="button" onclick="adminEditMe()">🎨 CUSTOMIZE OLD MAN ELI</button>`
+      + `<button class="btn btn-secondary" type="button" onclick="adminChangePin()">🔑 CHANGE ADMIN PIN</button>`;
+  }
+  // ── crew list (actions gated by tier) ──
   html += `<div class="adm-sec-label">CREW · ${roster.length} FIGHTERS</div>`;
-  html += roster.map(f => {
-    const claimed = isClaimed(f.id);
-    const isChamp = save.champion === f.id;
-    const status = claimed ? `<span class="adm-lock">🔒 ${(save.profiles[f.id].name || '').toUpperCase()}</span>` : `<span class="adm-open">🔓 open</span>`;
-    return `<div class="adm-row"><span class="adm-rname">${isChamp ? '🏆 ' : ''}${f.name}${f.custom ? ' <span class="adm-tag">made</span>' : ''}</span>${status}`
-      + `<span class="adm-acts"><button class="adm-mini" type="button" title="customize" onclick="adminEditBrother('${f.id}')">🎨</button>`
-      + `<button class="adm-mini" type="button" title="message" onclick="adminMsgTo('${f.id}')">✉</button>`
-      + `<button class="adm-mini" type="button" title="crown champion" onclick="adminCrown('${f.id}')">👑</button>`
-      + (claimed ? `<button class="adm-mini" type="button" title="sign out (release claim, keep look)" onclick="adminSignOutBrother('${f.id}')">⏏</button>` : '')
-      + (claimed ? `<button class="adm-mini danger" type="button" title="reset to default" onclick="adminResetBrother('${f.id}')">RESET</button>` : '')
-      + (f.custom ? `<button class="adm-mini danger" type="button" title="delete" onclick="adminDeleteCustom('${f.id}')">🗑</button>` : '')
-      + `</span></div>`;
-  }).join('');
-  // ADMIN LOG — what the admin has done (newest first)
-  const log = save.adminLog || [];
-  html += `<div class="adm-sec-label">📋 ADMIN LOG · ${log.length}</div>`;
-  html += log.length
-    ? `<div class="adm-log">` + log.slice(0, 12).map(e => `<div class="adm-log-row"><span class="adm-log-t">${adminTimeAgo(e.t)}</span> ${e.text}</div>`).join('') + `</div>`
-      + (log.length ? `<button class="adm-mini" type="button" style="margin-bottom:8px" onclick="adminClearLog()">clear log</button>` : '')
-    : `<div class="adm-log-row" style="color:var(--muted)">no actions yet</div>`;
-  html += `<div class="adm-sec-label">🛠 ADMIN TOOLS</div>`
-    + `<button class="btn btn-secondary" type="button" onclick="adminAnnounce()">📣 ANNOUNCE TO EVERYONE</button>`
-    + `<button class="btn btn-secondary" type="button" onclick="adminCreateFighter()">➕ CREATE A FIGHTER</button>`;
-  html += `<div class="adm-sec-label danger-label">⚠ MASTER CONTROLS</div>`
-    + `<button class="btn btn-secondary adm-danger" type="button" onclick="adminResetAllLooks()">🎨 RESET ALL LOOKS TO DEFAULT</button>`
-    + `<button class="btn btn-secondary adm-danger" type="button" onclick="adminResetAllProfiles()">♻ UNCLAIM EVERY FIGHTER</button>`
-    + `<button class="btn btn-secondary" type="button" style="border-color:var(--gold);color:var(--gold)" onclick="profileSignOut()">SIGN OUT OF ADMIN</button>`;
+  html += roster.map(f => adminCrewRow(f)).join('');
+  // ── feedback (tier 1/2/3 can view) ──
+  if (can('viewfeed')) {
+    const fb = save.feedback || [];
+    html += `<div class="adm-sec-label">✍️ FEEDBACK · ${fb.length}</div>`;
+    html += fb.length
+      ? `<div class="adm-log">` + fb.slice(0, 10).map(e => `<div class="adm-log-row"><span class="adm-log-t">${adminTimeAgo(e.t)}</span> <b>${e.from}</b>: ${e.text}</div>`).join('') + `</div>`
+        + (curAdminTier() === 1 ? `<button class="adm-mini" type="button" style="margin-bottom:8px" onclick="adminClearFeedback()">clear feedback</button>` : '')
+      : `<div class="adm-log-row" style="color:var(--muted)">no feedback yet</div>`;
+  }
+  // ── admin log ──
+  if (can('viewlog')) {
+    const log = save.adminLog || [];
+    html += `<div class="adm-sec-label">📋 ADMIN LOG · ${log.length}</div>`;
+    html += log.length
+      ? `<div class="adm-log">` + log.slice(0, 12).map(e => `<div class="adm-log-row"><span class="adm-log-t">${adminTimeAgo(e.t)}</span> ${e.text}</div>`).join('') + `</div>`
+        + (tier === 1 ? `<button class="adm-mini" type="button" style="margin-bottom:8px" onclick="adminClearLog()">clear log</button>` : '')
+      : `<div class="adm-log-row" style="color:var(--muted)">no actions yet</div>`;
+  }
+  // ── tools ──
+  html += `<div class="adm-sec-label">🛠 ADMIN TOOLS</div>`;
+  if (can('announce')) html += `<button class="btn btn-secondary" type="button" onclick="adminAnnounce()">📣 ANNOUNCE TO EVERYONE</button>`;
+  if (can('create')) html += `<button class="btn btn-secondary" type="button" onclick="adminCreateFighter()">➕ CREATE A FIGHTER</button>`;
+  // ── banlist (tier 1 only) ──
+  if (tier === 1) {
+    const banned = Object.keys(save.bans || {});
+    html += `<div class="adm-sec-label danger-label">⛔ BANS / TIMEOUTS · ${banned.length}</div>`;
+    html += banned.length
+      ? banned.map(n => { const b = save.bans[n]; return `<div class="adm-row"><span class="adm-rname">${n}</span><span class="adm-open">${b.type === 'ban' ? '⛔ banned' : '⏳ ' + fmtLeft(b.until)}</span><span class="adm-acts"><button class="adm-mini" type="button" onclick="adminUnban('${n.replace(/'/g, "")}')">lift</button></span></div>`; }).join('')
+      : `<div class="adm-log-row" style="color:var(--muted)">nobody’s banned</div>`;
+    html += `<div class="adm-sec-label danger-label">⚠ MASTER CONTROLS</div>`
+      + `<button class="btn btn-secondary adm-danger" type="button" onclick="adminResetAllLooks()">🎨 RESET ALL LOOKS TO DEFAULT</button>`
+      + `<button class="btn btn-secondary adm-danger" type="button" onclick="adminResetAllProfiles()">♻ UNCLAIM EVERY FIGHTER</button>`;
+  }
+  html += save.activeProfile === ADMIN_KEY
+    ? `<button class="btn btn-secondary" type="button" style="border-color:var(--gold);color:var(--gold)" onclick="profileSignOut()">SIGN OUT OF ADMIN</button>`
+    : `<button class="btn btn-secondary" type="button" onclick="closeAdminPanel()">‹ DONE</button>`;
   body.innerHTML = html;
 }
+function adminCrewRow(f) {
+  const claimed = isClaimed(f.id);
+  const isChamp = save.champion === f.id;
+  const ban = banStatus(claimed ? save.profiles[f.id].name : f.name);
+  const status = ban ? `<span class="adm-open" style="color:var(--red-bright)">${ban.type === 'ban' ? '⛔' : '⏳'}</span>`
+    : claimed ? `<span class="adm-lock">🔒 ${(save.profiles[f.id].name || '').toUpperCase()}</span>` : `<span class="adm-open">🔓 open</span>`;
+  const og = adminTierOf(f.id);
+  let acts = '';
+  if (can('edit')) acts += `<button class="adm-mini" type="button" title="customize" onclick="adminEditBrother('${f.id}')">🎨</button>`;
+  if (can('message')) acts += `<button class="adm-mini" type="button" title="message" onclick="adminMsgTo('${f.id}')">✉</button>`;
+  if (can('crown')) acts += `<button class="adm-mini" type="button" title="crown champion" onclick="adminCrown('${f.id}')">👑</button>`;
+  if (claimed && can('kick')) acts += `<button class="adm-mini" type="button" title="kick (sign out)" onclick="adminSignOutBrother('${f.id}')">⏏</button>`;
+  if (can('timeout')) acts += `<button class="adm-mini" type="button" title="timeout" onclick="adminTimeout('${f.id}')">⏳</button>`;
+  if (can('ban') && !og) acts += `<button class="adm-mini danger" type="button" title="ban" onclick="adminBan('${f.id}')">⛔</button>`;
+  if (claimed && can('reset')) acts += `<button class="adm-mini danger" type="button" title="reset to default" onclick="adminResetBrother('${f.id}')">RST</button>`;
+  if (f.custom && can('reset')) acts += `<button class="adm-mini danger" type="button" title="delete" onclick="adminDeleteCustom('${f.id}')">🗑</button>`;
+  return `<div class="adm-row"><span class="adm-rname">${isChamp ? '🏆 ' : ''}${og ? '⭐ ' : ''}${f.name}${f.custom ? ' <span class="adm-tag">made</span>' : ''}</span>${status}<span class="adm-acts">${acts}</span></div>`;
+}
+// who is acting (for logs + inbox text)
+function adminWho() { return save.activeProfile === ADMIN_KEY ? 'Old Man Eli' : ((FIGHTERS.find(f => f.id === save.activeProfile) || {}).name || 'an admin'); }
 // broadcast a message into EVERY claimed fighter's inbox + the public feed
 function adminAnnounce() {
-  if (!adminGuard()) return;
+  if (!can('announce')) return;
   const text = (prompt('Announce to the whole crew (every signed-in fighter will see it):') || '').trim();
   if (!text) return;
   let n = 0;
   for (const fid in (save.profiles || {})) { if (isClaimed(fid)) { inboxPush(fid, '📣 ' + text); n++; } }
-  adminLogPush('📣 Announced to ' + n + ' fighter(s): "' + text + '"');
-  logChange('📣 Old Man Eli announced: "' + text + '"', 'announce:' + Date.now());
+  adminLogPush('📣 ' + adminWho() + ' announced to ' + n + ': "' + text + '"');
+  logChange('📣 ' + adminWho() + ' announced: "' + text + '"', 'announce:' + Date.now());
   persistSave(); renderAdmin();
   setStatus && setStatus('ANNOUNCED TO ' + n, 'var(--gold)', 1000);
 }
 // admin creates a fighter straight from the panel
 function adminCreateFighter() {
-  if (!adminGuard()) return;
+  if (!can('create')) return;
   const name = (prompt('New fighter name:') || '').trim();
   if (!name) return;
+  const cn = cleanName(name); if (!cn.ok) { setStatus && setStatus(cn.why.toUpperCase(), 'var(--red-bright)', 1200); return; }
   if (fighterByName(name)) { setStatus && setStatus('NAME ALREADY EXISTS', 'var(--red-bright)', 900); return; }
   const nf = createFighterForName(name);
-  adminLogPush('➕ Created ' + nf.name);
-  logChange('🆕 Old Man Eli created ' + nf.name, 'create:' + nf.id);
+  adminLogPush('➕ ' + adminWho() + ' created ' + nf.name);
+  logChange('🆕 ' + adminWho() + ' created ' + nf.name + ' (OVR ' + getCurrentOVR(nf.id) + ')', 'create:' + nf.id);
   persistSave(); renderAdmin();
   setStatus && setStatus('CREATED ' + nf.name, 'var(--gold)', 1000);
 }
 function adminCrown(bid) {
-  if (!adminGuard()) return;
+  if (!can('crown')) return;
   const f = FIGHTERS.find(x => x.id === bid); if (!f) return;
   save.champion = bid; save.belts = Math.max(1, save.belts || 0);
-  inboxPush(bid, '👑 Old Man Eli crowned you CHAMPION of Slam City!');
-  adminLogPush('👑 Crowned ' + f.name + ' champion');
-  logChange('👑 ' + f.name + ' was crowned CHAMPION by Old Man Eli', 'crown:' + bid);
+  inboxPush(bid, '👑 ' + adminWho() + ' crowned you CHAMPION of Slam City!');
+  adminLogPush('👑 ' + adminWho() + ' crowned ' + f.name + ' champion');
+  logChange('👑 ' + f.name + ' was crowned CHAMPION by ' + adminWho(), 'crown:' + bid);
   persistSave(); renderAdmin();
   setStatus && setStatus('👑 ' + f.name + ' CROWNED', 'var(--gold)', 1100);
+}
+// ── tier-1 only: edit Old Man Eli's own fighter + change the admin PIN ──
+function adminEditMe() { if (curAdminTier() !== 1) return; profileEditLook('oldmaneli'); }
+function adminChangePin() {
+  if (curAdminTier() !== 1) return;
+  const cur = (prompt('Current admin PIN:') || '').trim();
+  if (!save.admin || save.admin.pin !== cur) { setStatus && setStatus('WRONG CURRENT PIN', 'var(--red-bright)', 1100); return; }
+  const next = (prompt('New admin PIN (4–8 digits):') || '').trim();
+  if (!/^\d{4,8}$/.test(next)) { setStatus && setStatus('PIN MUST BE 4–8 DIGITS', 'var(--red-bright)', 1100); return; }
+  save.admin.pin = next; adminLogPush('🔑 Changed admin PIN'); persistSave();
+  setStatus && setStatus('ADMIN PIN UPDATED', 'var(--gold)', 1000);
+}
+// ── moderation: timeout / ban / unban ──
+function adminTimeout(bid) {
+  if (!can('timeout')) return;
+  const f = FIGHTERS.find(x => x.id === bid); if (!f) return;
+  const name = (isClaimed(bid) ? save.profiles[bid].name : f.name) || f.name;
+  const mins = parseInt(prompt('Timeout ' + name + ' for how many minutes?', '10') || '0', 10);
+  if (!mins || mins < 1) return;
+  save.bans[name.toUpperCase()] = { type: 'timeout', until: Date.now() + mins * 60000, reason: 'timeout' };
+  if (isClaimed(bid)) { const look = save.profiles[bid].look; save.profiles[bid] = { name: '(timed out)', pin: null, look }; }  // kick them off too
+  inboxPush(bid, '⏳ ' + adminWho() + ' timed you out for ' + mins + ' min.');
+  adminLogPush('⏳ ' + adminWho() + ' timed out ' + name + ' (' + mins + 'm)');
+  logChange('⏳ ' + name + ' was timed out by ' + adminWho(), 'mod:' + bid);
+  persistSave(); renderAdmin();
+  setStatus && setStatus(name + ' TIMED OUT', 'var(--gold)', 1000);
+}
+function adminBan(bid) {
+  if (!can('ban')) return;   // tier-1 only
+  const f = FIGHTERS.find(x => x.id === bid); if (!f) return;
+  const name = (isClaimed(bid) ? save.profiles[bid].name : f.name) || f.name;
+  if (!confirm('BAN "' + name + '" permanently? They can’t sign in or be re-created until you lift it.')) return;
+  const reason = (prompt('Reason (optional):') || '').trim();
+  save.bans[name.toUpperCase()] = { type: 'ban', until: Infinity, reason };
+  if (f.custom) { deleteCustomFighter(bid); }   // remove their fighter
+  else if (isClaimed(bid)) { delete save.profiles[bid]; restoreOriginalArt(bid); }
+  adminLogPush('⛔ ' + adminWho() + ' BANNED ' + name + (reason ? ' (' + reason + ')' : ''));
+  logChange('⛔ ' + name + ' was banned by ' + adminWho(), 'mod:' + bid);
+  persistSave(); if (curAdminTier() > 0) renderAdmin();
+  setStatus && setStatus(name + ' BANNED', 'var(--red-bright)', 1100);
+}
+function adminUnban(nameUpper) {
+  if (curAdminTier() !== 1) return;
+  if (save.bans) delete save.bans[nameUpper];
+  adminLogPush('✅ Lifted ban/timeout on ' + nameUpper);
+  persistSave(); renderAdmin();
+  setStatus && setStatus('LIFTED · ' + nameUpper, 'var(--gold)', 900);
+}
+function adminClearFeedback() { if (curAdminTier() !== 1) return; save.feedback = []; persistSave(); renderAdmin(); }
+// ── feedback (anyone can send; admins read it in the panel) ──
+function openFeedback() {
+  const text = (prompt('Send feedback to the admins — bugs, ideas, anything 🙏') || '').trim();
+  if (!text) return;
+  const ap = save.activeProfile;
+  const from = ap === ADMIN_KEY ? 'Old Man Eli' : ((save.profiles[ap] && save.profiles[ap].name) || (FIGHTERS.find(f => f.id === ap) || {}).name || 'Anonymous');
+  save.feedback = save.feedback || [];
+  save.feedback.unshift({ t: Date.now(), from, text: text.slice(0, 280) });
+  if (save.feedback.length > 100) save.feedback.length = 100;
+  persistSave();
+  setStatus && setStatus('FEEDBACK SENT 🙏', 'var(--gold)', 1300);
+}
+// how many unread inbox messages the signed-in fighter has
+function myUnreadCount() { const ap = save.activeProfile; if (!ap || ap === ADMIN_KEY) return 0; return ((save.adminInbox || {})[ap] || []).length; }
+
+/* ---------- INSTALL / DOWNLOAD — works on every device, with instructions ---------- */
+function openInstall() {
+  let el = document.getElementById('install-modal');
+  if (!el) { el = document.createElement('div'); el.id = 'install-modal'; el.className = 'tutorial'; document.body.appendChild(el); }
+  const ua = navigator.userAgent || '';
+  const isIOS = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  const isAndroid = /Android/.test(ua);
+  const isMac = /Macintosh/.test(ua) && !isIOS;
+  const isWin = /Windows/.test(ua);
+  const canPrompt = !!window.__installPrompt;
+  const hot = c => c ? ' hot' : '';
+  el.innerHTML = `<div class="tut-card">
+    <div class="tut-title">⬇ GET SLAM CITY</div>
+    <div class="install-lead">Play it like a real app — on <b>any device</b>, even offline. Pick whatever fits you 👇</div>`
+    + (canPrompt ? `<button class="btn" type="button" onclick="doInstallPrompt()">⚡ INSTALL NOW · one tap</button>` : '')
+    + `<div class="install-steps">
+      <div class="ins-row${hot(isIOS)}"><b>📱 iPhone / iPad — Safari</b><span>Tap <b>Share</b> (the □↑ box) → <b>Add to Home Screen</b> → <b>Add</b>. Opens fullscreen like an app.</span></div>
+      <div class="ins-row${hot(isAndroid)}"><b>🤖 Android — Chrome</b><span>Tap the <b>⋮ menu</b> → <b>Install app</b> (or <b>Add to Home screen</b>).</span></div>
+      <div class="ins-row${hot(isMac)}"><b>🖥 Mac</b><span>Chrome/Edge: click the <b>install ⊕</b> in the address bar. Safari: <b>File → Add to Dock</b>.</span></div>
+      <div class="ins-row${hot(isWin)}"><b>🪟 Windows — Edge / Chrome</b><span>Click the <b>install ⊕</b> icon in the address bar → <b>Install</b>.</span></div>
+      <div class="ins-row"><b>💾 Any device — download the file</b><span>Save a single <b>SlamCity.html</b> below and open it anytime, fully offline.</span></div>
+      <div class="ins-row"><b>🔗 Share the link</b><span>snailgamedev.github.io/SlamCity — works in any browser, no install needed.</span></div>
+    </div>
+    <button class="btn btn-secondary" type="button" onclick="downloadGame()">💾 DOWNLOAD SlamCity.html (offline)</button>
+    <button class="btn btn-secondary" type="button" onclick="closeInstall()">CLOSE</button>
+  </div>`;
+  el.classList.add('on'); el.setAttribute('aria-hidden', 'false');
+}
+function closeInstall() { const el = document.getElementById('install-modal'); if (el) { el.classList.remove('on'); el.setAttribute('aria-hidden', 'true'); } }
+function doInstallPrompt() { const p = window.__installPrompt; if (!p) return; p.prompt(); (p.userChoice || Promise.resolve()).finally ? p.userChoice.finally(() => { window.__installPrompt = null; closeInstall(); }) : closeInstall(); }
+async function downloadGame() {
+  try {
+    let html = await (await fetch(location.href.split('?')[0], { cache: 'no-store' })).text();
+    try { const three = await (await fetch('three.min.js', { cache: 'no-store' })).text(); html = html.replace(/<script src="three\.min\.js"><\/script>/, '<script>/* three.js inlined for offline */\n' + three + '\n<\/script>'); } catch (e) {}
+    const blob = new Blob([html], { type: 'text/html' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'SlamCity.html'; document.body.appendChild(a); a.click(); a.remove();
+    setStatus && setStatus('DOWNLOADED · SlamCity.html', 'var(--gold)', 1500);
+  } catch (e) { alert('Download blocked here — use your browser menu → “Save Page As / Download Page”.'); }
 }
 // ── admin message + log plumbing ──
 function adminLogPush(text) { save.adminLog = save.adminLog || []; save.adminLog.unshift({ t: Date.now(), text }); if (save.adminLog.length > 25) save.adminLog.length = 25; }
@@ -2400,47 +2640,47 @@ function logChange(text, key) {
 }
 function inboxPush(fid, text) { save.adminInbox = save.adminInbox || {}; (save.adminInbox[fid] = save.adminInbox[fid] || []).unshift({ t: Date.now(), text }); }
 function adminTimeAgo(t) { const s = Math.max(0, Math.round((Date.now() - t) / 1000)); if (s < 60) return s + 's'; if (s < 3600) return Math.round(s / 60) + 'm'; if (s < 86400) return Math.round(s / 3600) + 'h'; return Math.round(s / 86400) + 'd'; }
-function adminEditBrother(bid) { if (!adminGuard()) return; profileEditLook(bid); }
+function adminEditBrother(bid) { if (!can('edit')) return; profileEditLook(bid); }
 function adminMsgTo(bid) {
-  if (!adminGuard()) return;
+  if (!can('message')) return;
   const f = FIGHTERS.find(x => x.id === bid); if (!f) return;
   const text = (prompt('Message to ' + f.name + ' (they\'ll see it next time they sign in):') || '').trim();
   if (!text) return;
-  inboxPush(bid, text);
-  adminLogPush('✉ Messaged ' + f.name + ': "' + text + '"');
+  inboxPush(bid, '✉ ' + adminWho() + ': ' + text);
+  adminLogPush('✉ ' + adminWho() + ' messaged ' + f.name + ': "' + text + '"');
   persistSave(); renderAdmin();
   setStatus && setStatus('MESSAGE SENT TO ' + f.name, 'var(--gold)', 900);
 }
 function adminSignOutBrother(bid) {
-  if (!adminGuard()) return;
+  if (!can('kick')) return;
   const f = FIGHTERS.find(x => x.id === bid); if (!f || !isClaimed(bid)) return;
-  if (!confirm('Sign out ' + f.name + '? Releases the claim (look is kept) so they can sign in again.')) return;
+  if (!confirm('Kick (sign out) ' + f.name + '? Releases the claim — look is kept, they can sign in again.')) return;
   const look = save.profiles[bid] ? save.profiles[bid].look : null;
   save.profiles[bid] = { name: '(signed out)', pin: null, look };   // unclaimed but look preserved
-  inboxPush(bid, 'Old Man Eli (admin) signed you out. Your look was kept — sign in again to take ' + f.name + ' back.');
-  adminLogPush('⏏ Signed out ' + f.name);
+  inboxPush(bid, '⏏ ' + adminWho() + ' signed you out. Your look was kept — sign in again to take ' + f.name + ' back.');
+  adminLogPush('⏏ ' + adminWho() + ' kicked ' + f.name);
   persistSave(); renderAdmin();
   setStatus && setStatus(f.name + ' SIGNED OUT', 'var(--gold)', 900);
 }
 function adminResetBrother(bid) {
-  if (!adminGuard()) return;
+  if (!can('reset')) return;
   const f = FIGHTERS.find(x => x.id === bid); if (!f) return;
   if (!confirm('Reset ' + f.name + '? Unclaims the profile + restores the default look.')) return;
   delete save.profiles[bid];
   restoreOriginalArt(bid);
-  inboxPush(bid, 'Old Man Eli (admin) reset ' + f.name + ' — profile freed + look restored to default. Sign in to claim again.');
-  adminLogPush('♻ Reset ' + f.name);
+  inboxPush(bid, '♻ ' + adminWho() + ' reset ' + f.name + ' — profile freed + look restored. Sign in to claim again.');
+  adminLogPush('♻ ' + adminWho() + ' reset ' + f.name);
   persistSave(); renderAdmin();
   setStatus && setStatus(f.name + ' RESET', 'var(--gold)', 800);
 }
 function adminDeleteCustom(id) {
-  if (!adminGuard()) return;
-  const f = FIGHTERS.find(x => x.id === id); if (f) adminLogPush('🗑 Deleted ' + f.name);
+  if (!can('reset')) return;
+  const f = FIGHTERS.find(x => x.id === id); if (f) adminLogPush('🗑 ' + adminWho() + ' deleted ' + f.name);
   deleteCustomFighter(id);   // shared deleter (confirms, persists, → roster)
 }
-function adminClearLog() { if (!adminGuard()) return; save.adminLog = []; persistSave(); renderAdmin(); }
+function adminClearLog() { if (curAdminTier() !== 1) return; save.adminLog = []; persistSave(); renderAdmin(); }
 function adminResetAllLooks() {
-  if (!adminGuard()) return;
+  if (curAdminTier() !== 1) return;
   if (!confirm('Restore EVERY fighter to a default look? (Claims stay — only looks reset.)')) return;
   for (const bid in (save.profiles || {})) { save.profiles[bid].look = null; restoreOriginalArt(bid); }
   adminLogPush('🎨 Reset ALL looks to default');
@@ -2448,7 +2688,7 @@ function adminResetAllLooks() {
   setStatus && setStatus('ALL LOOKS RESET', 'var(--gold)', 800);
 }
 function adminResetAllProfiles() {
-  if (!adminGuard()) return;
+  if (curAdminTier() !== 1) return;
   if (!confirm('UNCLAIM every fighter + wipe all looks? This frees every profile.')) return;
   for (const bid in (save.profiles || {})) restoreOriginalArt(bid);
   save.profiles = {};
@@ -2556,14 +2796,15 @@ const FIN_UNLOCK = 40;          // finisher unlocks once the TARGET drops to/bel
 const RT = { moveSpeed: 240, aiSpeed: 205, stRegen: 17, blockDrain: 24, backStep: 48 };
 // ~90% WRESTLING / 10% boxing. GRAPPLE (slam) is the bread-and-butter; STRIKE is the light 10%.
 // A landed `slam` knocks the opponent DOWN → opens a PIN. Win by KO, PINFALL, or SUBMISSION.
+// v4.1: SNAPPIER — windups + cooldowns cut so taps land crisp (no "late" attacks), reach slightly extended so hits connect.
 const ATK = {
-  strike:   { windup: 90,  cool: 300,  reach: 1.05, knock: 12, lockMove: 180, heavy: false },
-  combo:    { windup: 130, cool: 430,  reach: 1.02, knock: 18, lockMove: 250, heavy: false },   // follow-up flurry (the 'cross' move) — chains off a landed STRIKE
-  grapple:  { windup: 300, cool: 820,  reach: 0.95, knock: 30, lockMove: 540, heavy: true,  slam: true },
-  finisher: { windup: 380, cool: 1300, reach: 1.00, knock: 50, lockMove: 680, heavy: true,  slam: true },
+  strike:   { windup: 55,  cool: 200,  reach: 1.18, knock: 12, lockMove: 110, heavy: false },
+  combo:    { windup: 90,  cool: 300,  reach: 1.14, knock: 18, lockMove: 160, heavy: false },   // follow-up flurry (the 'cross') — chains off a landed STRIKE
+  grapple:  { windup: 210, cool: 600,  reach: 1.05, knock: 30, lockMove: 360, heavy: true,  slam: true },
+  finisher: { windup: 300, cool: 1000, reach: 1.10, knock: 50, lockMove: 460, heavy: true,  slam: true },
   // legacy aliases (kept so any old reference still resolves)
-  jab:      { windup: 95,  cool: 300,  reach: 1.08, knock: 14, lockMove: 200, heavy: false },
-  power:    { windup: 300, cool: 820,  reach: 0.95, knock: 30, lockMove: 540, heavy: true,  slam: true }
+  jab:      { windup: 55,  cool: 200,  reach: 1.20, knock: 14, lockMove: 120, heavy: false },
+  power:    { windup: 210, cool: 600,  reach: 1.05, knock: 30, lockMove: 360, heavy: true,  slam: true }
 };
 const DOWN_MS = 1700;        // how long a slammed fighter stays down (pin window)
 let rafId = null;
@@ -3655,6 +3896,10 @@ function finishMatch(result) {
     `;
     setResultButtons(result);
     goto('result');
+    // 3D WINNER avatar — the victor stands tall on the result screen
+    const winnerArt = (result === 'win' ? match.player.art : match.opponent.art);
+    const av = document.getElementById('result-avatar');
+    if (av) { if (!showPortraitIn(av, winnerArt)) av.innerHTML = renderFighter(winnerArt); }
   }, 1400);
 }
 
@@ -3814,39 +4059,46 @@ function resize3D() {
 }
 // one limb mesh
 function mkPart(w, h, d, color) { return new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshStandardMaterial({ color: new THREE.Color(color), roughness: 0.7 })); }
-// build a jointed humanoid rig facing +Z. Returns { group, parts, anim, blockPose, downed, lastX, walkPhase }
+function mkCyl(rt, rb, h, color, rough) { return new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, 14), new THREE.MeshStandardMaterial({ color: new THREE.Color(color), roughness: rough == null ? 0.65 : rough })); }
+function mkBall(r, color, rough) { return new THREE.Mesh(new THREE.SphereGeometry(r, 14, 12), new THREE.MeshStandardMaterial({ color: new THREE.Color(color), roughness: rough == null ? 0.55 : rough })); }
+// build a jointed humanoid rig facing +Z — ROUNDED (cylinders + sphere joints), not blocky. Returns { group, parts, anim, ... }
 function build3DFighter(art) {
   const skin = art.skin || '#c8956a', hood = art.hoodie || '#23232c', sh = art.shorts || '#2a2a30', hair = art.hair || '#3a2418', acc = art.accent || '#e04050', build = art.build || 1.0;
   const grp = new THREE.Group();
   const P = {};
-  // torso + pelvis
-  const torso = mkPart(0.46 * build, 0.56, 0.27, hood); torso.position.y = 1.24; grp.add(torso); P.torso = torso;
-  const stripe = mkPart(0.10, 0.30, 0.02, acc); stripe.position.set(0, 1.26, 0.145); grp.add(stripe);
-  const pelvis = mkPart(0.42 * build, 0.26, 0.26, sh); pelvis.position.y = 0.92; grp.add(pelvis); P.pelvis = pelvis;
-  // head + hair
-  const neck = mkPart(0.12, 0.10, 0.12, skin); neck.position.y = 1.56; grp.add(neck);
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.155, 16, 14), new THREE.MeshStandardMaterial({ color: new THREE.Color(skin), roughness: 0.6 })); head.position.y = 1.72; grp.add(head); P.head = head;
-  if ((art.hairStyle || 'short') !== 'bald') { const hr = new THREE.Mesh(new THREE.SphereGeometry(0.16, 14, 12, 0, Math.PI * 2, 0, Math.PI * 0.62), new THREE.MeshStandardMaterial({ color: new THREE.Color(hair), roughness: 0.8 })); hr.position.y = 1.75; grp.add(hr); }
-  // arms — shoulder joint groups (pivot at shoulder), forearm child
+  // torso (tapered cylinder, flattened front-to-back for a chest) + pelvis
+  const torso = mkCyl(0.215 * build, 0.17 * build, 0.56, hood); torso.position.y = 1.22; torso.scale.z = 0.66; grp.add(torso); P.torso = torso;
+  const chest = mkBall(0.2 * build, hood); chest.position.set(0, 1.42, 0); chest.scale.set(1, 0.7, 0.7); grp.add(chest);
+  const stripe = mkCyl(0.05, 0.05, 0.30, acc); stripe.position.set(0, 1.24, 0.115); stripe.scale.z = 0.5; grp.add(stripe);
+  const pelvis = mkCyl(0.17 * build, 0.19 * build, 0.2, sh); pelvis.position.y = 0.93; pelvis.scale.z = 0.72; grp.add(pelvis); P.pelvis = pelvis;
+  // neck + head + hair
+  const neck = mkCyl(0.058, 0.07, 0.12, skin); neck.position.y = 1.55; grp.add(neck);
+  const head = mkBall(0.15, skin); head.position.y = 1.71; head.scale.z = 0.94; grp.add(head); P.head = head;
+  if ((art.hairStyle || 'short') !== 'bald') { const hr = new THREE.Mesh(new THREE.SphereGeometry(0.158, 14, 12, 0, Math.PI * 2, 0, Math.PI * 0.6), new THREE.MeshStandardMaterial({ color: new THREE.Color(hair), roughness: 0.85 })); hr.position.y = 1.74; grp.add(hr); }
+  // arms — cylinders w/ sphere shoulders, elbows, and glove hands (accent)
   function arm(side) {
-    const sx = side * 0.30 * build;
-    const sh_ = new THREE.Group(); sh_.position.set(sx, 1.46, 0);
-    const upper = mkPart(0.13, 0.34, 0.14, hood); upper.position.y = -0.17; sh_.add(upper);
+    const sx = side * 0.25 * build;
+    const cap = mkBall(0.085, hood); cap.position.set(sx, 1.45, 0); grp.add(cap);
+    const sh_ = new THREE.Group(); sh_.position.set(sx, 1.45, 0);
+    const upper = mkCyl(0.062, 0.056, 0.34, hood); upper.position.y = -0.17; sh_.add(upper);
     const elbow = new THREE.Group(); elbow.position.y = -0.34; sh_.add(elbow);
-    const fore = mkPart(0.115, 0.34, 0.125, skin); fore.position.y = -0.17; elbow.add(fore);
-    const hand = mkPart(0.13, 0.13, 0.14, skin); hand.position.y = -0.36; elbow.add(hand);
+    elbow.add(mkBall(0.06, skin));
+    const fore = mkCyl(0.056, 0.05, 0.32, skin); fore.position.y = -0.17; elbow.add(fore);
+    const hand = mkBall(0.078, acc); hand.position.y = -0.35; elbow.add(hand);   // glove
     grp.add(sh_);
     return { shoulder: sh_, elbow };
   }
   P.armL = arm(1); P.armR = arm(-1);
-  // legs — hip joint groups, knee child
+  // legs — cylinders w/ sphere hips/knees + a boot
   function leg(side) {
-    const hx = side * 0.12 * build;
-    const hip = new THREE.Group(); hip.position.set(hx, 0.86, 0);
-    const thigh = mkPart(0.17, 0.42, 0.2, sh); thigh.position.y = -0.21; hip.add(thigh);
+    const hx = side * 0.105 * build;
+    const cap = mkBall(0.09, sh); cap.position.set(hx, 0.86, 0); grp.add(cap);
+    const hip = new THREE.Group(); hip.position.set(hx, 0.84, 0);
+    const thigh = mkCyl(0.092, 0.078, 0.42, sh); thigh.position.y = -0.21; hip.add(thigh);
     const knee = new THREE.Group(); knee.position.y = -0.42; hip.add(knee);
-    const shin = mkPart(0.15, 0.42, 0.17, skin); shin.position.y = -0.21; knee.add(shin);
-    const foot = mkPart(0.18, 0.1, 0.28, '#15151b'); foot.position.set(0, -0.42, 0.05); knee.add(foot);
+    knee.add(mkBall(0.075, skin));
+    const shin = mkCyl(0.075, 0.058, 0.42, skin); shin.position.y = -0.21; knee.add(shin);
+    const foot = mkBall(0.1, '#15151b'); foot.position.set(0, -0.43, 0.06); foot.scale.set(1, 0.55, 1.7); knee.add(foot);   // rounded boot
     grp.add(hip);
     return { hip, knee };
   }
@@ -3868,6 +4120,7 @@ function set3DAnim(side, name, dur) {
   if (name === 'unblock') { f.block = false; return; }
   if (name === 'downed') { f.downed = true; return; }
   if (name === 'up') { f.downed = false; return; }
+  if (name === 'hit') f.hitFlash = performance.now() + 200;   // clear red flash on contact
   f.anim = { name, t0: performance.now(), dur: dur || 380 };
 }
 function set3DHyped(side, on) { const f = SC3D.fighters[side]; if (f) f.hyped = on; }
@@ -3922,6 +4175,11 @@ function poseFighter(f, dt, now, moving) {
   jointTo(P.legL.knee, 0, kneeLx, 0, 0, dt, rate); jointTo(P.legR.knee, 0, kneeRx, 0, 0, dt, rate);
   P.torso.rotation.x = damp(P.torso.rotation.x, torsoX, dt, rate); P.torso.rotation.z = damp(P.torso.rotation.z, torsoZ, dt, rate);
   P.head.position.z = damp(P.head.position.z, A.name === 'hit' && active ? -0.06 : 0, dt, rate);
+  // CLEAR hit flash — body glows red on contact so you can tell what's landing
+  const flash = (f.hitFlash && now < f.hitFlash) ? Math.max(0, (f.hitFlash - now) / 200) : 0;
+  if (P.torso.material && P.torso.material.emissive) { P.torso.material.emissive.setRGB(flash * 0.55, flash * 0.04, flash * 0.04); P.head.material.emissive.setRGB(flash * 0.55, flash * 0.04, flash * 0.04); }
+  // hyped: gold glow
+  if (f.hyped && P.torso.material) { P.torso.material.emissive.setRGB(0.25, 0.18, 0.05); }
   f._step = rootStep;
 }
 function update3D(now) {
