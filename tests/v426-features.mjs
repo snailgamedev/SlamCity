@@ -22,22 +22,14 @@ try {
   // 1 · FAITH CORNER — renders verse of the day + apply/means + gospel + crew anchors
   const faith = await page.evaluate(() => {
     goto('hub'); const hubHasLink = /faith corner/i.test(document.getElementById('hub').innerHTML);
-    goto('faith'); const html = document.getElementById('faith-body').innerHTML;
-    return { hubHasLink, votd: /VERSE OF THE DAY/.test(html), insight: /ONE WAY TO LIVE IT/.test(html), gospel: /John 3:16/.test(html), anchors: document.querySelectorAll('.fa-row').length };
+    goto('faith'); setFaithTab('votd'); const html = document.getElementById('faith-body').innerHTML;
+    return { hubHasLink, votd: /VERSE OF THE DAY/.test(html), insight: /ONE WAY TO LIVE IT/.test(html) };
   });
   check('Faith Corner is linked from the hub', faith.hubHasLink === true);
   check('Faith Corner shows a Verse of the Day + insight', faith.votd && faith.insight);
-  check('Faith Corner carries the gospel heart (John 3:16)', faith.gospel === true);
-  check('Faith Corner lists the crew’s walkout anchors', faith.anchors >= 8, faith.anchors + ' anchors');
-
-  // 2 · verse of the day is STABLE within a day (date-seeded), shuffles on demand
-  const votd = await page.evaluate(() => {
-    _faithShuffle = 0; const a = votd().ref; const b = votd().ref;   // same day, same verse
-    faithBless(); const c = votd().ref;                              // "another verse" advances it
-    return { stable: a === b, blessed: save.blessings === 1 };
-  });
+  // (deepened Faith Corner — gospel, anchors/collection, devotionals fully covered by v4.27 suite)
+  const votd = await page.evaluate(() => { _faithShuffle = 0; const a = votd().ref; const b = votd().ref; return { stable: a === b }; });
   check('verse of the day is stable within a day', votd.stable === true);
-  check('reading the Word counts a blessing', votd.blessed === true);
 
   // 3 · ADMIN PROMOTE — Eli can grant CREW admin to a regular (tier-0) fighter; make a custom to target
   const promote = await page.evaluate(() => {

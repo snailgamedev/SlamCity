@@ -760,7 +760,25 @@
   .fa-row .fa-name { display: block; font-size: 11px; font-weight: 900; color: var(--gold); letter-spacing: 1px; }
   .fa-row .fa-verse { font-size: 11.5px; color: var(--soft); line-height: 1.4; }
   .fa-row .fa-verse i { color: var(--muted); }
+  .fa-row.locked { opacity: 0.5; }
+  .fa-row.locked .fa-name { color: var(--muted); }
   .walkout-cross { color: var(--gold); }
+  /* faith corner — deepened */
+  .faith-top { display: flex; gap: 8px; justify-content: center; margin-bottom: 10px; }
+  .faith-top span { flex: 1; text-align: center; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; padding: 8px 4px; border-radius: 9px; border: 1px solid var(--bg-3); background: rgba(200,160,96,0.05); color: var(--soft); }
+  .faith-top .faith-stars { color: var(--gold); }
+  .faith-tabs { display: flex; gap: 4px; margin-bottom: 12px; flex-wrap: wrap; }
+  .faith-tabs button { flex: 1; min-width: 0; font-size: 10.5px; padding: 8px 4px; }
+  .faith-mem { border: 1px solid var(--gold); border-radius: 12px; padding: 16px; background: rgba(200,160,96,0.05); text-align: center; }
+  .faith-mem .fm-verse { font-size: 15px; line-height: 1.55; color: var(--cream); font-style: italic; margin: 8px 0; }
+  .fm-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0 8px; }
+  .fm-choice { padding: 11px 8px; border-radius: 9px; border: 1px solid var(--bg-3); background: var(--bg-1); color: var(--cream); font-family: inherit; font-weight: 800; font-size: 12px; cursor: pointer; -webkit-appearance: none; appearance: none; }
+  .fm-choice:active { transform: scale(0.97); border-color: var(--gold); }
+  .faith-devo { border: 1px solid var(--bg-3); border-radius: 11px; padding: 13px 14px; margin-bottom: 10px; background: rgba(200,160,96,0.04); }
+  .faith-devo .fd-theme { font-size: 11px; letter-spacing: 2px; font-weight: 900; color: var(--gold); margin-bottom: 6px; }
+  .faith-devo .fd-verse { font-size: 12.5px; color: var(--cream); font-style: italic; line-height: 1.45; }
+  .faith-devo .fd-verse i { color: var(--muted); font-style: normal; }
+  .faith-devo .fd-reflect { font-size: 12px; color: var(--soft); line-height: 1.6; margin-top: 8px; }
   .hub-modes + .hub-grp-label { margin-top: 18px; }
   .hub-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .mode-card { display: flex; align-items: center; gap: 10px; text-align: left; padding: 14px 12px; border: 1px solid var(--bg-3); border-radius: 12px; background: linear-gradient(180deg, var(--bg-2), var(--bg-1)); color: var(--cream); cursor: pointer; transition: transform 0.08s, border-color 0.12s; min-height: 62px; }
@@ -1045,7 +1063,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v4.26 · build 2026-05-24·1830 · ✝ NEW FAITH CORNER — verse of the day · the crew's anchors · go to the Word · 🛡 admin promote/demote + 🧊 freeze ratings · for AARON</div>
+  <div class="splash-foot">v4.27 · build 2026-05-24·1850 · ✝ FAITH CORNER WAY DEEPER — daily blessing + streak · 🧠 memorize · 📚 collection · 🕊 devotionals · ✝ the gospel · ⭐ Faith Stars · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -1370,7 +1388,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v4.26</div>
+    <div class="load-skip">tap to skip · v4.27</div>
   </div>
 </div>
 
@@ -1881,7 +1899,7 @@ function loadSave() {
     }
   } catch(e) {}
   return { wins:0, losses:0, kos:0, finishers:0, scriptureStrikes:0, picks:{}, ovrDelta:{}, abilDelta:{},
-           difficulty:2, sfxOn:true, vol:0.9, captionsOn:true, platform:null, reducedMotion:false, tutorialSeen:false, seenVersion:null, customFighters:[], achievements:{}, belts:0, champion:null, profiles:{}, activeProfile:null, admin:null, adminLog:[], adminInbox:{}, changeFeed:[], bans:{}, feedback:[], adminPins:{}, undo:[], wcOverride:{}, motd:null, titleHistory:[], titleDefenses:0, adminNotes:{}, adminGrants:{}, frozen:{}, blessings:0 };
+           difficulty:2, sfxOn:true, vol:0.9, captionsOn:true, platform:null, reducedMotion:false, tutorialSeen:false, seenVersion:null, customFighters:[], achievements:{}, belts:0, champion:null, profiles:{}, activeProfile:null, admin:null, adminLog:[], adminInbox:{}, changeFeed:[], bans:{}, feedback:[], adminPins:{}, undo:[], wcOverride:{}, motd:null, titleHistory:[], titleDefenses:0, adminNotes:{}, adminGrants:{}, frozen:{}, blessings:0, faithStars:0, blessStreak:0, lastBlessDay:null, versesRead:{} };
 }
 function persistSave() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch(e) {}
@@ -2038,6 +2056,7 @@ function renderHub() {
     + `<span class="hp-stat"><b>${wins}</b>W</span><span class="hp-stat"><b>${losses}</b>L</span>`
     + `<span class="hp-stat"><b>${winPct}%</b>WIN</span>`
     + `<span class="hp-stat"><b>${save.kos || 0}</b>KO</span><span class="hp-stat"><b>${save.finishers || 0}</b>FIN</span>`
+    + (save.faithStars > 0 ? `<span class="hp-stat" style="cursor:pointer" onclick="goto('faith')"><b>${save.faithStars}</b>⭐</span>` : '')
     + (save.belts > 0 ? `<span class="hp-stat hp-belt"><b>${save.belts}</b>🏆</span>` : '')
     + `<span class="hp-stat"><b>${curDiff().name}</b></span>`
     + `</div>`
@@ -2297,7 +2316,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '4.26';
+const GAME_VERSION = '4.27';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -2331,6 +2350,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['4.27', 'FAITH CORNER — WAY DEEPER (you asked to make the G way better): now a real space with 5 tabs → 📖 VERSE OF THE DAY with a 🙏 daily blessing + 🔥 day-streak, 🧠 MEMORIZE (fill-the-blank scripture challenge), 📚 COLLECTION (every verse you read or nail gets gathered — build your set), 🕊 DEVO (5 game-tied devotionals: Courage · Brotherhood · Perseverance · Identity · Humility), and ✝ THE REAL WIN (a clear, warm, no-pressure gospel — John 3:16). Earn ⭐ Faith Stars for showing up in the Word; they ride on your hub profile. Still humble: “go to the Word for yourself.”'],
   ['4.26', 'FAITH + DEEPER ADMIN (the last drop skipped the faith — fixing that): ✝ NEW FAITH CORNER off the hub — a VERSE OF THE DAY with “one way to live it / what it means”, the heart behind the game (iron sharpening iron · John 3:16), and every brother’s walkout scripture in one place, with a humble “go to the Word for yourself” note. 🛡 ADMIN got deeper: Old Man Eli can now PROMOTE any fighter to a CREW admin (or revoke it) on the fly, and 🧊 FREEZE a fighter’s ratings so wins/losses stop moving them (perfect for a benchmark fighter).'],
   ['4.25', 'MORE MODES + DEEPER ADMIN: 🎲 NEW SPECIAL MATCHES — six STIPULATIONS that turn a fight into a totally different version of itself: ⏱️ IRON MAN (75s clock, most knockdowns wins), 💀 SUDDEN DEATH (one knockdown ends it), 🔥 HARDCORE (everything hits 70% harder), 💥 GLASS CANNON (huge damage, thin HP), 🦅 COMEBACK KING (hurt = hit harder), ⚖️ EVEN STEVEN (ratings equalized, pure skill). 🛡 ADMIN: ⚖ LIFT ALL bans/timeouts in one tap, and 🧬 CLONE any fighter into a fresh editable custom (instant variants). (Still on deck: more move options.)'],
   ['4.24', 'BIG FIX-IT + GAMEPLAY PASS (no sandbagging): 🐛 the search bar no longer stops you from typing (admin + roster). 🐛 the VIEW TUTORIAL / HOW TO PLAY button now actually opens (it was trapped inside the fight screen). 🎥 the camera stays a CONSISTENT close front view — no more drifting to a sideview. 🥊 bigger ring + you can roam the whole mat (way more front↔back room). ⚡ fight lag fixed (lighter render + one shadow caster + fewer per-frame repaints). 🛡 the admin “all fighters” page now shows WHO is using each fighter (owner name) and lists created fighters. 🖼 roster/detail avatars now refresh the moment an owner changes their look. (Next drop: more move/customization options + a batch of fresh ideas.)'],
@@ -2448,27 +2468,85 @@ function defendTitle() {
   launchFight(save.champion, c.id);
 }
 // FAITH CORNER — verse of the day (date-seeded so it's the same all day), the crew's walkout anchors, go-to-the-Word note.
-let _faithShuffle = 0;
+/* ===== FAITH CORNER (deepened) — daily blessing + streak · memory verse · collection · devotionals · the gospel ===== */
+let faithTab = 'votd', _faithShuffle = 0, _memSeed = 0;
+function todayKey() { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
 function votd() {
   const d = new Date(); const seed = d.getFullYear() * 366 + (d.getMonth() + 1) * 31 + d.getDate() + _faithShuffle;
   return SPLASH_VERSES[seed % SPLASH_VERSES.length];
 }
-function faithBless() {
-  save.blessings = (save.blessings || 0) + 1; _faithShuffle++; persistSave(); renderFaith();
-  setStatus && setStatus('🙏 ' + save.blessings + ' time' + (save.blessings !== 1 ? 's' : '') + ' in the Word', 'var(--gold)', 1200);
+// every verse the player can COLLECT (the splash set + each brother's walkout anchor)
+function faithPool() {
+  const pool = SPLASH_VERSES.map(v => ({ text: v.text, ref: v.ref }));
+  FIGHTERS.forEach(f => { if (f.art && f.art.scriptureFinisher) pool.push({ text: f.art.scriptureFinisher.text, ref: f.art.scriptureFinisher.ref }); });
+  const seen = {}; return pool.filter(v => seen[v.ref] ? false : (seen[v.ref] = true));   // dedupe by ref
 }
+function collectVerse(ref) { save.versesRead = save.versesRead || {}; if (!save.versesRead[ref]) { save.versesRead[ref] = true; persistSave(); } }
+const DEVOS = [
+  { theme: 'COURAGE', ic: '🦁', ref: 'Joshua 1:9', text: 'Be strong and of a good courage · be not afraid · neither be thou dismayed.', reflect: 'Stepping in the ring takes nerve — but real courage isn’t pretending you’re not scared. It’s moving forward knowing God goes with you.' },
+  { theme: 'BROTHERHOOD', ic: '🤝', ref: 'Proverbs 27:17', text: 'Iron sharpeneth iron · so a man sharpeneth the countenance of his friend.', reflect: 'Your toughest sparring partner makes you better. Surround yourself with people who push you to grow — and be that person for someone else.' },
+  { theme: 'PERSEVERANCE', ic: '⛰️', ref: 'Galatians 6:9', text: 'Let us not be weary in well doing · for in due season we shall reap.', reflect: 'Some rounds you’re just gassed. Keep doing the right thing anyway — the harvest comes for the ones who don’t quit.' },
+  { theme: 'IDENTITY', ic: '👑', ref: 'Psalm 139:14', text: 'I will praise thee · for I am fearfully and wonderfully made.', reflect: 'Your worth was never your win-loss record. It was settled before you threw a single punch — you’re made on purpose, by a God who loves you.' },
+  { theme: 'HUMILITY', ic: '🙇', ref: 'James 4:10', text: 'Humble yourselves in the sight of the Lord · and he shall lift you up.', reflect: 'Champions who last stay low. Let God do the lifting — you just stay faithful in the small rounds.' }
+];
+function faithStat(n) { return n + ' ⭐'; }
+// DAILY BLESSING — once a day: builds your streak + grants a Faith Star
+function faithClaim() {
+  const today = todayKey();
+  if (save.lastBlessDay === today) { setStatus && setStatus('already claimed today — come back tomorrow 🙏', 'var(--muted)', 1200); return; }
+  const y = new Date(Date.now() - 864e5); const yKey = y.getFullYear() + '-' + (y.getMonth() + 1) + '-' + y.getDate();
+  save.blessStreak = (save.lastBlessDay === yKey) ? (save.blessStreak || 0) + 1 : 1;
+  save.lastBlessDay = today; save.blessings = (save.blessings || 0) + 1; save.faithStars = (save.faithStars || 0) + 1;
+  collectVerse(votd().ref); persistSave(); renderFaith();
+  setStatus && setStatus('🙏 BLESSING CLAIMED · ' + save.blessStreak + '-day streak · +1 ⭐', 'var(--gold)', 1500);
+}
+function faithShuffleVerse() { _faithShuffle++; collectVerse(votd().ref); renderFaith(); }
+function setFaithTab(t) { faithTab = t; _memSeed = 0; renderFaith(); }
+function newMemVerse() { _memSeed++; renderFaith(); }
+function faithGuess(pick, ans, ref) {
+  if (pick === ans) { save.faithStars = (save.faithStars || 0) + 1; collectVerse(ref); persistSave(); setStatus && setStatus('✓ "' + ans + '" — +1 ⭐ · verse collected', 'var(--gold)', 1400); _memSeed++; renderFaith(); }
+  else setStatus && setStatus('not quite — read it again 🙏', 'var(--muted)', 1100);
+}
+function faithMemHTML() {
+  const pool = SPLASH_VERSES; const v = pool[(votd0Seed() + _memSeed) % pool.length];
+  const words = v.text.replace(/·/g, ' ').split(/\s+/).filter(w => /^[A-Za-z]{4,}$/.test(w));
+  if (!words.length) return '<div class="rank-stat">…</div>';
+  const ans = words[(votd0Seed() + _memSeed * 7) % words.length];
+  const blanked = v.text.replace(new RegExp('\\b' + ans + '\\b'), '——————');
+  // distractors from OTHER verses
+  const others = []; pool.forEach(p => p.text.replace(/·/g, ' ').split(/\s+/).forEach(w => { if (/^[A-Za-z]{4,}$/.test(w) && w !== ans) others.push(w); }));
+  const picks = [ans];
+  while (picks.length < 4 && others.length) { const w = others[(votd0Seed() + picks.length * 13 + _memSeed * 5) % others.length]; if (!picks.includes(w)) picks.push(w); else others.splice(others.indexOf(w), 1); }
+  const shuffled2 = picks.sort((a, b) => ((a.length * 7 + _memSeed) % 5) - ((b.length * 7 + _memSeed) % 5));
+  return `<div class="faith-mem"><div class="fv-label">🧠 FILL THE BLANK</div>`
+    + `<div class="fm-verse">"${blanked}"</div><div class="fv-ref">— ${v.ref}</div>`
+    + `<div class="fm-choices">` + shuffled2.map(w => `<button class="fm-choice" type="button" onclick="faithGuess('${w}','${ans}','${v.ref}')">${w}</button>`).join('') + `</div>`
+    + `<button class="adm-mini" type="button" onclick="newMemVerse()">↻ another verse</button></div>`;
+}
+function votd0Seed() { const d = new Date(); return d.getFullYear() * 366 + (d.getMonth() + 1) * 31 + d.getDate(); }
 function renderFaith() {
   const body = document.getElementById('faith-body'); if (!body) return;
-  const v = votd();
-  const anchors = FIGHTERS.filter(f => f.art && f.art.scriptureFinisher).slice(0, 12);
-  let html = `<div class="faith-votd"><div class="fv-label">📖 VERSE OF THE DAY</div>`
-    + `<div class="fv-text"><span class="walkout-cross">✝</span>"${v.text}"</div><div class="fv-ref">— ${v.ref} · KJV</div></div>`
-    + verseInsightHTML(v)
-    + `<button class="btn btn-secondary" type="button" onclick="faithBless()">🙏 ANOTHER VERSE${save.blessings ? ' · ' + save.blessings + ' read' : ''}</button>`
-    + `<div class="faith-gospel"><b>THE HEART OF IT</b> SLAM CITY's a brother-crew game built on iron sharpening iron (Prov 27:17) — competition that lifts you, not tears you down. The real win was never on the mat. <span class="walkout-cross">✝</span> "For God so loved the world, that he gave his only begotten Son…" — John 3:16</div>`
-    + `<div class="adm-sec-label" style="margin-top:18px">🤝 THE CREW'S ANCHORS</div>`
-    + `<div class="faith-anchors">` + anchors.map(f => `<div class="fa-row"><span class="fa-name">${f.name}</span><span class="fa-verse"><span class="walkout-cross">✝</span>"${f.art.scriptureFinisher.text}" <i>— ${f.art.scriptureFinisher.ref}</i></span></div>`).join('') + `</div>`
-    + `<div class="vi-note" style="margin-top:14px">one way to read it · others may see it differently — go to the Word for yourself 🙏</div>`;
+  const pool = faithPool(); const collected = pool.filter(v => (save.versesRead || {})[v.ref]).length;
+  const tabs = [['votd', '📖 Verse'], ['mem', '🧠 Memorize'], ['coll', '📚 Collection'], ['devo', '🕊 Devo'], ['gospel', '✝ Gospel']];
+  let html = `<div class="faith-top"><span class="faith-stars">${faithStat(save.faithStars || 0)}</span><span class="faith-streak">🔥 ${save.blessStreak || 0}-day streak</span><span class="faith-coll">📚 ${collected}/${pool.length}</span></div>`;
+  html += `<div class="seg faith-tabs">` + tabs.map(t => `<button class="${faithTab === t[0] ? 'on' : ''}" type="button" onclick="setFaithTab('${t[0]}')">${t[1]}</button>`).join('') + `</div>`;
+  if (faithTab === 'votd') {
+    const v = votd(); const claimed = save.lastBlessDay === todayKey();
+    html += `<div class="faith-votd"><div class="fv-label">📖 VERSE OF THE DAY</div><div class="fv-text"><span class="walkout-cross">✝</span>"${v.text}"</div><div class="fv-ref">— ${v.ref} · KJV</div></div>`
+      + verseInsightHTML(v)
+      + `<button class="btn" type="button" style="border-color:var(--gold);color:var(--gold)" onclick="faithClaim()">${claimed ? '✓ BLESSING CLAIMED TODAY' : '🙏 CLAIM TODAY’S BLESSING (+1 ⭐)'}</button>`
+      + `<button class="btn btn-secondary" type="button" onclick="faithShuffleVerse()">↻ another verse</button>`;
+  } else if (faithTab === 'mem') {
+    html += faithMemHTML() + `<div class="vi-note" style="margin-top:12px">hide-and-seek the Word — every verse you nail gets collected + a ⭐</div>`;
+  } else if (faithTab === 'coll') {
+    html += `<div class="adm-sec-label">📚 VERSES YOU’VE GATHERED · ${collected}/${pool.length}</div>`;
+    html += `<div class="faith-anchors">` + pool.map(v => { const got = (save.versesRead || {})[v.ref]; return `<div class="fa-row ${got ? '' : 'locked'}"><span class="fa-name">${got ? '✝ ' + v.ref : '🔒 ???'}</span><span class="fa-verse">${got ? '"' + v.text + '"' : 'read or memorize to reveal'}</span></div>`; }).join('') + `</div>`;
+  } else if (faithTab === 'devo') {
+    html += DEVOS.map(d => `<div class="faith-devo"><div class="fd-theme">${d.ic} ${d.theme}</div><div class="fd-verse"><span class="walkout-cross">✝</span>"${d.text}" <i>— ${d.ref}</i></div><div class="fd-reflect">${d.reflect}</div></div>`).join('');
+  } else {
+    html += `<div class="faith-gospel"><b>THE REAL WIN</b> SLAM CITY is iron sharpening iron (Prov 27:17) — but the realest win was never yours to earn on the mat. We all fall short. God’s answer wasn’t “try harder” — it was a gift: <span class="walkout-cross">✝</span> “For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.” — John 3:16<br><br>That’s grace — you can’t out-train it or earn it. You just receive it. If that stirs something, talk to Him like a friend, and crack open a real Bible (start with the book of John). 🙏</div>`;
+  }
+  html += `<div class="vi-note" style="margin-top:14px">one way to read it · others may see it differently — go to the Word for yourself 🙏</div>`;
   body.innerHTML = html;
 }
 function renderRankings() {
