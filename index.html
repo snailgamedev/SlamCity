@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#0a0a0d" />
-<title>SLAM CITY · v3.8 · ADMIN + UNIVERSAL LOOKS</title>
+<title>SLAM CITY · v3.9 · CREATE-ON-SIGN-IN + OLD MAN ELI</title>
 <!-- retro arcade type: Press Start 2P for marquee, Oxanium for readable UI · safe fallback stack -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -478,6 +478,15 @@
   .adm-mini.danger { border-color: var(--red); color: var(--red-bright); }
   .adm-danger { border-color: rgba(224,64,80,0.5) !important; color: var(--red-bright) !important; }
   .admin-chip { color: var(--gold) !important; border-color: rgba(200,160,96,0.5) !important; background: linear-gradient(180deg, rgba(60,44,16,0.5), rgba(40,28,12,0.4)) !important; font-weight: 800; box-shadow: 0 0 14px rgba(200,160,96,0.2); }
+  .adm-tag { font-size: 8px; letter-spacing: 1px; color: var(--gold); border: 1px solid rgba(200,160,96,0.4); border-radius: 4px; padding: 1px 4px; vertical-align: middle; }
+  .adm-log { background: var(--bg-1); border: 1px solid var(--bg-3); border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; max-height: 168px; overflow-y: auto; }
+  .adm-log-row { font-size: 11px; color: var(--soft); line-height: 1.5; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .adm-log-row:last-child { border-bottom: none; }
+  .adm-log-t { color: var(--muted); font-size: 9px; font-weight: 700; }
+  .prof-inbox { border: 1px solid rgba(200,160,96,0.45); background: linear-gradient(180deg, rgba(60,44,16,0.4), rgba(20,14,8,0.3)); border-radius: 10px; padding: 12px 13px; margin-bottom: 14px; box-shadow: 0 0 18px rgba(200,160,96,0.12); }
+  .prof-inbox-head { font-size: 9px; letter-spacing: 2px; color: var(--gold); font-weight: 800; margin-bottom: 7px; }
+  .prof-inbox-msg { font-size: 12.5px; color: var(--cream); line-height: 1.5; margin-bottom: 6px; }
+  .prof-inbox-t { color: var(--muted); font-size: 10px; }
   .hud-btns { position: absolute; top: 6px; right: 8px; z-index: 30; display: flex; gap: 6px; }
   .hud-btn { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--bg-3); background: rgba(20,20,26,0.9); color: var(--soft); font-weight: 900; font-size: 12px; cursor: pointer; line-height: 1; display: flex; align-items: center; justify-content: center; padding: 0; }
   #pause-btn { font-size: 10px; letter-spacing: -1px; color: var(--cream); border-color: var(--bg-3); }
@@ -804,7 +813,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v3.8 · build 2026-05-24·0820 · 👑 ADMIN (Old Man Eli · master key) + case-insensitive sign-in + claimed brothers LOCK + UNIVERSAL looks (everyone sees them) · on top of v3.7 profiles/customization · for AARON</div>
+  <div class="splash-foot">v3.9 · build 2026-05-24·0857 · sign in with ANY name → makes your fighter · 👑 OLD MAN ELI on the roster · admin sign-out + messages (admin log + your inbox) · OG crew only (filler CPUs cut) · COMBO chain + more finishers · update log fixed · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -1094,7 +1103,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v3.8</div>
+    <div class="load-skip">tap to skip · v3.9</div>
   </div>
 </div>
 
@@ -1292,6 +1301,20 @@ const FIGHTERS = [
       {name:'Submission',type:'finisher',dmg:[60,75],cost:58,acc:0.90, fin:true}
     ],
     art:{skin:'#c89878', skinDark:'#8a6850', hair:'#1a0e08', hairLight:'#2a1810', hoodie:'#1a3020', hoodieDark:'#0a1810', accent:'#40a040', shorts:'#1a2018', logo:'CB', build:1.0, scriptureFinisher:{text:'He wholly followed the LORD.', ref:'Joshua 14:14'}}
+  },
+  {
+    id:'oldmaneli', name:'OLD MAN ELI', slot:16, arch:'WRESTLER', ovr:90, admin:true, og:true,
+    stats:{striking:88, grappling:92, stamina:84, heart:99, charisma:99},
+    finishers:['ANCIENT LANDMARK','THE CORNERSTONE'],
+    vibe:'👑 THE ARCHITECT · built the whole wall · admin of SLAM CITY',
+    walkout:{text:'Remove not the ancient landmark, which thy fathers have set.', ref:'Proverbs 22:28 · KJV', label:'Architect Anthem'},
+    moves:[
+      {name:'Old-School Jab',type:'jab',dmg:[9,15],cost:7,acc:0.94},
+      {name:'Veteran Combo',type:'cross',dmg:[16,24],cost:18,acc:0.88},
+      {name:'The Cornerstone',type:'power',dmg:[27,37],cost:33,acc:0.80, sig:true},
+      {name:'Ancient Landmark',type:'finisher',dmg:[62,80],cost:58,acc:0.94, fin:true}
+    ],
+    art:{skin:'#d2a878', skinDark:'#9e7848', hair:'#cfcfd6', hairLight:'#ececf2', hoodie:'#1a1410', hoodieDark:'#0a0806', accent:'#c8a060', shorts:'#3a2c10', logo:'OE', build:1.05, scriptureFinisher:{text:'Except the LORD build the house, they labour in vain that build it.', ref:'Psalm 127:1'}}
   }
 ];
 
@@ -1354,14 +1377,9 @@ function mkCPU(id, name, arch, ovr, st, skinK, hairK, style, finName, finV, acce
     art: Object.assign({ hoodie: '#1d1d24', hoodieDark: '#0a0a0d', accent: accent || '#8a8a92', shorts: '#26262e', logo: id.slice(0, 2).toUpperCase(), build: 1.0, scriptureFinisher: finV, hairStyle: style }, SKIN[skinK], HAIRC[hairK])
   };
 }
-const CPU_FIGHTERS = [
-  mkCPU('titan',  'TITAN',  'POWERHOUSE', 87, [82, 96, 84, 88, 80], 'black', 'black',    'short-afro', 'Tower Drop',   { text: 'The Lord is my strength and my shield.', ref: 'Psalm 28:7' }, '#c84a4a'),
-  mkCPU('rico',   'RICO',   'BOXER',      85, [95, 70, 88, 86, 90], 'pr',    'black',    'waves',      'Counter Cross',{ text: 'I press toward the mark.', ref: 'Philippians 3:14' }, '#4aa0c8'),
-  mkCPU('duke',   'DUKE',   'BRAWLER',    84, [88, 86, 84, 90, 78], 'white', 'brown',    'straight',   'Duke Driver',  { text: 'Be strong and of a good courage.', ref: 'Joshua 1:9' }, '#c89a4a'),
-  mkCPU('viper',  'VIPER',  'KICKBOXER',  86, [93, 74, 90, 84, 85], 'black', 'black',    'curly-afro', 'Venom Kick',   { text: 'They that wait upon the Lord shall renew their strength.', ref: 'Isaiah 40:31' }, '#5ac84a'),
-  mkCPU('bishop', 'BISHOP', 'WRESTLER',   88, [78, 97, 88, 92, 82], 'white', 'bleached', 'short-afro', 'Last Rites',   { text: 'Fight the good fight of faith.', ref: '1 Timothy 6:12' }, '#a04ac8'),
-  mkCPU('ace',    'ACE',    'STRIKER',    83, [92, 72, 86, 82, 88], 'white', 'blonde',   'perm',       'Ace of Spades',{ text: 'Whatsoever thy hand findeth to do, do it with thy might.', ref: 'Ecclesiastes 9:10' }, '#c8c84a')
-];
+// Per Eli (v3.9): the 6 generic "circuit veteran" CPUs (TITAN/RICO/DUKE/VIPER/BISHOP/ACE) were removed —
+// the roster is OG crew + Old Man Eli + fighters people CREATE by signing in. (mkCPU kept; git-recoverable.)
+const CPU_FIGHTERS = [];
 CPU_FIGHTERS.forEach((f, i) => { f.slot = 30 + i; FIGHTERS.push(f); });
 
 /* ========== SVG FIGHTER RENDERER (parametric · matches Aaron preview style) ========== */
@@ -1568,11 +1586,13 @@ function loadSave() {
       if (!parsed.profiles) parsed.profiles = {};        // brotherId → { name, pin, look }
       if (!('activeProfile' in parsed)) parsed.activeProfile = null;
       if (!('admin' in parsed)) parsed.admin = null;     // { pin } — the "Old Man Eli" master account
+      if (!Array.isArray(parsed.adminLog)) parsed.adminLog = [];   // admin's audit log [{t,text}]
+      if (!parsed.adminInbox) parsed.adminInbox = {};    // fighterId → [{t,text}] messages the affected person sees
       return parsed;
     }
   } catch(e) {}
   return { wins:0, losses:0, kos:0, finishers:0, scriptureStrikes:0, picks:{}, ovrDelta:{}, abilDelta:{},
-           difficulty:2, sfxOn:true, vol:0.9, captionsOn:true, platform:null, reducedMotion:false, tutorialSeen:false, seenVersion:null, customFighters:[], achievements:{}, belts:0, champion:null, profiles:{}, activeProfile:null, admin:null };
+           difficulty:2, sfxOn:true, vol:0.9, captionsOn:true, platform:null, reducedMotion:false, tutorialSeen:false, seenVersion:null, customFighters:[], achievements:{}, belts:0, champion:null, profiles:{}, activeProfile:null, admin:null, adminLog:[], adminInbox:{} };
 }
 function persistSave() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch(e) {}
@@ -1877,7 +1897,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '3.8';
+const GAME_VERSION = '3.9';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -1901,8 +1921,9 @@ function showUpdateToast() {
 function showWhatsNew() {
   const el = document.getElementById('whatsnew'); if (!el) return;
   document.getElementById('wn-version').textContent = 'v' + GAME_VERSION;
-  // ACTUAL UPDATES (newest first) — not the static game goals. The top entry is THIS version's change.
-  document.getElementById('wn-desc').textContent = 'Latest in v' + CHANGELOG[0][0] + ': ' + CHANGELOG[0][1];
+  // Pull THIS version's notes by matching GAME_VERSION (robust if the list order ever slips), fall back to newest.
+  const cur = CHANGELOG.find(c => c[0] === GAME_VERSION) || CHANGELOG[0];
+  document.getElementById('wn-desc').textContent = 'New in v' + cur[0] + ': ' + cur[1];
   document.getElementById('wn-list').innerHTML = CHANGELOG.slice(0, 7).map(c => `<div class="wn-row"><b>v${c[0]}</b><span>${c[1]}</span></div>`).join('');
   el.classList.add('on'); el.setAttribute('aria-hidden', 'false');
 }
@@ -1910,6 +1931,8 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['3.9',  'Sign in with ANY name and it spins up your OWN fighter (not just the crew) · 👑 OLD MAN ELI joins the roster — the Architect · admin can now sign-out + message any fighter, so everyone sees what happened (admin log + your inbox) · roster trimmed to the OG crew (filler CPUs removed) · more moves + finishers (COMBO chain · 2nd signatures) · update log fixed (it was stuck on v3.7)'],
+  ['3.8',  'ADMIN — sign in as "Old Man Eli" (master key): edit / reset / message any fighter · names are case-insensitive (aaron = AARON) · claimed brothers LOCK so only admin can reset them · recolors are now UNIVERSAL — everyone sees your look on the roster + in the ring'],
   ['3.7',  'Profiles + deeper customization — SIGN IN as your brother (PIN-secured · one profile each) and recolor him · 14 hairstyles + more skin/hair/gear colors · DELETE your customs · in-fight PAUSE menu (resume/settings/quit) · every OVR stat now levels up · downed fighters lie clean on the mat (no more jumble) · tightened UI so nothing overlaps · AI roams + does real footwork'],
   ['3.6',  'Every move animates differently — jab snaps, combo doubles up, finishers drive; each fighter’s signature throws its own way (suplex, powerbomb, aerial spin, spin-kick, spear, flying knee…) and its name flashes on the hit'],
   ['3.5',  'Realistic movement — fighters circle, approach on angles, weave + footwork-bounce (roam, not stand still); AI no longer a straight-line robot'],
@@ -2108,7 +2131,13 @@ function customSpecToFighter(spec) {
     art: Object.assign({ hoodie: '#1d1d24', hoodieDark: '#0a0a0d', accent: spec.accent || '#c8a060', shorts: spec.trunks || '#26262e', logo: ((spec.name || 'MY').replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase() || 'MY'), build: 1.0, scriptureFinisher: FIN_SCRIPT, hairStyle: spec.hairStyle }, SKIN[spec.skin], HAIRC[spec.hairColor])
   };
 }
-function addCustomToRoster(spec) { if (!FIGHTERS.find(x => x.id === spec.id)) FIGHTERS.push(customSpecToFighter(spec)); }
+function addCustomToRoster(spec) {
+  if (!FIGHTERS.find(x => x.id === spec.id)) {
+    const f = customSpecToFighter(spec);
+    FIGHTERS.push(f);
+    if (typeof ORIGINAL_ART !== 'undefined' && !ORIGINAL_ART[f.id]) ORIGINAL_ART[f.id] = JSON.parse(JSON.stringify(f.art));  // so admin RESET can restore created fighters too
+  }
+}
 function loadCustomFighters() { (save.customFighters || []).forEach(addCustomToRoster); }
 function saveCustomFighter() {
   const id = 'custom_' + Date.now();
@@ -2129,13 +2158,19 @@ const ADMIN_NAME = 'OLD MAN ELI';
 const ADMIN_KEY  = '__admin';
 const ORIGINAL_ART = {};   // pristine brother art snapshotted at boot (before any look applies) so admin can RESET to default
 function snapshotOriginalArt() {
-  FIGHTERS.forEach(f => { if (isBrother(f) && !ORIGINAL_ART[f.id]) ORIGINAL_ART[f.id] = JSON.parse(JSON.stringify(f.art)); });
+  FIGHTERS.forEach(f => { if (!f.cpu && !f.admin && !ORIGINAL_ART[f.id]) ORIGINAL_ART[f.id] = JSON.parse(JSON.stringify(f.art)); });  // brothers + customs
 }
 function restoreOriginalArt(bid) {
   const f = FIGHTERS.find(x => x.id === bid);
   if (f && ORIGINAL_ART[bid]) f.art = JSON.parse(JSON.stringify(ORIGINAL_ART[bid]));
 }
-function isBrother(f) { return f && !f.cpu && !f.custom; }
+function isBrother(f) { return f && !f.cpu && !f.custom && !f.admin; }   // admin fighter (Old Man Eli) is claimed via the ADMIN path, not as a brother
+// match ANY claimable fighter by name (brothers + created customs; not the admin fighter)
+function fighterByName(name) {
+  const n = (name || '').trim().toUpperCase();
+  if (!n) return null;
+  return FIGHTERS.find(f => !f.cpu && !f.admin && f.name.toUpperCase() === n) || null;
+}
 function brotherByName(name) {
   const n = (name || '').trim().toUpperCase();   // case-insensitive: "aaron", "Aaron", "AARON" all match
   if (!n) return null;
@@ -2163,8 +2198,15 @@ function renderProfile() {
     : `<div class="prof-claimed">no brothers claimed yet</div>`;
   if (prof) {
     const f = FIGHTERS.find(x => x.id === active);
+    const inbox = (save.adminInbox && save.adminInbox[active]) || [];
+    const inboxHTML = inbox.length
+      ? `<div class="prof-inbox"><div class="prof-inbox-head">👑 FROM OLD MAN ELI (ADMIN)</div>`
+        + inbox.map(m => `<div class="prof-inbox-msg">${m.text} <span class="prof-inbox-t">· ${adminTimeAgo(m.t)} ago</span></div>`).join('')
+        + `<button class="adm-mini" type="button" onclick="dismissInbox('${active}')">GOT IT</button></div>`
+      : '';
     body.innerHTML =
-        `<div class="prof-signed"><div class="prof-avatar">${renderFighter(f.art)}</div>`
+        inboxHTML
+      + `<div class="prof-signed"><div class="prof-avatar">${renderFighter(f.art)}</div>`
       + `<div class="prof-who"><div class="prof-hi">SIGNED IN</div><div class="prof-name">${prof.name}</div><div class="prof-as">as ${f.name} · OVR ${getCurrentOVR(f.id)}</div></div></div>`
       + `<button class="btn" type="button" onclick="profileEditLook('${active}')">🎨 CUSTOMIZE ${f.name}</button>`
       + `<button class="btn btn-secondary" type="button" onclick="openDetail('${active}')">VIEW CARD</button>`
@@ -2172,8 +2214,8 @@ function renderProfile() {
       + claimedList;
   } else {
     body.innerHTML =
-        `<div class="prof-intro">Sign in as your brother. Type your crew name — <b>caps or lowercase, doesn't matter</b> — and claim it with a PIN. Then customize your fighter and the new look shows up <b>everywhere, for everyone</b>. <b>One profile per brother — once claimed it locks.</b></div>`
-      + `<div class="cr-row"><div class="cr-label">YOUR NAME</div><input id="prof-name" class="roster-search" maxlength="14" placeholder="e.g. aaron" autocomplete="off"></div>`
+        `<div class="prof-intro">Type your name — <b>caps or lowercase, doesn't matter</b> — and claim it with a PIN. If you're one of the <b>crew</b>, you claim your brother. A <b>new name</b> spins up a fresh fighter that's yours. Your look then shows up <b>everywhere, for everyone</b>. <b>One profile each — once claimed it locks to you.</b></div>`
+      + `<div class="cr-row"><div class="cr-label">YOUR NAME</div><input id="prof-name" class="roster-search" maxlength="14" placeholder="e.g. aaron — or a new name" autocomplete="off"></div>`
       + `<div class="cr-row"><div class="cr-label">PIN (4+ digits)</div><input id="prof-pin" class="roster-search" type="password" inputmode="numeric" maxlength="8" placeholder="••••" autocomplete="off"></div>`
       + `<div id="prof-msg" class="prof-msg"></div>`
       + `<button class="btn" type="button" onclick="profileSignIn()">SIGN IN / CLAIM</button>`
@@ -2196,20 +2238,43 @@ function profileSignIn() {
     setStatus && setStatus('👑 ADMIN · OLD MAN ELI', 'var(--gold)', 1100);
     return;
   }
-  // ===== BROTHER PATH =====
-  const bro = brotherByName(rawName);
-  if (!bro) { profileMsg('No brother named "' + (rawName || '—') + '" in the crew.', false); return; }
-  if (isClaimed(bro.id)) {   // HARD LOCK — once claimed, no re-sign-in; admin must reset
-    profileMsg('🔒 ' + bro.name + ' is already claimed & locked. Only Old Man Eli (admin) can reset it.', false);
+  // ===== EXISTING FIGHTER (a crew brother OR an already-created fighter) =====
+  const f = fighterByName(rawName);
+  if (f) {
+    if (isClaimed(f.id)) {   // HARD LOCK — once claimed, no re-sign-in; admin must reset
+      profileMsg('🔒 ' + f.name + ' is already claimed & locked. Only Old Man Eli (admin) can reset it.', false);
+      return;
+    }
+    const prior = save.profiles[f.id];
+    save.profiles[f.id] = { name: rawName, pin: pin, look: prior ? prior.look : null };
+    save.activeProfile = f.id; persistSave(); renderProfile();
+    setStatus && setStatus('CLAIMED ' + f.name + '!', 'var(--gold)', 1000);
     return;
   }
-  // CLAIM — first to sign in owns it. Keep any look an admin pre-set for this brother.
-  const prior = save.profiles[bro.id];
-  save.profiles[bro.id] = { name: rawName, pin: pin, look: prior ? prior.look : null };
-  save.activeProfile = bro.id; persistSave(); renderProfile();
-  setStatus && setStatus('CLAIMED ' + bro.name + '!', 'var(--gold)', 1000);
+  // ===== NEW NAME → CREATE a fighter for them, then claim it =====
+  const nf = createFighterForName(rawName);
+  save.profiles[nf.id] = { name: rawName, pin: pin, look: null };
+  save.activeProfile = nf.id; persistSave();
+  renderProfile();
+  setStatus && setStatus('CREATED + CLAIMED ' + nf.name + '!', 'var(--gold)', 1300);
+}
+// spin up a brand-new fighter from just a name (defaults; the owner customizes after) — used by sign-in
+function createFighterForName(name) {
+  const id = 'custom_' + Date.now();
+  const clean = (name || 'NEW FIGHTER').toUpperCase().slice(0, 14);
+  const spec = {
+    id, name: clean, arch: 'BRAWLER', skin: 'white', hairColor: 'black', hairStyle: 'short',
+    accent: '#c8a060', trunks: '#26262e',
+    stats: { striking: 80, grappling: 80, stamina: 80, heart: 82, charisma: 80 },
+    finisher: 'Slam City Special'
+  };
+  save.customFighters = save.customFighters || [];
+  save.customFighters.push(spec);
+  addCustomToRoster(spec);
+  return FIGHTERS.find(x => x.id === id) || customSpecToFighter(spec);
 }
 function profileSignOut() { save.activeProfile = null; persistSave(); renderProfile(); }
+function dismissInbox(fid) { if (save.adminInbox) delete save.adminInbox[fid]; persistSave(); renderProfile(); }
 
 /* ---------- ADMIN PANEL · "Old Man Eli" — master control over the whole crew ---------- */
 function adminGuard() { return save.activeProfile === ADMIN_KEY; }
@@ -2221,48 +2286,89 @@ function renderAdmin() {
   let html =
       `<div class="adm-crown">👑</div>`
     + `<div class="adm-hero"><div class="adm-hi">ADMIN · THE ARCHITECT</div><div class="adm-name">OLD MAN ELI</div><div class="adm-sub">master key to the whole crew</div></div>`;
-  html += `<div class="adm-sec-label">CREW · ${brothers.length} BROTHERS</div>`;
-  html += brothers.map(f => {
+  const roster = [...brothers, ...customs];
+  html += `<div class="adm-sec-label">CREW · ${roster.length} FIGHTERS</div>`;
+  html += roster.map(f => {
     const claimed = isClaimed(f.id);
     const status = claimed ? `<span class="adm-lock">🔒 ${(save.profiles[f.id].name || '').toUpperCase()}</span>` : `<span class="adm-open">🔓 open</span>`;
-    return `<div class="adm-row"><span class="adm-rname">${f.name}</span>${status}`
-      + `<span class="adm-acts"><button class="adm-mini" type="button" onclick="adminEditBrother('${f.id}')">🎨</button>`
-      + (claimed ? `<button class="adm-mini danger" type="button" onclick="adminResetBrother('${f.id}')">RESET</button>` : '')
+    return `<div class="adm-row"><span class="adm-rname">${f.name}${f.custom ? ' <span class="adm-tag">made</span>' : ''}</span>${status}`
+      + `<span class="adm-acts"><button class="adm-mini" type="button" title="customize" onclick="adminEditBrother('${f.id}')">🎨</button>`
+      + `<button class="adm-mini" type="button" title="message" onclick="adminMsgTo('${f.id}')">✉</button>`
+      + (claimed ? `<button class="adm-mini" type="button" title="sign out (release claim, keep look)" onclick="adminSignOutBrother('${f.id}')">⏏</button>` : '')
+      + (claimed ? `<button class="adm-mini danger" type="button" title="reset to default" onclick="adminResetBrother('${f.id}')">RESET</button>` : '')
+      + (f.custom ? `<button class="adm-mini danger" type="button" title="delete" onclick="adminDeleteCustom('${f.id}')">🗑</button>` : '')
       + `</span></div>`;
   }).join('');
-  if (customs.length) {
-    html += `<div class="adm-sec-label">CUSTOM FIGHTERS · ${customs.length}</div>`;
-    html += customs.map(f => `<div class="adm-row"><span class="adm-rname">${f.name}</span><span class="adm-acts"><button class="adm-mini danger" type="button" onclick="adminDeleteCustom('${f.id}')">🗑 DELETE</button></span></div>`).join('');
-  }
+  // ADMIN LOG — what the admin has done (newest first)
+  const log = save.adminLog || [];
+  html += `<div class="adm-sec-label">📋 ADMIN LOG · ${log.length}</div>`;
+  html += log.length
+    ? `<div class="adm-log">` + log.slice(0, 12).map(e => `<div class="adm-log-row"><span class="adm-log-t">${adminTimeAgo(e.t)}</span> ${e.text}</div>`).join('') + `</div>`
+      + (log.length ? `<button class="adm-mini" type="button" style="margin-bottom:8px" onclick="adminClearLog()">clear log</button>` : '')
+    : `<div class="adm-log-row" style="color:var(--muted)">no actions yet</div>`;
   html += `<div class="adm-sec-label danger-label">⚠ MASTER CONTROLS</div>`
     + `<button class="btn btn-secondary adm-danger" type="button" onclick="adminResetAllLooks()">🎨 RESET ALL LOOKS TO DEFAULT</button>`
-    + `<button class="btn btn-secondary adm-danger" type="button" onclick="adminResetAllProfiles()">♻ UNCLAIM EVERY BROTHER</button>`
+    + `<button class="btn btn-secondary adm-danger" type="button" onclick="adminResetAllProfiles()">♻ UNCLAIM EVERY FIGHTER</button>`
     + `<button class="btn btn-secondary" type="button" style="border-color:var(--gold);color:var(--gold)" onclick="profileSignOut()">SIGN OUT OF ADMIN</button>`;
   body.innerHTML = html;
 }
+// ── admin message + log plumbing ──
+function adminLogPush(text) { save.adminLog = save.adminLog || []; save.adminLog.unshift({ t: Date.now(), text }); if (save.adminLog.length > 25) save.adminLog.length = 25; }
+function inboxPush(fid, text) { save.adminInbox = save.adminInbox || {}; (save.adminInbox[fid] = save.adminInbox[fid] || []).unshift({ t: Date.now(), text }); }
+function adminTimeAgo(t) { const s = Math.max(0, Math.round((Date.now() - t) / 1000)); if (s < 60) return s + 's'; if (s < 3600) return Math.round(s / 60) + 'm'; if (s < 86400) return Math.round(s / 3600) + 'h'; return Math.round(s / 86400) + 'd'; }
 function adminEditBrother(bid) { if (!adminGuard()) return; profileEditLook(bid); }
+function adminMsgTo(bid) {
+  if (!adminGuard()) return;
+  const f = FIGHTERS.find(x => x.id === bid); if (!f) return;
+  const text = (prompt('Message to ' + f.name + ' (they\'ll see it next time they sign in):') || '').trim();
+  if (!text) return;
+  inboxPush(bid, text);
+  adminLogPush('✉ Messaged ' + f.name + ': "' + text + '"');
+  persistSave(); renderAdmin();
+  setStatus && setStatus('MESSAGE SENT TO ' + f.name, 'var(--gold)', 900);
+}
+function adminSignOutBrother(bid) {
+  if (!adminGuard()) return;
+  const f = FIGHTERS.find(x => x.id === bid); if (!f || !isClaimed(bid)) return;
+  if (!confirm('Sign out ' + f.name + '? Releases the claim (look is kept) so they can sign in again.')) return;
+  const look = save.profiles[bid] ? save.profiles[bid].look : null;
+  save.profiles[bid] = { name: '(signed out)', pin: null, look };   // unclaimed but look preserved
+  inboxPush(bid, 'Old Man Eli (admin) signed you out. Your look was kept — sign in again to take ' + f.name + ' back.');
+  adminLogPush('⏏ Signed out ' + f.name);
+  persistSave(); renderAdmin();
+  setStatus && setStatus(f.name + ' SIGNED OUT', 'var(--gold)', 900);
+}
 function adminResetBrother(bid) {
   if (!adminGuard()) return;
   const f = FIGHTERS.find(x => x.id === bid); if (!f) return;
-  if (!confirm('Reset ' + f.name + '? Unclaims his profile + restores his default look.')) return;
+  if (!confirm('Reset ' + f.name + '? Unclaims the profile + restores the default look.')) return;
   delete save.profiles[bid];
   restoreOriginalArt(bid);
+  inboxPush(bid, 'Old Man Eli (admin) reset ' + f.name + ' — profile freed + look restored to default. Sign in to claim again.');
+  adminLogPush('♻ Reset ' + f.name);
   persistSave(); renderAdmin();
   setStatus && setStatus(f.name + ' RESET', 'var(--gold)', 800);
 }
-function adminDeleteCustom(id) { if (!adminGuard()) return; deleteCustomFighter(id); }   // shared deleter (confirms, then → roster)
+function adminDeleteCustom(id) {
+  if (!adminGuard()) return;
+  const f = FIGHTERS.find(x => x.id === id); if (f) adminLogPush('🗑 Deleted ' + f.name);
+  deleteCustomFighter(id);   // shared deleter (confirms, persists, → roster)
+}
+function adminClearLog() { if (!adminGuard()) return; save.adminLog = []; persistSave(); renderAdmin(); }
 function adminResetAllLooks() {
   if (!adminGuard()) return;
-  if (!confirm('Restore EVERY brother to his default look? (Claims stay — only looks reset.)')) return;
+  if (!confirm('Restore EVERY fighter to a default look? (Claims stay — only looks reset.)')) return;
   for (const bid in (save.profiles || {})) { save.profiles[bid].look = null; restoreOriginalArt(bid); }
+  adminLogPush('🎨 Reset ALL looks to default');
   persistSave(); renderAdmin();
   setStatus && setStatus('ALL LOOKS RESET', 'var(--gold)', 800);
 }
 function adminResetAllProfiles() {
   if (!adminGuard()) return;
-  if (!confirm('UNCLAIM every brother + wipe all looks? This frees every profile.')) return;
+  if (!confirm('UNCLAIM every fighter + wipe all looks? This frees every profile.')) return;
   for (const bid in (save.profiles || {})) restoreOriginalArt(bid);
   save.profiles = {};
+  adminLogPush('♻ Unclaimed EVERY fighter');
   persistSave(); renderAdmin();
   setStatus && setStatus('ALL PROFILES CLEARED', 'var(--red-bright)', 900);
 }
@@ -2366,6 +2472,7 @@ const RT = { moveSpeed: 240, aiSpeed: 205, stRegen: 17, blockDrain: 24, backStep
 // A landed `slam` knocks the opponent DOWN → opens a PIN. Win by KO, PINFALL, or SUBMISSION.
 const ATK = {
   strike:   { windup: 90,  cool: 300,  reach: 1.05, knock: 12, lockMove: 180, heavy: false },
+  combo:    { windup: 130, cool: 430,  reach: 1.02, knock: 18, lockMove: 250, heavy: false },   // follow-up flurry (the 'cross' move) — chains off a landed STRIKE
   grapple:  { windup: 300, cool: 820,  reach: 0.95, knock: 30, lockMove: 540, heavy: true,  slam: true },
   finisher: { windup: 380, cool: 1300, reach: 1.00, knock: 50, lockMove: 680, heavy: true,  slam: true },
   // legacy aliases (kept so any old reference still resolves)
@@ -2553,6 +2660,8 @@ function caption(text, cls) {
 function moveOf(fighter, kind) {
   const ms = fighter.moves;
   if (kind === 'finisher') return ms.find(m => m.fin) || ms[ms.length - 1];
+  // COMBO → the fighter's 'cross' (the doubled-up follow-up after a landed strike)
+  if (kind === 'combo') return ms.find(m => m.type === 'cross') || ms.find(m => m.type === 'jab') || ms[0];
   // GRAPPLE / power → the fighter's signature slam (powerbomb/suplex/F5/spear…)
   if (kind === 'grapple' || kind === 'power') return ms.find(m => m.type === 'power') || ms.find(m => m.sig) || ms.find(m => m.type === 'cross') || ms[0];
   // STRIKE / jab → the light hit (the 10% boxing)
@@ -2673,13 +2782,17 @@ function playerAttack(kind) {
   if (match.pAtk || match.pStun > 0 || match.pCool > 0 || match.pBlock) return;
   if (match.pDowned > 0 || match.pinning || match.subbing) return;
   if (kind === 'finisher' && match.oHP > FIN_UNLOCK) return;
+  // COMBO CHAIN: a STRIKE that lands opens a brief window — tap STRIKE again to throw the bigger follow-up.
+  let combo = false;
+  if (kind === 'strike' && match.comboUntil && performance.now() < match.comboUntil) { kind = 'combo'; combo = true; match.comboUntil = 0; }
   const move = moveOf(match.player, kind);
   if (match.pST < move.cost) { setStatus('LOW STAMINA', 'var(--red-bright)', 600); return; }
   ensureCtx();
   match.pST -= move.cost;
   const cfg = ATK[kind];
   triggerLunge('left', move.type, sigAnimClass(match.player, move));
-  if (move.sig || move.fin) flashSig(move.name, !!move.fin);
+  if (combo) flashSig(move.name + ' ✦', false);
+  else if (move.sig || move.fin) flashSig(move.name, !!move.fin);
   playSwingSound(kind);
   match.pLockMove = cfg.lockMove;
   match.pCool = cfg.cool;
@@ -2902,9 +3015,13 @@ function resolveAttack(atk) {
     if (heavy) match.tally.heavyLanded++;
     if (move.type === 'power') match.tally.grappleLanded++;          // slams/grapples landed → feeds GRAPPLING
     if (move.fin && !blocked) match.tally.finisherLanded = true;
+    // COMBO window: a landed STRIKE opens a quick follow-up; a thrown combo closes the chain
+    if (atk.kind === 'strike' && !blocked) { match.comboUntil = performance.now() + 700; setStatus('COMBO READY — tap STRIKE', 'var(--gold)', 600); }
+    else if (atk.kind === 'combo') match.comboUntil = 0;
   } else {
     match.tally.dmgTaken += dmg;
     if (blocked) match.tally.blocked++;
+    if (!blocked) match.comboUntil = 0;                              // getting hit breaks your combo chain
   }
 
   const atkName = isPlayer ? match.player.name : match.opponent.name;
