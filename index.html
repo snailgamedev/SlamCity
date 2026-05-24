@@ -746,6 +746,21 @@
   .rank-row .rank-tag { font-size: 9px; letter-spacing: 1px; color: var(--red-bright); font-weight: 800; }
   .rank-row .rank-ovr { flex: 0 0 auto; font-weight: 900; color: #fff; }
   .rank-stat { font-size: 12px; color: var(--soft); padding: 4px 2px; }
+  /* FAITH CORNER */
+  .faith-body { padding: 12px 14px 30px; max-width: 480px; margin: 0 auto; }
+  .faith-votd { text-align: center; border: 1px solid var(--gold); border-radius: 14px; padding: 18px 16px; margin-bottom: 12px; background: linear-gradient(180deg, rgba(200,160,96,0.12), rgba(200,160,96,0.03)); }
+  .faith-votd .fv-label { font-size: 10px; letter-spacing: 3px; color: var(--gold); font-weight: 800; margin-bottom: 8px; }
+  .faith-votd .fv-text { font-size: 17px; line-height: 1.5; color: var(--cream); font-style: italic; }
+  .faith-votd .fv-ref { font-size: 12px; color: var(--gold); font-weight: 800; margin-top: 8px; }
+  .faith-gospel { font-size: 12.5px; line-height: 1.65; color: var(--soft); border-left: 3px solid var(--gold); padding: 12px 14px; margin: 14px 0; background: rgba(200,160,96,0.05); border-radius: 0 8px 8px 0; }
+  .faith-gospel b { color: var(--gold); display: block; font-size: 10px; letter-spacing: 2px; margin-bottom: 5px; }
+  .faith-anchors { border: 1px solid var(--bg-3); border-radius: 10px; overflow: hidden; }
+  .fa-row { padding: 9px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .fa-row:last-child { border-bottom: none; }
+  .fa-row .fa-name { display: block; font-size: 11px; font-weight: 900; color: var(--gold); letter-spacing: 1px; }
+  .fa-row .fa-verse { font-size: 11.5px; color: var(--soft); line-height: 1.4; }
+  .fa-row .fa-verse i { color: var(--muted); }
+  .walkout-cross { color: var(--gold); }
   .hub-modes + .hub-grp-label { margin-top: 18px; }
   .hub-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .mode-card { display: flex; align-items: center; gap: 10px; text-align: left; padding: 14px 12px; border: 1px solid var(--bg-3); border-radius: 12px; background: linear-gradient(180deg, var(--bg-2), var(--bg-1)); color: var(--cream); cursor: pointer; transition: transform 0.08s, border-color 0.12s; min-height: 62px; }
@@ -1030,7 +1045,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v4.25 · build 2026-05-24·1808 · 🎲 SPECIAL MATCHES — 6 stipulations (Iron Man · Sudden Death · Hardcore · Glass Cannon · Comeback · Even Steven) · 🛡 admin Lift-All + 🧬 Clone fighter · for AARON</div>
+  <div class="splash-foot">v4.26 · build 2026-05-24·1830 · ✝ NEW FAITH CORNER — verse of the day · the crew's anchors · go to the Word · 🛡 admin promote/demote + 🧊 freeze ratings · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -1109,6 +1124,16 @@
     <span style="width:60px"></span>
   </div>
   <div class="rank-body" id="rank-body"></div>
+</div>
+
+<!-- ========== FAITH CORNER (verse of the day · the crew's anchors · go to the Word) ========== -->
+<div id="faith" class="screen">
+  <div class="hub-head">
+    <button class="back-btn" onclick="goto('hub')">‹ Hub</button>
+    <div class="set-title">✝ FAITH CORNER</div>
+    <span style="width:60px"></span>
+  </div>
+  <div class="faith-body" id="faith-body"></div>
 </div>
 
 <!-- ========== PROFILE (sign in as a brother) ========== -->
@@ -1345,7 +1370,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v4.25</div>
+    <div class="load-skip">tap to skip · v4.26</div>
   </div>
 </div>
 
@@ -1856,7 +1881,7 @@ function loadSave() {
     }
   } catch(e) {}
   return { wins:0, losses:0, kos:0, finishers:0, scriptureStrikes:0, picks:{}, ovrDelta:{}, abilDelta:{},
-           difficulty:2, sfxOn:true, vol:0.9, captionsOn:true, platform:null, reducedMotion:false, tutorialSeen:false, seenVersion:null, customFighters:[], achievements:{}, belts:0, champion:null, profiles:{}, activeProfile:null, admin:null, adminLog:[], adminInbox:{}, changeFeed:[], bans:{}, feedback:[], adminPins:{}, undo:[], wcOverride:{}, motd:null, titleHistory:[], titleDefenses:0, adminNotes:{} };
+           difficulty:2, sfxOn:true, vol:0.9, captionsOn:true, platform:null, reducedMotion:false, tutorialSeen:false, seenVersion:null, customFighters:[], achievements:{}, belts:0, champion:null, profiles:{}, activeProfile:null, admin:null, adminLog:[], adminInbox:{}, changeFeed:[], bans:{}, feedback:[], adminPins:{}, undo:[], wcOverride:{}, motd:null, titleHistory:[], titleDefenses:0, adminNotes:{}, adminGrants:{}, frozen:{}, blessings:0 };
 }
 function persistSave() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch(e) {}
@@ -1968,6 +1993,7 @@ function goto(id) {
   if (id==='profile') renderProfile();
   if (id==='create') renderCreate();
   if (id==='rankings') renderRankings();
+  if (id==='faith') renderFaith();
   window.scrollTo(0,0);
 }
 
@@ -2023,6 +2049,7 @@ function renderHub() {
         return `<div class="hub-signin" onclick="goto('profile')">${ap && f ? '👤 ' + ap.name + ' · ' + f.name + ' ' + badge : '👤 SIGN IN / CREATE your fighter ›'}</div>`; })()
     + `<div class="hub-ver" onclick="showUpdateLog()">✦ v${GAME_VERSION} · update log</div>`
     + `<div class="hub-ver" onclick="goto('rankings')" style="margin-left:8px">🏆 titles &amp; rankings</div>`
+    + `<div class="hub-ver" onclick="goto('faith')" style="margin-left:8px">✝ faith corner</div>`
     + `<div class="hub-ver" onclick="showAchievements()" style="margin-left:8px">⭐ ${ACHIEVEMENTS.filter(a=>save.achievements[a[0]]).length}/${ACHIEVEMENTS.length}</div>`
     + `<div class="hub-ver" onclick="openFeedback()" style="margin-left:8px">✍️ feedback</div>`
     + `<div class="hub-ver" onclick="openInstall()" style="margin-left:8px">⬇ install</div>`
@@ -2270,7 +2297,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '4.25';
+const GAME_VERSION = '4.26';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -2304,6 +2331,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['4.26', 'FAITH + DEEPER ADMIN (the last drop skipped the faith — fixing that): ✝ NEW FAITH CORNER off the hub — a VERSE OF THE DAY with “one way to live it / what it means”, the heart behind the game (iron sharpening iron · John 3:16), and every brother’s walkout scripture in one place, with a humble “go to the Word for yourself” note. 🛡 ADMIN got deeper: Old Man Eli can now PROMOTE any fighter to a CREW admin (or revoke it) on the fly, and 🧊 FREEZE a fighter’s ratings so wins/losses stop moving them (perfect for a benchmark fighter).'],
   ['4.25', 'MORE MODES + DEEPER ADMIN: 🎲 NEW SPECIAL MATCHES — six STIPULATIONS that turn a fight into a totally different version of itself: ⏱️ IRON MAN (75s clock, most knockdowns wins), 💀 SUDDEN DEATH (one knockdown ends it), 🔥 HARDCORE (everything hits 70% harder), 💥 GLASS CANNON (huge damage, thin HP), 🦅 COMEBACK KING (hurt = hit harder), ⚖️ EVEN STEVEN (ratings equalized, pure skill). 🛡 ADMIN: ⚖ LIFT ALL bans/timeouts in one tap, and 🧬 CLONE any fighter into a fresh editable custom (instant variants). (Still on deck: more move options.)'],
   ['4.24', 'BIG FIX-IT + GAMEPLAY PASS (no sandbagging): 🐛 the search bar no longer stops you from typing (admin + roster). 🐛 the VIEW TUTORIAL / HOW TO PLAY button now actually opens (it was trapped inside the fight screen). 🎥 the camera stays a CONSISTENT close front view — no more drifting to a sideview. 🥊 bigger ring + you can roam the whole mat (way more front↔back room). ⚡ fight lag fixed (lighter render + one shadow caster + fewer per-frame repaints). 🛡 the admin “all fighters” page now shows WHO is using each fighter (owner name) and lists created fighters. 🖼 roster/detail avatars now refresh the moment an owner changes their look. (Next drop: more move/customization options + a batch of fresh ideas.)'],
   ['4.23', 'POLISH PASS + DEEPER ADMIN: ✨ every screen now fades in smoothly, a slow living glow drifts behind the menus, and the buttons catch a sheen — the whole app feels more premium (all of it respects reduced-motion). 🛡 ADMIN got deeper: a 📊 at-a-glance dashboard (claimed · bans · made · logged · notes), 📝 STAFF NOTES you can pin to any fighter (collaborative mod memory, shows right on their row), and ⎘ EXPORT the audit log to your clipboard as a real paper-trail.'],
@@ -2418,6 +2446,30 @@ function defendTitle() {
   const c = topContender(); if (!c) return;
   gameMode = 'title'; modeCtx.queue = []; modeCtx.idx = 0; modeCtx.playerId = save.champion;
   launchFight(save.champion, c.id);
+}
+// FAITH CORNER — verse of the day (date-seeded so it's the same all day), the crew's walkout anchors, go-to-the-Word note.
+let _faithShuffle = 0;
+function votd() {
+  const d = new Date(); const seed = d.getFullYear() * 366 + (d.getMonth() + 1) * 31 + d.getDate() + _faithShuffle;
+  return SPLASH_VERSES[seed % SPLASH_VERSES.length];
+}
+function faithBless() {
+  save.blessings = (save.blessings || 0) + 1; _faithShuffle++; persistSave(); renderFaith();
+  setStatus && setStatus('🙏 ' + save.blessings + ' time' + (save.blessings !== 1 ? 's' : '') + ' in the Word', 'var(--gold)', 1200);
+}
+function renderFaith() {
+  const body = document.getElementById('faith-body'); if (!body) return;
+  const v = votd();
+  const anchors = FIGHTERS.filter(f => f.art && f.art.scriptureFinisher).slice(0, 12);
+  let html = `<div class="faith-votd"><div class="fv-label">📖 VERSE OF THE DAY</div>`
+    + `<div class="fv-text"><span class="walkout-cross">✝</span>"${v.text}"</div><div class="fv-ref">— ${v.ref} · KJV</div></div>`
+    + verseInsightHTML(v)
+    + `<button class="btn btn-secondary" type="button" onclick="faithBless()">🙏 ANOTHER VERSE${save.blessings ? ' · ' + save.blessings + ' read' : ''}</button>`
+    + `<div class="faith-gospel"><b>THE HEART OF IT</b> SLAM CITY's a brother-crew game built on iron sharpening iron (Prov 27:17) — competition that lifts you, not tears you down. The real win was never on the mat. <span class="walkout-cross">✝</span> "For God so loved the world, that he gave his only begotten Son…" — John 3:16</div>`
+    + `<div class="adm-sec-label" style="margin-top:18px">🤝 THE CREW'S ANCHORS</div>`
+    + `<div class="faith-anchors">` + anchors.map(f => `<div class="fa-row"><span class="fa-name">${f.name}</span><span class="fa-verse"><span class="walkout-cross">✝</span>"${f.art.scriptureFinisher.text}" <i>— ${f.art.scriptureFinisher.ref}</i></span></div>`).join('') + `</div>`
+    + `<div class="vi-note" style="margin-top:14px">one way to read it · others may see it differently — go to the Word for yourself 🙏</div>`;
+  body.innerHTML = html;
 }
 function renderRankings() {
   const body = document.getElementById('rank-body'); if (!body) return;
@@ -2647,6 +2699,7 @@ function adminTierOf(key) {
   if (key === ADMIN_KEY) return 1;
   if (key === 'aaron') return 2;
   if (OG_IDS.includes(key)) return 3;
+  if (save.adminGrants && save.adminGrants[key]) return save.adminGrants[key];   // tier-1 can promote anyone to CREW admin
   return 0;
 }
 function curAdminTier() { return adminTierOf(save.activeProfile); }
@@ -3163,6 +3216,26 @@ function adminClone(id) {
   setStatus && setStatus('CLONED ' + f.name, 'var(--gold)', 1100);
   openFighterEditor(nid);
 }
+// PROMOTE / DEMOTE — tier-1 only: grant a fighter CREW-admin powers (or take them back). Born-in OGs/Aaron can't be revoked.
+function adminGrantAdmin(id) {
+  if (curAdminTier() !== 1) return;
+  const f = FIGHTERS.find(x => x.id === id); if (!f) return;
+  save.adminGrants = save.adminGrants || {};
+  if (save.adminGrants[id]) { delete save.adminGrants[id]; adminLogPush('🛡✕ revoked CREW admin from ' + f.name); inboxPush(id, '🛡 ' + adminWho() + ' revoked your admin powers.'); }
+  else { save.adminGrants[id] = 3; adminLogPush('🛡 promoted ' + f.name + ' to CREW admin'); inboxPush(id, '🛡 ' + adminWho() + ' made you a CREW admin! You can moderate regular fighters now.'); }
+  persistSave(); renderAdmin();
+  setStatus && setStatus((save.adminGrants[id] ? 'PROMOTED ' : 'REVOKED ') + f.name, 'var(--gold)', 1100);
+}
+// FREEZE — lock a fighter's ratings so wins/losses no longer move them (e.g. a balanced benchmark fighter)
+function adminFreeze(id) {
+  if (!can('reset')) return;
+  const f = FIGHTERS.find(x => x.id === id); if (!f) return;
+  save.frozen = save.frozen || {};
+  if (save.frozen[id]) { delete save.frozen[id]; adminLogPush('🧊✕ unfroze ' + f.name + "'s ratings"); }
+  else { save.frozen[id] = true; adminLogPush('🧊 froze ' + f.name + "'s ratings (no more drift)"); }
+  persistSave(); renderAdmin();
+  setStatus && setStatus((save.frozen[id] ? 'FROZE ' : 'UNFROZE ') + f.name, 'var(--gold)', 1000);
+}
 function adminClearFeedback() { if (curAdminTier() !== 1) return; save.feedback = []; persistSave(); renderAdmin(); }
 
 /* ---------- 90-DAY UNDO — snapshot the relevant state before each admin command ---------- */
@@ -3276,6 +3349,8 @@ function renderFighterEditor(fid) {
   // commands
   html += `<div class="adm-sec-label">COMMANDS</div>`;
   if (can('create')) html += `<button class="btn btn-secondary" type="button" onclick="adminClone('${fid}')">🧬 CLONE THIS FIGHTER</button>`;   // duplicate into a new editable custom
+  if (can('reset')) html += `<button class="btn btn-secondary" type="button" onclick="adminFreeze('${fid}')">${(save.frozen && save.frozen[fid]) ? '🧊 UNFREEZE RATINGS' : '🧊 FREEZE RATINGS (lock from drift)'}</button>`;
+  if (curAdminTier() === 1 && !OG_IDS.includes(fid) && fid !== ADMIN_KEY) html += `<button class="btn btn-secondary" type="button" onclick="adminGrantAdmin('${fid}')">${(save.adminGrants && save.adminGrants[fid]) ? '🛡✕ REVOKE CREW ADMIN' : '🛡 MAKE CREW ADMIN'}</button>`;
   if (can('crown')) html += champ ? `<button class="btn btn-secondary" type="button" onclick="adminUncrown()">👑✕ UNCROWN (remove champion)</button>` : `<button class="btn btn-secondary" type="button" onclick="efCmd('crown')">👑 CROWN CHAMPION</button>`;
   if (claimed && can('message')) html += `<button class="btn btn-secondary" type="button" onclick="efCmd('msg')">✉ MESSAGE (claimed)</button>`;
   if (claimed && can('kick')) html += `<button class="btn btn-secondary" type="button" onclick="efCmd('kick')">⏏ KICK (sign out)</button>`;
@@ -4829,9 +4904,9 @@ function applyProgression(result) {
   const pid0 = match.player.id, oid0 = match.opponent.id;
   if (match.pAI) {   // WATCH (CPU vs CPU) — both fighters still EVOLVE a little so the roster grows from every bout
     const w = result === 'win' ? pid0 : oid0, l = result === 'win' ? oid0 : pid0;
-    adjustAbility(w, ABILITY_KEYS[Math.floor(Math.random() * ABILITY_KEYS.length)], +1);
-    adjustAbility(w, 'heart', +1);
-    adjustAbility(l, ABILITY_KEYS[Math.floor(Math.random() * ABILITY_KEYS.length)], -1);
+    const fz = save.frozen || {};
+    if (!fz[w]) { adjustAbility(w, ABILITY_KEYS[Math.floor(Math.random() * ABILITY_KEYS.length)], +1); adjustAbility(w, 'heart', +1); }
+    if (!fz[l]) adjustAbility(l, ABILITY_KEYS[Math.floor(Math.random() * ABILITY_KEYS.length)], -1);
     persistSave();
     const a = getCurrentOVR(pid0), b = getCurrentOVR(oid0);
     return { pCh: {}, oCh: {}, pBefore: a, pAfter: a, oBefore: b, oAfter: b, lowHPwin: false };
@@ -4842,8 +4917,9 @@ function applyProgression(result) {
   const lowHPwin = (result === 'win' && match.pHP < 25);
   const pBefore = getCurrentOVR(pid), oBefore = getCurrentOVR(oid);
   const pCh = {}, oCh = {};
-  const pNudge = (k, a) => { if (trainNoLoss && a < 0) return; if (a) { const x = adjustAbility(pid, k, a); if (x) pCh[k] = (pCh[k] || 0) + x; } };
-  const oNudge = (k, a) => { if (a) { const x = adjustAbility(oid, k, a); if (x) oCh[k] = (oCh[k] || 0) + x; } };
+  const frozenP = !!(save.frozen && save.frozen[pid]), frozenO = !!(save.frozen && save.frozen[oid]);   // 🧊 frozen ratings don't drift
+  const pNudge = (k, a) => { if (frozenP) return; if (trainNoLoss && a < 0) return; if (a) { const x = adjustAbility(pid, k, a); if (x) pCh[k] = (pCh[k] || 0) + x; } };
+  const oNudge = (k, a) => { if (frozenO) return; if (a) { const x = adjustAbility(oid, k, a); if (x) oCh[k] = (oCh[k] || 0) + x; } };
 
   const won = result === 'win';
   const dominate = won && match.pHP > 70;                  // won barely scratched
