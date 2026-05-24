@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#0a0a0d" />
-<title>SLAM CITY · v3.0 · UPDATE LOG</title>
+<title>SLAM CITY · v3.1 · TRUE 3D DEPTH</title>
 <!-- retro arcade type: Press Start 2P for marquee, Oxanium for readable UI · safe fallback stack -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -719,7 +719,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v3.0 · build 2026-05-23·2052 · IN-GAME UPDATE LOG + version clarity (v2.x → v3.0) · audio fixed · 90/10 wrestling · 8 modes · for AARON</div>
+  <div class="splash-foot">v3.1 · build 2026-05-23·2105 · TRUE 3D — DEPTH AXIS (move into the ring · fighters scale with distance · dodge by depth) · 90/10 wrestling · 8 modes · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -983,7 +983,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v3.0</div>
+    <div class="load-skip">tap to skip · v3.1</div>
   </div>
 </div>
 
@@ -1697,7 +1697,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '3.0';
+const GAME_VERSION = '3.1';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -1729,6 +1729,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['3.1',  'TRUE 3D — depth axis: move INTO the ring, fighters scale with distance, dodge/whiff by depth'],
   ['3.0',  'Audio reliability fix · in-game UPDATE LOG · version reset to 3.0 for clarity'],
   ['2.25', 'All sound effects verified firing (WebAudio resume fix)'],
   ['2.24', 'Final polish sweep · 18 test suites green · 0 console errors'],
@@ -2019,7 +2020,8 @@ function startMatchWith(playerId, oppId) {
     pinning: false, subbing: false,
     pCool: 0, oCool: 0,
     pLockMove: 0,
-    joy: 0,
+    joy: 0, joyZ: 0,         // lateral + depth stick input
+    pZ: 0.5, oZ: 0.5,        // DEPTH (0 = far/back, 1 = near/front) — the real 3rd dimension
     paused: false,
     started: false,
     mode: gameMode,
@@ -2106,9 +2108,30 @@ function initFightVisuals() {
   else beginPrefight();
 }
 
+// Perspective projection: a fighter at (X lateral, Z depth) → screen transform.
+// Z=1 near/front (bigger, lower, full width), Z=0 far/back (smaller, lifted up, compressed toward center).
+function projectFighter(side, x, z) {
+  const ring = document.getElementById('ring');
+  const el = document.getElementById('ring-' + side);
+  const ringW = ring.clientWidth, ringH = ring.clientHeight || 320;
+  const fW = el.offsetWidth || ringW * 0.42;
+  const sc = 0.72 + z * 0.42;                          // depth scale
+  const rise = (1 - z) * ringH * 0.40;                 // back is lifted up the floor
+  const center = ringW / 2;
+  const compress = 0.55 + z * 0.45;                    // back compresses toward center (perspective)
+  const cx = x + fW / 2;
+  const projLeft = (center + (cx - center) * compress) - fW / 2;
+  el.style.transform = 'translate(' + projLeft + 'px,' + (-rise) + 'px) scale(' + sc + ')';
+  el.style.zIndex = 1 + Math.round(z * 6);             // nearer fighter draws in front
+}
 function applyPositions() {
-  document.getElementById('ring-left').style.transform = 'translateX(' + match.pX + 'px)';
-  document.getElementById('ring-right').style.transform = 'translateX(' + match.oX + 'px)';
+  projectFighter('left', match.pX, match.pZ);
+  projectFighter('right', match.oX, match.oZ);
+}
+// 2D distance between fighters (lateral + depth) — attacks land on real proximity.
+function fighterDist() {
+  const ringW = (document.getElementById('ring').clientWidth) || 360;
+  return Math.hypot(match.oX - match.pX, (match.oZ - match.pZ) * ringW * 0.5);
 }
 
 function syncBars() {
@@ -2211,8 +2234,10 @@ function gameLoop(t) {
 
   if (match.pAI && !frozen) updateWatchAI(dt, dtms, fW);   // WATCH mode: AI drives the left fighter too
 
-  if (!frozen && match.pStun <= 0 && match.pLockMove <= 0 && match.pDowned <= 0 && Math.abs(match.joy) > 0.08) {
-    match.pX += match.joy * RT.moveSpeed * (match.pAb.speed / 80) * (match.pBlock ? 0.4 : 1) * dt; // SPEED drives movement
+  if (!frozen && match.pStun <= 0 && match.pLockMove <= 0 && match.pDowned <= 0) {
+    const spd = RT.moveSpeed * (match.pAb.speed / 80) * (match.pBlock ? 0.4 : 1);
+    if (Math.abs(match.joy) > 0.08) match.pX += match.joy * spd * dt;                 // lateral
+    if (Math.abs(match.joyZ) > 0.08) match.pZ = Math.max(0, Math.min(1, match.pZ + match.joyZ * 0.85 * dt)); // DEPTH (into the ring)
   }
 
   // STAMINA + CONDITIONING + weight class drive regen (conditioning = deeper gas tank)
@@ -2420,7 +2445,7 @@ function resolveAttack(atk) {
   if (!match || match.over) return;
   const isPlayer = atk.side === 'player';
   const fW = document.getElementById('ring-left').offsetWidth || 160;
-  const gap = match.oX - match.pX;            // shared width → left-edge gap ≈ center gap
+  const gap = fighterDist();                  // 2D distance (lateral + DEPTH) — must be close in both to land
   const reachPx = fW * atk.cfg.reach;
   const move = atk.move;
   const defSide = isPlayer ? 'right' : 'left';
@@ -2573,6 +2598,8 @@ function aiTaunt() {
 // WATCH mode: drive the LEFT fighter with the same player verbs (reuses playerAttack/playerPin).
 function updateWatchAI(dt, dtms, fW) {
   if (match.pStun > 0 || match.pAtk || match.pinning || match.subbing || match.pDowned > 0) { match.joy = 0; return; }
+  const zg = match.oZ - match.pZ;   // track depth toward opponent
+  if (Math.abs(zg) > 0.06) match.pZ = Math.max(0, Math.min(1, match.pZ + Math.sign(zg) * 0.55 * dt));
   const gap = match.oX - match.pX;
   match.watchT = (match.watchT || 0) - dtms;
   if (match.oDowned > 0 && gap <= fW * 1.15) { match.joy = 0; if (match.pCool <= 0) playerPin(); return; }
@@ -2623,6 +2650,10 @@ function updateAI(dt, dtms, fW, maxX) {
 
   match.ai.decision = Math.max(0, match.ai.decision - dtms);
   const spd = RT.aiSpeed * (match.oAb.speed / 80) * d.speed;
+
+  // DEPTH: drift toward the player's plane to stay engaged (depth-juking can dodge; AI re-aligns)
+  const zGap = match.pZ - match.oZ;
+  if (Math.abs(zGap) > 0.06) match.oZ = Math.max(0, Math.min(1, match.oZ + Math.sign(zGap) * 0.55 * dt));
 
   if (match.oST < 16) { match.oX = Math.min(maxX, match.oX + spd * 0.7 * dt); return; }   // gassed → breathe
 
@@ -2702,13 +2733,14 @@ function bindControls() {
   function setJoy(e) {
     const r = joy.getBoundingClientRect();
     let dx = (e.clientX - (r.left + r.width / 2)) / (r.width / 2);
-    dx = Math.max(-1, Math.min(1, dx));
-    if (match) match.joy = Math.abs(dx) < 0.12 ? 0 : dx;
-    knob.style.transform = 'translate(-50%,-50%) translateX(' + (dx * r.width * 0.30) + 'px)';
+    let dy = (e.clientY - (r.top + r.height / 2)) / (r.height / 2);
+    dx = Math.max(-1, Math.min(1, dx)); dy = Math.max(-1, Math.min(1, dy));
+    if (match) { match.joy = Math.abs(dx) < 0.12 ? 0 : dx; match.joyZ = Math.abs(dy) < 0.14 ? 0 : dy; }  // dy: up=back, down=forward
+    knob.style.transform = 'translate(-50%,-50%) translate(' + (dx * r.width * 0.30) + 'px,' + (dy * r.height * 0.30) + 'px)';
   }
   joy.addEventListener('pointerdown', e => { joyId = e.pointerId; try { joy.setPointerCapture(e.pointerId); } catch (_) {} setJoy(e); e.preventDefault(); });
   joy.addEventListener('pointermove', e => { if (e.pointerId === joyId) { setJoy(e); e.preventDefault(); } });
-  function joyEnd(e) { if (e.pointerId !== joyId) return; joyId = null; if (match) match.joy = 0; knob.style.transform = 'translate(-50%,-50%)'; }
+  function joyEnd(e) { if (e.pointerId !== joyId) return; joyId = null; if (match) { match.joy = 0; match.joyZ = 0; } knob.style.transform = 'translate(-50%,-50%)'; }
   joy.addEventListener('pointerup', joyEnd);
   joy.addEventListener('pointercancel', joyEnd);
 
@@ -2727,6 +2759,8 @@ function bindControls() {
     switch (e.key) {
       case 'ArrowLeft': case 'a': case 'A': match.joy = -1; break;
       case 'ArrowRight': case 'd': case 'D': match.joy = 1; break;
+      case 'ArrowUp': case 'w': case 'W': match.joyZ = -1; e.preventDefault(); break;   // into the ring (back)
+      case 'ArrowDown': case 's': case 'S': match.joyZ = 1; e.preventDefault(); break;  // toward camera (front)
       case 'j': case 'J': playerAttack('strike'); break;
       case 'k': case 'K': playerAttack('grapple'); break;
       case 'l': case 'L': playerAttack('finisher'); break;
@@ -2738,6 +2772,8 @@ function bindControls() {
     if (!match) return;
     if ((e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') && match.joy < 0) match.joy = 0;
     if ((e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') && match.joy > 0) match.joy = 0;
+    if ((e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') && match.joyZ < 0) match.joyZ = 0;
+    if ((e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') && match.joyZ > 0) match.joyZ = 0;
     if (e.key === ' ') setBlock(false);
   });
 }
