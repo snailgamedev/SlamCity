@@ -93,6 +93,27 @@
   /* SCREENS · only active visible */
   .screen { display: none; min-height: 100dvh; position: relative; z-index: 1; padding: max(16px, var(--safe-top)) max(12px, var(--safe-r)) max(16px, var(--safe-bottom)) max(12px, var(--safe-l)); }
   .screen.active { display: flex; flex-direction: column; }
+  /* ADVANCED UI · smooth screen-to-screen fade (opacity only → no transform containing-block side effects) */
+  .screen.active { animation: screen-in 0.3s ease both; }
+  #fight.active, #splash.active { animation: none; }   /* live canvas / splash has its own reveal */
+  @keyframes screen-in { from { opacity: 0; } to { opacity: 1; } }
+  /* ADVANCED UI · ambient animated backdrop — a slow living glow behind every menu (fixed, behind content) */
+  body::after { content: ''; position: fixed; inset: -20%; z-index: 0; pointer-events: none;
+    background: radial-gradient(38% 30% at 22% 18%, rgba(200,64,74,0.13), transparent 70%),
+                radial-gradient(42% 34% at 82% 82%, rgba(200,160,96,0.11), transparent 72%);
+    animation: ambient-drift 22s ease-in-out infinite alternate; }
+  @keyframes ambient-drift { 0% { transform: translate3d(-3%, -2%, 0) scale(1); opacity: 0.85; } 100% { transform: translate3d(3%, 2%, 0) scale(1.12); opacity: 1; } }
+  /* ADVANCED UI · sheen sweep across primary buttons */
+  .btn { position: relative; overflow: hidden; }
+  .btn::after { content: ''; position: absolute; top: 0; left: -60%; width: 45%; height: 100%; pointer-events: none;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,0.22), transparent); transform: skewX(-18deg);
+    animation: btn-sheen 5.5s ease-in-out infinite; }
+  @keyframes btn-sheen { 0%, 18% { left: -60%; } 34%, 100% { left: 140%; } }
+  @media (prefers-reduced-motion: reduce) {
+    .screen.active { animation: none !important; }
+    body::after { animation: none !important; }
+    .btn::after { display: none !important; }
+  }
 
   /* Title block reusable */
   .title-block { text-align: center; margin: 8px 0 16px; }
@@ -700,6 +721,13 @@
   .pow-row.on .pow-ic { color: #4ad06a; }
   .adm-note { font-size: 10.5px; color: var(--gold); line-height: 1.5; margin: 2px 2px 10px; font-style: italic; }
   .adm-protect { font-size: 10px; letter-spacing: 0.5px; color: var(--muted); font-weight: 800; padding: 3px 7px; border: 1px dashed var(--bg-3); border-radius: 6px; }
+  /* admin dashboard strip + staff notes */
+  .adm-dash { display: flex; gap: 6px; margin-bottom: 10px; }
+  .adm-dash .dash-cell { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 8px 4px; border: 1px solid var(--bg-3); border-radius: 9px; background: linear-gradient(180deg, rgba(200,160,96,0.06), transparent); }
+  .adm-dash .dash-v { font-size: 18px; font-weight: 900; color: #fff; line-height: 1; }
+  .adm-dash .dash-l { font-size: 8px; letter-spacing: 0.5px; color: var(--muted); font-weight: 800; }
+  .adm-mini.has-note { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 6px rgba(200,160,96,0.5); }
+  .adm-noteline { font-size: 10.5px; color: var(--gold); background: rgba(200,160,96,0.08); border-left: 2px solid var(--gold); padding: 4px 8px; margin: -2px 0 6px; border-radius: 0 6px 6px 0; line-height: 1.4; }
   /* TITLES & RANKINGS screen */
   .rank-body { padding: 10px 14px 30px; max-width: 480px; margin: 0 auto; }
   .rank-champ { text-align: center; border: 1px solid var(--gold); border-radius: 14px; padding: 16px; margin-bottom: 12px; background: linear-gradient(180deg, rgba(200,160,96,0.14), rgba(200,160,96,0.03)); }
@@ -1001,7 +1029,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v4.22 · build 2026-05-24·1617 · 🎥 camera stays CLOSE the whole fight (no more zoom-out) · 📛 live action readout chips (▶move ◆block ●down 🔥hyped) · for AARON</div>
+  <div class="splash-foot">v4.23 · build 2026-05-24·1644 · ✨ premium polish on every screen (fades · ambient glow · button sheen) · 🛡 deeper admin (dashboard · 📝 staff notes · ⎘ export log) · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -1321,7 +1349,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v4.22</div>
+    <div class="load-skip">tap to skip · v4.23</div>
   </div>
 </div>
 
@@ -1816,7 +1844,7 @@ function loadSave() {
     }
   } catch(e) {}
   return { wins:0, losses:0, kos:0, finishers:0, scriptureStrikes:0, picks:{}, ovrDelta:{}, abilDelta:{},
-           difficulty:2, sfxOn:true, vol:0.9, captionsOn:true, platform:null, reducedMotion:false, tutorialSeen:false, seenVersion:null, customFighters:[], achievements:{}, belts:0, champion:null, profiles:{}, activeProfile:null, admin:null, adminLog:[], adminInbox:{}, changeFeed:[], bans:{}, feedback:[], adminPins:{}, undo:[], wcOverride:{}, motd:null, titleHistory:[], titleDefenses:0 };
+           difficulty:2, sfxOn:true, vol:0.9, captionsOn:true, platform:null, reducedMotion:false, tutorialSeen:false, seenVersion:null, customFighters:[], achievements:{}, belts:0, champion:null, profiles:{}, activeProfile:null, admin:null, adminLog:[], adminInbox:{}, changeFeed:[], bans:{}, feedback:[], adminPins:{}, undo:[], wcOverride:{}, motd:null, titleHistory:[], titleDefenses:0, adminNotes:{} };
 }
 function persistSave() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch(e) {}
@@ -2205,7 +2233,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '4.22';
+const GAME_VERSION = '4.23';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -2239,6 +2267,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['4.23', 'POLISH PASS + DEEPER ADMIN: ✨ every screen now fades in smoothly, a slow living glow drifts behind the menus, and the buttons catch a sheen — the whole app feels more premium (all of it respects reduced-motion). 🛡 ADMIN got deeper: a 📊 at-a-glance dashboard (claimed · bans · made · logged · notes), 📝 STAFF NOTES you can pin to any fighter (collaborative mod memory, shows right on their row), and ⎘ EXPORT the audit log to your clipboard as a real paper-trail.'],
   ['4.22', 'FIGHT READABILITY (you said you still couldn’t tell what’s happening): 🎥 the camera now stays CLOSE the WHOLE time — before, it zoomed back out whenever you drifted apart (which is most of a fight), so it felt like nothing changed. Now it stays tight and PANS to follow, with a wider lens so BOTH fighters always fill the frame, near or far. 📛 LIVE ACTION READOUT — a chip next to each fighter’s name calls out exactly what they’re doing every moment: ▶ their move, ◆ BLOCKING, ● STUNNED, ● DOWN, 🔥 HYPED. No more guessing what just happened.'],
   ['4.21', 'ADMIN RANKS NOW MEAN SOMETHING: enforced a real chain of command — you can only moderate (kick · ban · timeout · reset · restyle · message) fighters you OUTRANK. A Crew admin can’t touch Aaron or Old Man Eli; Aaron can’t touch Eli; nobody reaches up the chain (protected fighters show a 🛡 marker). Plus a new 🔑 YOUR RANK panel at the top of every admin’s screen spells out exactly which powers your tier grants ✓ and which are locked 🔒 — so Supreme vs Senior vs Crew is crystal clear. Crowning a champion stays open to all admins (it’s a blessing, not a punishment).'],
   ['4.20', 'SIGNATURE MOVE (cooking the list): your HYPE meter finally PAYS OFF. Fill it (land hits · taunt) and a glowing ⚡ SIGNATURE button floats up over your controls — tap it to unleash a guaranteed momentum-swing blow that KNOCKS THEM DOWN (blocked, it still rocks them but they stay up). It cashes your whole meter, fires the comic cut-in + a crowd eruption, and sets up your pin/finisher. HYPE was just a passive damage buff before — now it’s a weapon.'],
@@ -2808,6 +2837,8 @@ function renderAdmin() {
     + `<div class="adm-sub">${tier === 1 ? 'master key to the whole crew' : tier === 2 ? 'second-in-command — full mod powers' : 'crew moderator — message + kick'}</div></div>`;
   if (adminPanelOpen && tier > 0 && save.activeProfile !== ADMIN_KEY)
     html += `<button class="adm-mini" type="button" style="margin-bottom:10px" onclick="closeAdminPanel()">‹ back to my profile</button>`;
+  // ── at-a-glance crew dashboard ──
+  html += adminDashHTML();
   // ── what THIS rank can/can't do (so every rank's powers are explicit) ──
   html += adminPowersHTML();
   // ── tier-1 only: edit MY (Old Man Eli) fighter + change PIN ──
@@ -2836,7 +2867,8 @@ function renderAdmin() {
     html += `<input id="adm-log-search" class="roster-search" placeholder="🔍 search the log (action or admin)…" value="${escapeHTML(adminLogQuery)}" oninput="adminLogSearch(this.value)" autocomplete="off" style="margin-bottom:8px">`;
     html += log.length
       ? `<div class="adm-log">` + log.slice(0, 14).map(e => `<div class="adm-log-row"><span class="adm-log-t">${adminTimeAgo(e.t)}</span> ${e.text}${e.by ? ` <span class="adm-log-by">· ${escapeHTML(e.by)}</span>` : ''}</div>`).join('') + `</div>`
-        + (tier === 1 ? `<button class="adm-mini" type="button" style="margin-bottom:8px" onclick="adminClearLog()">clear log</button>` : '')
+        + `<button class="adm-mini" type="button" style="margin-bottom:8px" onclick="adminExportLog()">⎘ export log</button>`
+        + (tier === 1 ? `<button class="adm-mini" type="button" style="margin-bottom:8px;margin-left:6px" onclick="adminClearLog()">clear log</button>` : '')
       : `<div class="adm-log-row" style="color:var(--muted)">${q ? 'no matches' : 'no actions yet'}</div>`;
     // ── admin activity leaderboard (who's been moderating) ──
     html += adminActivityHTML();
@@ -2885,7 +2917,9 @@ function adminCrewRow(f) {
     : claimed ? `<span class="adm-lock">🔒 ${(save.profiles[f.id].name || '').toUpperCase()}</span>` : `<span class="adm-open">🔓 open</span>`;
   const og = adminTierOf(f.id);
   const mod = canActOn(f.id);               // am I allowed to moderate this fighter? (rank hierarchy)
+  const note = (save.adminNotes || {})[f.id];
   let acts = '';
+  acts += `<button class="adm-mini${note ? ' has-note' : ''}" type="button" title="${note ? 'note: ' + note.replace(/"/g, '') : 'add a staff note'}" onclick="adminNote('${f.id}')">📝</button>`;   // notes = collaborative memory, any admin
   if (can('crown')) acts += `<button class="adm-mini" type="button" title="crown champion" onclick="adminCrown('${f.id}')">👑</button>`;   // crowning isn't moderation → always allowed
   if (mod) {                                // moderation buttons ONLY for fighters you outrank
     if (can('edit')) acts += `<button class="adm-mini" type="button" title="customize" onclick="adminEditBrother('${f.id}')">🎨</button>`;
@@ -2899,7 +2933,8 @@ function adminCrewRow(f) {
     acts += `<span class="adm-protect" title="outranks you — TIER ${og}">🛡 ${TIER_NAME[og].split(' ')[0]}</span>`;   // they rank at/above you → hands off
   }
   const badge = og === 1 ? '👑 ' : og === 2 ? '🥈 ' : og === 3 ? '🛡 ' : (isChamp ? '' : '');
-  return `<div class="adm-row"><span class="adm-rname">${isChamp ? '🏆 ' : ''}${badge}${f.name}${f.custom ? ' <span class="adm-tag">made</span>' : ''}</span>${status}<span class="adm-acts">${acts}</span></div>`;
+  const noteLine = note ? `<div class="adm-noteline">📝 ${escapeHTML(note)}</div>` : '';
+  return `<div class="adm-row"><span class="adm-rname">${isChamp ? '🏆 ' : ''}${badge}${f.name}${f.custom ? ' <span class="adm-tag">made</span>' : ''}</span>${status}<span class="adm-acts">${acts}</span></div>${noteLine}`;
 }
 // who is acting (for logs + inbox text)
 function adminWho() { return save.activeProfile === ADMIN_KEY ? 'Old Man Eli' : ((FIGHTERS.find(f => f.id === save.activeProfile) || {}).name || 'an admin'); }
@@ -2941,6 +2976,40 @@ function adminActivityHTML() {
   return `<div class="adm-sec-label">🏆 ADMIN ACTIVITY</div><div class="adm-activity">`
     + rows.map(([who, n], i) => `<div class="adm-rank-row"><span>${['🥇', '🥈', '🥉'][i] || '•'} ${escapeHTML(who)}</span><span>${n} action${n !== 1 ? 's' : ''}</span></div>`).join('')
     + `</div>`;
+}
+// ADMIN NOTES — pin a private staff note to any fighter (collaborative moderation memory)
+function adminNote(id) {
+  if (curAdminTier() === 0) return;
+  const f = FIGHTERS.find(x => x.id === id); if (!f) return;
+  const cur = (save.adminNotes || {})[id] || '';
+  const txt = prompt('Staff note on ' + f.name + ' (visible to admins · blank to clear):', cur);
+  if (txt === null) return;
+  save.adminNotes = save.adminNotes || {};
+  if (txt.trim()) { save.adminNotes[id] = txt.trim().slice(0, 120); adminLogPush('📝 noted ' + f.name + ': "' + save.adminNotes[id] + '"'); }
+  else { delete save.adminNotes[id]; adminLogPush('📝 cleared the note on ' + f.name); }
+  persistSave(); renderAdmin();
+}
+// EXPORT the audit log to the clipboard (a real paper-trail you can keep)
+function auditLogText() {
+  const log = save.adminLog || [];
+  return 'SLAM CITY · ADMIN LOG (' + new Date().toLocaleString() + ')\n'
+    + log.map(e => '· ' + new Date(e.t).toLocaleString() + ' — ' + (e.by ? '[' + e.by + '] ' : '') + e.text).join('\n');
+}
+function adminExportLog() {
+  const log = save.adminLog || [];
+  const text = auditLogText();
+  const done = () => setStatus && setStatus('AUDIT LOG COPIED (' + log.length + ' entries)', 'var(--gold)', 1400);
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done).catch(() => { window.prompt('Copy the audit log:', text); });
+  else window.prompt('Copy the audit log:', text);
+}
+// a live dashboard line so admins see the state of the crew at a glance
+function adminDashHTML() {
+  const claimed = Object.keys(save.profiles || {}).filter(isClaimed).length;
+  const bans = Object.keys(save.bans || {}).length;
+  const customs = FIGHTERS.filter(f => f.custom).length;
+  const notes = Object.keys(save.adminNotes || {}).length;
+  const cell = (v, l) => `<div class="dash-cell"><span class="dash-v">${v}</span><span class="dash-l">${l}</span></div>`;
+  return `<div class="adm-dash">${cell(claimed, 'CLAIMED')}${cell(bans, 'BANS')}${cell(customs, 'MADE')}${cell((save.adminLog || []).length, 'LOGGED')}${cell(notes, 'NOTES')}</div>`;
 }
 let adminLogQuery = '';
 function adminLogSearch(v) {
