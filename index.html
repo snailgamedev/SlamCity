@@ -869,7 +869,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v4.2 · build 2026-05-24·1005 · fighters face the right way + living camera · ALL hairstyles render in 3D · ADMIN: searchable FIGHTERS editor (change anything: stats/weight/moves/look) + 90-day UNDO + uncrown · creator: weight class + moves + full 1–99 stats · ratings move both ways · message claimed-only · for AARON</div>
+  <div class="splash-foot">v4.3 · build 2026-05-24·1022 · CINEMATIC 3D — real shadows + a ring spotlight + a camera that drifts & punches in on big hits · OVERALL now matters (higher OVR hits harder / tanks more) · all 12 ratings move both ways · progress saved across sign-out/in · bans + every command undoable (90-day) · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -1161,7 +1161,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v4.2</div>
+    <div class="load-skip">tap to skip · v4.3</div>
   </div>
 </div>
 
@@ -1976,7 +1976,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '4.2';
+const GAME_VERSION = '4.3';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -2010,6 +2010,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['4.3',  'CINEMATIC 3D progress — real cast shadows, a dramatic ring spotlight, filmic tone-mapping, and a camera that slowly drifts + punches in on big hits / hype · OVERALL now MATTERS: a higher-OVR fighter hits harder and absorbs more (up to ±18% on the gap) · all 12 ratings can rise AND fall from how you fight · your progress (ratings + record) is saved across sign-out → sign-in · every admin command — bans, timeouts, all of it — is undoable for 90 days'],
   ['4.2',  'Fixed "fighting backwards" — fighters now face each other + a living camera that tracks the action for a more 3D feel · ALL 14 hairstyles render distinctly in 3D (afro, mohawk, dreads, man-bun, spiky, long…) · ADMIN: a searchable/sortable FIGHTERS screen where you can change ANYTHING about any fighter (rename, weight class, archetype, every 1–99 rating, moves, finisher, look) + 90-DAY UNDO on admin commands + UNCROWN · you can only message a CLAIMED fighter · creator now sets weight class + your move names + full 1–99 stats & OVR · ratings now move UP and DOWN from how you fight (not just a couple) · everything capped 1–99'],
   ['4.1',  'Rounder 3D fighters (no more boxy limbs — same model in the ring + customizer) · SNAPPIER combat (windups/cooldowns cut, hits land crisp, clear red flash on contact) · ADMIN TIERS — Eli (supreme) ▸ Aaron (senior) ▸ OG crew (mod), each with the right powers · moderation: timeout, kick, ban + a ban list · profanity filter on new names · new fighters start RANDOM 60–80 OVR (everything still capped 1–99) · feedback system (send from your profile/hub → admins read it) · clearer messages (📬 badge) · INSTALLABLE app + downloadable file on every device · revamped victory screen with a 3D winner · Old Man Eli is your PIN-locked account + you can recolor him from the panel'],
   ['4.0',  'REAL 3D — fighters are now jointed humanoid bodies (head, arms, legs, hands, joints) in a true perspective ring with posts + ropes; attack animations actually connect (strike, combo, grapple, finisher) · the customization menu shows your fighter in 3D too · NEW universal-changes feed on the hub so EVERYONE sees who recolored/created/claimed a fighter · more admin: announce to everyone, create a fighter, crown a champion · (changes were already universal — now they’re visible)'],
@@ -2615,6 +2616,7 @@ function adminBan(bid) {
 }
 function adminUnban(nameUpper) {
   if (curAdminTier() !== 1) return;
+  snapshotForUndo('lift ban on ' + nameUpper);
   if (save.bans) delete save.bans[nameUpper];
   adminLogPush('✅ Lifted ban/timeout on ' + nameUpper);
   persistSave(); renderAdmin();
@@ -3120,7 +3122,7 @@ function initFightVisuals() {
   // Position fighters once the ring has a real width, then start the loop.
   requestAnimationFrame(() => {
     const ring = document.getElementById('ring');
-    const fW = document.getElementById('ring-left').offsetWidth || ring.clientWidth * 0.42;
+    const fW = fighterW();
     match.pX = ring.clientWidth * 0.05;
     match.oX = ring.clientWidth * 0.95 - fW;
     applyPositions();
@@ -3152,6 +3154,13 @@ function applyPositions() {
 function fighterDist() {
   const ringW = (document.getElementById('ring').clientWidth) || 360;
   return Math.hypot(match.oX - match.pX, (match.oZ - match.pZ) * ringW * 0.5);
+}
+// Stable fighter footprint — in 3D mode the cuboid DOM is hidden (offsetWidth→0), so fall back to a
+// fraction of the ring width. Used for attack reach + spacing so proximity stays correct in 3D.
+function fighterW() {
+  const el = document.getElementById('ring-left'); const ring = document.getElementById('ring');
+  const rw = (ring && ring.clientWidth) || 360;
+  return Math.max((el && el.offsetWidth) || 0, rw * 0.34);
 }
 
 function syncBars() {
@@ -3231,7 +3240,7 @@ function gameLoop(t) {
 
   const ring = document.getElementById('ring');
   const arenaW = ring.clientWidth;
-  const fW = document.getElementById('ring-left').offsetWidth || arenaW * 0.42;
+  const fW = fighterW();
   const maxX = Math.max(0, arenaW - fW);
   const minGap = fW * 0.60;                  // bodies crowd close at contact (the "collide" feel)
 
@@ -3388,7 +3397,7 @@ function triggerHitReact(side, heavy) {
 
 function applyKnockback(isPlayerAttacking, amt) {
   const ring = document.getElementById('ring');
-  const fW = document.getElementById('ring-left').offsetWidth || 160;
+  const fW = fighterW();
   const maxX = Math.max(0, ring.clientWidth - fW);
   if (isPlayerAttacking) match.oX = Math.min(maxX, match.oX + amt);
   else match.pX = Math.max(0, match.pX - amt);
@@ -3443,7 +3452,7 @@ function endMatchBy(result, by) {
 // PIN the downed opponent (or, if they're gassed + caught, SUBMIT them).
 function playerPin() {
   if (!match || match.over || match.pinning || match.subbing) return;
-  const fW = document.getElementById('ring-left').offsetWidth || 160;
+  const fW = fighterW();
   const gap = match.oX - match.pX;
   if (match.oDowned > 0 && gap <= fW * 1.15) { doPin(true); return; }
   if (gap <= fW * 1.05 && match.oST < 18 && match.pStun <= 0) { doSubmission(true); return; }
@@ -3493,7 +3502,7 @@ function resolveAttack(atk) {
   atk.resolved = true;
   if (!match || match.over) return;
   const isPlayer = atk.side === 'player';
-  const fW = document.getElementById('ring-left').offsetWidth || 160;
+  const fW = fighterW();
   const gap = fighterDist();                  // 2D distance (lateral + DEPTH) — must be close in both to land
   const reachPx = fW * atk.cfg.reach;
   const move = atk.move;
@@ -3531,6 +3540,10 @@ function resolveAttack(atk) {
   if (isPlayer ? match.pHype > 0 : match.oHype > 0) dmg *= 1.18;     // HYPE surge — momentum-fueled damage
   if (isPlayer) dmg /= curDiff().oTough;                             // harder = opponent tankier
   else          dmg *= curDiff().oDmg;                               // harder = opponent hits harder
+  // OVERALL MATTERS — the higher-OVR fighter hits a touch harder; the gap swings damage up to ±18%
+  const ovrAvg = ab => { let s = 0; for (const k of ABILITY_KEYS) s += ab[k] || 0; return s / ABILITY_KEYS.length; };
+  const atkOVR = ovrAvg(atkAb), defOVR = ovrAvg(defAb);
+  dmg *= 1 + Math.max(-0.18, Math.min(0.18, (atkOVR - defOVR) / 300));
   let blocked = false;
   const defBlock = isPlayer ? match.oBlock : match.pBlock;
   if (defBlock) { dmg *= Math.max(0.08, Math.min(0.34, 0.34 - defAb.blocking * 0.0022)); blocked = true; } // BLOCKING = absorb%
@@ -3634,7 +3647,7 @@ function aiFeint() {
   match.oCool = 320;
   match.ai.feintCD = 650 + Math.random() * 700;
   match.ai.decision = 200 * curDiff().react;
-  const ring = document.getElementById('ring'); const fW = document.getElementById('ring-left').offsetWidth || 160;
+  const ring = document.getElementById('ring'); const fW = fighterW();
   match.oX = Math.min(Math.max(0, ring.clientWidth - fW), match.oX + 26); // slip back to bait the whiff
   caption(match.opponent.name + ' feints', 'enemy');
 }
@@ -3991,8 +4004,9 @@ function applyProgression(result) {
   // ── POWER ── heavy shots build it; never landing a heavy in a loss drops it
   if (t.heavyLanded >= 4)         pNudge('power', +1);
   else if (!won && t.heavyLanded === 0) pNudge('power', -1);
-  // ── FINISHER ──
+  // ── FINISHER ── land it = sharper; had the kill shot open (opp below unlock) and lost = blew it
   if (t.finisherLanded)           pNudge('finisher', +2);
+  else if (!won && match.oHP <= FIN_UNLOCK) pNudge('finisher', -1);
   // ── BLOCKING ── absorbing builds it; eating damage open drops it
   if (t.blocked >= 4)             pNudge('blocking', +1);
   else if (t.dmgTaken >= 80 && t.blocked <= 1) pNudge('blocking', -1);
@@ -4003,6 +4017,8 @@ function applyProgression(result) {
   else if (lostBy === 'SUBMISSION') pNudge('submission', -1);          // got tapped = leakier subs
   if (t.winMethod === 'PINFALL')    pNudge('pinPower', +2);
   else if (lostBy === 'PINFALL')    pNudge('pinPower', -1);            // got pinned = weaker hold-down
+  if (t.grappleLanded >= 5) { pNudge('pinPower', +1); pNudge('submission', +1); }     // total mat control lifts both
+  else if (!won && t.grappleLanded === 0) { pNudge('pinPower', -1); pNudge('submission', -1); }   // dominated on the mat = both slip
   // ── CHIN ── survive a beating & win = iron; get KO'd = glassier
   if (won && t.dmgTaken >= 55)    pNudge('chin', +1);
   else if (!won && (t.dmgTaken >= 90 || (match.pHP <= 0 && !lostBy))) pNudge('chin', -1);
@@ -4232,19 +4248,32 @@ function init3D() {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.setSize(w, h, false);
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;   // CINEMATIC shadows
+  if (THREE.ACESFilmicToneMapping) renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.15;
+  if (THREE.sRGBEncoding) renderer.outputEncoding = THREE.sRGBEncoding;
   const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0x0a0a10, 8, 16);
+  scene.fog = new THREE.Fog(0x07070c, 7, 17);
   const camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 100);
   camera.position.set(0.9, 1.7, 5.3);   // lower + slightly off-axis = more dimensional / 3D
   camera.lookAt(0, 1.05, 0);
-  // lights
-  scene.add(new THREE.HemisphereLight(0xdfe6ff, 0x20202c, 0.95));
-  const key = new THREE.DirectionalLight(0xfff2e0, 0.9); key.position.set(3.5, 7, 4); scene.add(key);
-  const rim = new THREE.DirectionalLight(0xff5060, 0.35); rim.position.set(-4, 3, -3); scene.add(rim);
+  // CINEMATIC lighting — dim arena + a dramatic spotlight over the ring + warm key + red rim
+  scene.add(new THREE.HemisphereLight(0xaeb6d8, 0x161620, 0.55));
+  const key = new THREE.DirectionalLight(0xfff2e0, 0.75); key.position.set(3.5, 8, 4.5);
+  key.castShadow = true; key.shadow.mapSize.set(1024, 1024);
+  key.shadow.camera.near = 1; key.shadow.camera.far = 20;
+  key.shadow.camera.left = -4; key.shadow.camera.right = 4; key.shadow.camera.top = 4; key.shadow.camera.bottom = -4;
+  key.shadow.bias = -0.0006; scene.add(key);
+  const rim = new THREE.DirectionalLight(0xff4858, 0.5); rim.position.set(-4.5, 3, -3.5); scene.add(rim);
+  const spot = new THREE.SpotLight(0xffffff, 1.5, 22, Math.PI / 5, 0.45, 1.2);
+  spot.position.set(0, 7.5, 1.5); spot.target.position.set(0, 0.6, 0);
+  spot.castShadow = true; spot.shadow.mapSize.set(1024, 1024); spot.shadow.bias = -0.0006;
+  scene.add(spot); scene.add(spot.target);
+  SC3D.spot = spot;
   // ring mat
   const RX = 1.95, RZ = 1.55;   // ring half-extents (mat reaches the posts)
   const mat = new THREE.Mesh(new THREE.BoxGeometry(RX * 2, 0.28, RZ * 2), new THREE.MeshStandardMaterial({ color: 0x232633, roughness: 0.95 }));
-  mat.position.y = -0.14; scene.add(mat);
+  mat.position.y = -0.14; mat.receiveShadow = true; scene.add(mat);
   const center = new THREE.Mesh(new THREE.BoxGeometry(RX * 1.0, 0.02, RZ * 1.0), new THREE.MeshStandardMaterial({ color: 0x2e3344, roughness: 0.9 }));
   center.position.y = 0.005; scene.add(center);
   const skirt = new THREE.Mesh(new THREE.BoxGeometry(RX * 2 + 0.05, 0.5, RZ * 2 + 0.05), new THREE.MeshStandardMaterial({ color: 0x7a1820, roughness: 0.9 }));
@@ -4337,6 +4366,7 @@ function build3DFighter(art) {
     return { hip, knee };
   }
   P.legL = leg(1); P.legR = leg(-1);
+  grp.traverse(o => { if (o.isMesh) o.castShadow = true; });   // cinematic shadows
   return { group: grp, parts: P, anim: { name: 'idle', t0: 0, dur: 0 }, block: false, downed: false, hyped: false, lastX: null, walk: 0, cur: {}, art };
 }
 function mountFighters(pArt, oArt) {
@@ -4444,11 +4474,16 @@ function update3D(now) {
     R.group.position.z = damp(R.group.position.z, rz, dt, 10);
     L.group.rotation.y = damp(L.group.rotation.y, lYaw, dt, 12);
     R.group.rotation.y = damp(R.group.rotation.y, rYaw, dt, 12);
-    // LIVING CAMERA — gently track the action (midpoint) + ease in when they clinch, for a more 3D feel
+    // CINEMATIC CAMERA — track the action midpoint + a slow orbital drift + a punch-in on big hits
     const midX = (lx + rx) / 2, sep = Math.abs(rx - lx);
-    const camTX = 0.9 + midX * 0.35, camTZ = 4.7 + Math.min(1.1, sep * 0.5);
-    SC3D.camera.position.x = damp(SC3D.camera.position.x, camTX, dt, 3);
-    SC3D.camera.position.z = damp(SC3D.camera.position.z, camTZ, dt, 3);
+    const orbit = Math.sin(now * 0.00016) * 0.55;                     // gentle dolly across
+    const punch = (match.hitStop > 0 || match.pHype > 0 || match.oHype > 0) ? 0.55 : 0;   // zoom in on freeze-frames / hype
+    const camTX = 0.9 + midX * 0.32 + orbit;
+    const camTZ = 4.6 + Math.min(1.0, sep * 0.45) - punch;
+    const camTY = 1.7 + Math.sin(now * 0.00011) * 0.12 - punch * 0.1;
+    SC3D.camera.position.x = damp(SC3D.camera.position.x, camTX, dt, punch ? 9 : 2.6);
+    SC3D.camera.position.z = damp(SC3D.camera.position.z, camTZ, dt, punch ? 9 : 2.6);
+    SC3D.camera.position.y = damp(SC3D.camera.position.y, camTY, dt, 2.2);
     SC3D._lookX = damp(SC3D._lookX || 0, midX * 0.5, dt, 3);
     SC3D.camera.lookAt(SC3D._lookX, 1.05, 0);
   }

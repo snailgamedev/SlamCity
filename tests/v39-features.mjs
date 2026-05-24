@@ -110,18 +110,25 @@ try {
   await page.waitForTimeout(1600);
   await page.evaluate(() => { if (match) { match.started = true; match.paused = false; match.lastT = performance.now(); } });
   await page.waitForTimeout(150);
-  // land a STRIKE (jam contact, FULLY freeze opponent so their attack can't break the combo).
-  // Buttons bind on pointerdown, so call playerAttack directly.
-  const freeze = () => { match.oAtk = null; match.oStun = 9000; match.oCool = 9000; match.oBlock = false; match.oInvuln = 0; };
-  await page.evaluate(() => { if (!match) return; match.oAtk = null; match.oStun = 9000; match.oCool = 9000; match.oBlock = false; match.oInvuln = 0; match.pZ = match.oZ; match.pX = Math.max(0, match.oX - 38); match.pStun = 0; match.pCool = 0; match.pLockMove = 0; playerAttack('strike'); });
-  await page.waitForTimeout(180);   // let the strike resolve (opens the window)
-  await page.evaluate(() => { match.oAtk = null; match.oStun = 9000; });   // keep opponent frozen so the window survives
-  const win = await page.evaluate(() => match ? { open: match.comboUntil > performance.now() } : null);
-  check('landed STRIKE opens a combo window', !!(win && win.open));
-  // follow-up STRIKE within the window → throws the cross combo (clear the prior atk so the recover-guard passes)
-  await page.evaluate(() => { if (!match) return; match.pAtk = null; match.oAtk = null; match.oStun = 9000; match.pCool = 0; match.pStun = 0; match.pLockMove = 0; match.pZ = match.oZ; match.pX = Math.max(0, match.oX - 38); playerAttack('strike'); });
-  await page.waitForTimeout(60);
-  const comboKind = await page.evaluate(() => match && match.pAtk ? { kind: match.pAtk.kind, type: match.pAtk.move.type } : null);
+  // land a STRIKE then resolve it SYNCHRONOUSLY (no loop-tick race), fully reset guards + opponent frozen.
+  const winOpen = await page.evaluate(() => {
+    if (!match) return null;
+    match.pAtk = null; match.oAtk = null; match.pBlock = false; match.oBlock = false; match.pDowned = 0; match.pinning = false; match.subbing = false;
+    match.pStun = 0; match.pCool = 0; match.pLockMove = 0; match.pInvuln = 0; match.oInvuln = 0; match.oStun = 9000; match.oCool = 9000; match.pST = 100; match.oHP = 100;
+    match.pZ = 0.5; match.oZ = 0.5; match.oX = 200; match.pX = 170;
+    playerAttack('strike');
+    if (match.pAtk) { match.pAtk.hitAt = performance.now() - 1; resolveAttack(match.pAtk); }
+    return { open: match.comboUntil > performance.now(), hadAtk: !!match.pAtk };
+  });
+  check('landed STRIKE opens a combo window', !!(winOpen && winOpen.open), winOpen ? ('atk:' + winOpen.hadAtk) : 'no match');
+  // follow-up STRIKE within the window → throws the cross combo
+  const comboKind = await page.evaluate(() => {
+    if (!match) return null;
+    match.pAtk = null; match.oAtk = null; match.oStun = 9000; match.pCool = 0; match.pStun = 0; match.pLockMove = 0; match.pBlock = false; match.pDowned = 0;
+    match.pZ = 0.5; match.oZ = 0.5; match.oX = 200; match.pX = 170;
+    playerAttack('strike');
+    return match.pAtk ? { kind: match.pAtk.kind, type: match.pAtk.move.type } : null;
+  });
   check('follow-up STRIKE throws the COMBO (cross)', !!(comboKind && comboKind.kind === 'combo' && comboKind.type === 'cross'), comboKind ? comboKind.kind + '/' + comboKind.type : 'no atk');
 
   check('zero page/console errors', errs.length === 0, errs.slice(0, 3).join(' | '));
