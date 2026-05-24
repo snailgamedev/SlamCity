@@ -419,6 +419,15 @@
     .name { font-size: clamp(56px, 6vw, 92px); }
   }
   /* labeled HP + Stamina bars so it's clear what each is */
+  /* LIVE ACTION READOUT chip beside each fighter's name — tells you what they're doing right now */
+  .fs-state { display: inline-block; min-height: 14px; font-size: 10px; font-weight: 800; letter-spacing: 0.5px; margin-top: 2px; padding: 1px 6px; border-radius: 6px; white-space: nowrap; }
+  .fs-state:empty { padding: 0; }
+  .fs-state.right { float: right; }
+  .fs-state.st-atk { color: #fff; background: rgba(224,64,80,0.85); }
+  .fs-state.st-block { color: #0a0a0d; background: #7fd0ff; }
+  .fs-state.st-stun { color: #0a0a0d; background: #e0a020; }
+  .fs-state.st-down { color: #fff; background: #8a1020; }
+  .fs-state.st-hype { color: #0a0a0d; background: var(--gold); }
   .bar-line { display: flex; align-items: center; gap: 5px; margin-top: 4px; }
   .bar-line .hp-bar-outer, .bar-line .st-bar-outer { flex: 1; margin-top: 0; }
   .bar-tag { flex: 0 0 auto; font-size: 8px; font-weight: 800; letter-spacing: 0.5px; width: 46px; text-align: right; white-space: nowrap; }
@@ -992,7 +1001,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v4.21 · build 2026-05-24·1425 · 🔑 ADMIN RANKS MEAN SOMETHING — chain of command enforced (only moderate who you outrank) + a YOUR RANK powers panel · for AARON</div>
+  <div class="splash-foot">v4.22 · build 2026-05-24·1617 · 🎥 camera stays CLOSE the whole fight (no more zoom-out) · 📛 live action readout chips (▶move ◆block ●down 🔥hyped) · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -1141,7 +1150,7 @@
 
   <div class="fighter-row">
     <div class="fighter-slot">
-      <div class="fs-name" id="left-name">—</div>
+      <div class="fs-name" id="left-name">—</div><span class="fs-state" id="left-state"></span>
       <div class="bar-line"><span class="bar-tag hp">HP</span>
         <div class="hp-bar-outer">
           <div class="hp-bar-fill" id="left-hp" style="width:100%"></div>
@@ -1156,7 +1165,7 @@
       </div>
     </div>
     <div class="fighter-slot">
-      <div class="fs-name right" id="right-name">—</div>
+      <div class="fs-name right" id="right-name">—</div><span class="fs-state right" id="right-state"></span>
       <div class="bar-line"><span class="bar-tag hp">HP</span>
         <div class="hp-bar-outer">
           <div class="hp-bar-fill right" id="right-hp" style="width:100%"></div>
@@ -1312,7 +1321,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v4.21</div>
+    <div class="load-skip">tap to skip · v4.22</div>
   </div>
 </div>
 
@@ -2196,7 +2205,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '4.21';
+const GAME_VERSION = '4.22';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -2230,6 +2239,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['4.22', 'FIGHT READABILITY (you said you still couldn’t tell what’s happening): 🎥 the camera now stays CLOSE the WHOLE time — before, it zoomed back out whenever you drifted apart (which is most of a fight), so it felt like nothing changed. Now it stays tight and PANS to follow, with a wider lens so BOTH fighters always fill the frame, near or far. 📛 LIVE ACTION READOUT — a chip next to each fighter’s name calls out exactly what they’re doing every moment: ▶ their move, ◆ BLOCKING, ● STUNNED, ● DOWN, 🔥 HYPED. No more guessing what just happened.'],
   ['4.21', 'ADMIN RANKS NOW MEAN SOMETHING: enforced a real chain of command — you can only moderate (kick · ban · timeout · reset · restyle · message) fighters you OUTRANK. A Crew admin can’t touch Aaron or Old Man Eli; Aaron can’t touch Eli; nobody reaches up the chain (protected fighters show a 🛡 marker). Plus a new 🔑 YOUR RANK panel at the top of every admin’s screen spells out exactly which powers your tier grants ✓ and which are locked 🔒 — so Supreme vs Senior vs Crew is crystal clear. Crowning a champion stays open to all admins (it’s a blessing, not a punishment).'],
   ['4.20', 'SIGNATURE MOVE (cooking the list): your HYPE meter finally PAYS OFF. Fill it (land hits · taunt) and a glowing ⚡ SIGNATURE button floats up over your controls — tap it to unleash a guaranteed momentum-swing blow that KNOCKS THEM DOWN (blocked, it still rocks them but they stay up). It cashes your whole meter, fires the comic cut-in + a crowd eruption, and sets up your pin/finisher. HYPE was just a passive damage buff before — now it’s a weapon.'],
   ['4.19', 'TITLES & RANKINGS (cooking the list): a new 🏆 TITLES & RANKINGS screen off the hub — see the REIGNING CHAMPION + their defense streak, a live POWER-RANKINGS ladder of the whole roster by OVR (with the #1 CONTENDER flagged), your hardware (titles won + record), and a HALL OF FAME of every past champion. NEW 🥊 DEFEND THE TITLE — the champ takes on the #1 contender; win and it’s a successful defense, lose and the belt changes hands. Career/Gauntlet wins still crown you.'],
@@ -3607,6 +3617,25 @@ function syncBars() {
   const lm = document.getElementById('left-mo'), rm = document.getElementById('right-mo');
   if (lm) { lm.style.width = match.pMo + '%'; lm.parentElement.classList.toggle('hyped', match.pHype > 0); }
   if (rm) { rm.style.width = match.oMo + '%'; rm.parentElement.classList.toggle('hyped', match.oHype > 0); }
+  updateFightState();
+}
+// LIVE ACTION READOUT — a chip by each name that says exactly what that fighter is doing right now
+function fightStateOf(p) {
+  const downed = p ? match.pDowned : match.oDowned, stun = p ? match.pStun : match.oStun;
+  const atk = p ? match.pAtk : match.oAtk, block = p ? match.pBlock : match.oBlock, hype = p ? match.pHype : match.oHype;
+  const pinnedMe = match.pinning && ((p && match.pinVictim === 'player') || (!p && match.pinVictim === 'opp'));
+  if (pinnedMe) return ['● PINNED', 'st-down'];
+  if (downed > 0) return ['● DOWN', 'st-down'];
+  if (stun > 0) return ['● STUNNED', 'st-stun'];
+  if (atk && atk.hitAt > performance.now()) return ['▶ ' + (((atk.move && atk.move.name) || atk.kind || 'ATTACK') + '').toUpperCase(), 'st-atk'];
+  if (block) return ['◆ BLOCKING', 'st-block'];
+  if (hype > 0) return ['🔥 HYPED', 'st-hype'];
+  return ['', ''];
+}
+function updateFightState() {
+  if (!match) return;
+  const set = (side, p) => { const el = document.getElementById(side + '-state'); if (!el) return; const s = fightStateOf(p); el.textContent = s[0] ? ' ' + s[0] : ''; el.className = 'fs-state ' + s[1]; };
+  set('left', true); set('right', false);
 }
 
 let statusTimer = null;
@@ -4992,8 +5021,8 @@ function init3D() {
   if (THREE.sRGBEncoding) renderer.outputEncoding = THREE.sRGBEncoding;
   const scene = new THREE.Scene();
   scene.fog = new THREE.Fog(0x07070c, 7, 17);
-  const camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 100);
-  camera.position.set(0, 1.28, 3.4);   // close, near eye-level broadcast angle (fighters fill the frame)
+  const camera = new THREE.PerspectiveCamera(58, w / h, 0.1, 100);   // wide FOV → both fighters stay framed while the cam stays CLOSE
+  camera.position.set(0, 1.22, 3.0);   // close, near eye-level broadcast angle (fighters fill the frame)
   camera.lookAt(0, 1.02, 0);
   // CINEMATIC lighting — dim arena + a dramatic spotlight over the ring + warm key + red rim
   scene.add(new THREE.HemisphereLight(0xaeb6d8, 0x161620, 0.55));
@@ -5359,9 +5388,9 @@ function update3D(now) {
       // BROADCAST CAMERA — close, near eye-level, STABLE: fighters fill the frame & the action reads clearly
       const punch = (match.hitStop > 0 || match.pHype > 0 || match.oHype > 0) ? 0.4 : 0;   // small punch-in on freeze-frames / hype
       const entWide = enWalk ? 1.2 : 0;                               // pull back for the establishing entrance shot
-      const camTX = midX * 0.55;                                      // centered on the action — no constant sway/bias
-      const camTZ = 3.15 + Math.min(1.7, sep * 0.72) - punch + entWide;   // closer base; pulls back only when they’re far apart so BOTH stay framed
-      const camTY = 1.28 - punch * 0.05 + entWide * 0.22;             // near eye-level → you watch the fight, not the floor
+      const camTX = midX * 0.62;                                      // PAN to follow the action (stay tight on it, don't zoom out)
+      const camTZ = 3.0 + Math.min(0.6, sep * 0.28) - punch + entWide;    // stays CLOSE always (wide FOV keeps both framed) — fixes "cam pulled back out when they drift apart"
+      const camTY = 1.22 - punch * 0.05 + entWide * 0.22;            // near eye-level → you watch the fight, not the floor
       SC3D.camera.position.x = damp(SC3D.camera.position.x, camTX, dt, punch ? 8 : 3.6);
       SC3D.camera.position.z = damp(SC3D.camera.position.z, camTZ, dt, punch ? 8 : 3.6);
       SC3D.camera.position.y = damp(SC3D.camera.position.y, camTY, dt, 3);
