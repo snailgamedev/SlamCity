@@ -963,7 +963,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v4.17 · build 2026-05-24·1335 · ⬇ INSTALL + OFFLINE verified — full game plays with no internet · 📱 crisp iPhone home-screen icon (real PNGs) · for AARON</div>
+  <div class="splash-foot">v4.18 · build 2026-05-24·1346 · 🗣️ CROWD REACTIONS — pops on big hits · erupts on finishers · boos on stalling · reactive crowd that swells with the energy · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -1272,7 +1272,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v4.17</div>
+    <div class="load-skip">tap to skip · v4.18</div>
   </div>
 </div>
 
@@ -2154,7 +2154,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '4.17';
+const GAME_VERSION = '4.18';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -2188,6 +2188,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['4.18', 'CROWD REACTIONS (cooking the list): 🗣️ the arena is ALIVE now — the crowd POPS on a heavy hit, ERUPTS on a finisher/KO, and BOOS if the fight stalls out (both of you standing around far apart too long). The crowd band up top glows and swells with the energy in the building, and dies down when nothing’s happening. Real filtered-noise roars, not beeps — and it all respects your Sound + Volume settings.'],
   ['4.17', 'INSTALL / OFFLINE polish: verified the whole game plays fully OFFLINE (the 3D engine, fighters, every mode — all cached, no internet needed once loaded). Fixed the iPhone home-screen icon — “Add to Home Screen” now shows a crisp SLAM CITY app icon instead of a blank one (real PNG icons at 180/192/512 instead of an SVG iOS ignored). Install + offline are solid.'],
   ['4.16', 'FIGHT CLARITY OVERHAUL (you said it was hard to tell what’s happening — fixed): 🎥 NEW CAMERA — pulled in close at near eye-level so the fighters FILL the screen instead of being tiny specks in a sea of black, and the constant floaty sway is gone — it’s a stable broadcast angle that keeps BOTH fighters framed whether they’re close or far · 🔵🔴 WHO’S WHO — a blue ring under YOU, a red ring under your FOE, so you never lose track of yourself · ⚠️ ATTACK TELEGRAPH — a fighter’s ring flashes bright the instant they commit an attack, so you can SEE the hit coming and time your REVERSE/BLOCK · fighters no longer fully overlap at contact so you can read the action. The whole fight is way easier to follow now.'],
   ['4.15', 'ADMIN TOOLS cluster (cooking the list · you flagged this one): 📢 MESSAGE OF THE DAY — an admin posts a banner that stays on the hub for EVERYONE until changed (separate from the one-shot announce) · 🏆 ADMIN ACTIVITY — the panel now ranks who’s been moderating, tallied from the audit log · 🔍 LOG SEARCH — filter the admin log by action or by which admin did it. Every logged action now records WHO did it.'],
@@ -3364,7 +3365,7 @@ function startMatchWith(playerId, oppId) {
     tally: { strikesLanded:0, strikesWhiff:0, heavyLanded:0, blocked:0, dodgedClean:0,
              finisherLanded:false, dmgDealt:0, dmgTaken:0, gassed:false, grappleLanded:0, winMethod:null,
              biggestHit:0, reversals:0, comboMax:0 },   // feed the post-match breakdown + combo HUD
-    comboCount: 0, comboUntil: 0, comboHitUntil: 0, biggestHit: 0
+    comboCount: 0, comboUntil: 0, comboHitUntil: 0, biggestHit: 0, lastActionT: 0
   };
   applyModeRules(match);                 // per-mode feel: scaling, worn HP, training dummy
   save.picks[playerId] = (save.picks[playerId] || 0) + 1;
@@ -3577,6 +3578,13 @@ function gameLoop(t) {
   if (match.oDowned <= 0) setDowned('right', false);
 
   const frozen = match.pinning || match.subbing;   // a pin/submission sequence owns the moment
+
+  // STALL DETECTOR — too long with no clean hit while standing far apart → the crowd boos
+  if (!frozen && match.pDowned <= 0 && match.oDowned <= 0) {
+    const idle = t - (match.lastActionT || match.lastT);
+    const apart = Math.abs(match.oX - match.pX) > fW * 1.5;
+    if (idle > 6500 && apart) { crowdReact('boo'); match.lastActionT = t; }
+  }
 
   if (match.pAI && !frozen) updateWatchAI(dt, dtms, fW);   // WATCH mode: AI drives the left fighter too
 
@@ -4007,6 +4015,10 @@ function resolveAttack(atk) {
   burst(defSide, dmg);
   shakeRing(heavy);
   triggerHitReact(defSide, heavy);
+  // CROWD reacts to clean contact — a roar on finishers, a pop on heavy hits
+  match.lastActionT = performance.now();
+  if (!blocked && move.fin) crowdReact('big');
+  else if (!blocked && heavy) crowdReact('pop');
 
   // tally what happened — feeds the end-of-match rating movement
   if (isPlayer) {
@@ -4585,6 +4597,7 @@ function finishMatch(result) {
   const lossSide = result === 'win' ? 'right' : 'left';
   document.getElementById('ring-' + lossSide).classList.add('ko');
   playKOSound();
+  crowdReact('big');                         // the place ERUPTS on the finish
   flash(lossSide, true); shakeRing(true);   // big finish flash + shake
   const cineOn = triggerFinishCam(result);   // slow-mo cinematic finish before the result screen
   const revealDelay = cineOn ? 2300 : 1400;  // let the finish cam play out
@@ -4749,6 +4762,44 @@ function playKOSound() {
 }
 
 function playClickSound() { tone(680, 0.04, 'square', 0.06, 40); }   // UI tick — every menu button confirms
+
+/* ===== CROWD REACTIONS — the arena reacts: roars on big hits/finishers, boos on stalling ===== */
+let crowdEnergy = 0;     // 0..1, drives the reactive crowd-band glow; decays each frame
+// a crowd-roar = filtered white-noise swell (real "wash" of voices, not a beep)
+function crowdNoise(dur, peak, freq, q, rise) {
+  if (!save.sfxOn) return;
+  const ctx = ensureCtx(); if (!ctx) return;
+  const v = peak * (save.vol != null ? save.vol : 0.9); if (v <= 0.0006) return;
+  const n = Math.floor(ctx.sampleRate * dur);
+  const buf = ctx.createBuffer(1, n, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (0.6 + 0.4 * Math.sin(i * 0.0007));   // slight shimmer
+  const src = ctx.createBufferSource(); src.buffer = buf;
+  const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = freq; bp.Q.value = q || 0.6;
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.0001, ctx.currentTime);
+  g.gain.linearRampToValueAtTime(v, ctx.currentTime + (rise || dur * 0.3));
+  g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
+  src.connect(bp); bp.connect(g); g.connect(ctx.destination);
+  src.start(); src.stop(ctx.currentTime + dur);
+}
+let _booCool = 0;
+function crowdReact(kind) {
+  if (kind === 'big') { crowdNoise(1.15, 0.2, 820, 0.5, 0.16); sfxDelay(() => crowdNoise(0.7, 0.12, 1200, 0.7, 0.1), 120); bumpCrowd(1); }   // huge roar
+  else if (kind === 'boo') {
+    if (performance.now() < _booCool) return; _booCool = performance.now() + 7000;     // don't nag
+    crowdNoise(0.85, 0.12, 220, 0.9, 0.25); sfxDelay(() => tone(150, 0.6, 'sawtooth', 0.05, -50), 0); bumpCrowd(-0.5);
+    if (typeof caption === 'function') caption('🗣️ the crowd’s getting restless…', 'big');
+  }
+  else { crowdNoise(0.55, 0.13, 720, 0.6, 0.07); bumpCrowd(0.55); }   // pop on a solid hit
+}
+function bumpCrowd(amt) { crowdEnergy = Math.max(0, Math.min(1.4, crowdEnergy + amt)); }
+function updateCrowdVisual(dt) {
+  crowdEnergy = Math.max(0, crowdEnergy - dt * 0.5);
+  const el = document.querySelector('.arena-crowd'); if (!el) return;
+  el.style.filter = 'brightness(' + (1 + crowdEnergy * 1.1).toFixed(2) + ') saturate(' + (1 + crowdEnergy * 0.6).toFixed(2) + ')';
+  el.style.transform = 'scaleY(' + (1 + crowdEnergy * 0.04).toFixed(3) + ')';
+}
 
 /* Measures the REAL viewport (not a default) → exact height + orientation classes so every screen fits the device. */
 function fitViewport() {
@@ -5092,6 +5143,7 @@ function update3D(now) {
   if (!SC3D.ok || !match) return;
   let dt = (now - (SC3D.last || now)) / 1000; SC3D.last = now; if (dt > 0.05) dt = 0.05;
   if (match.paused) dt = 0;   // PAUSE freezes the fighters in place (so pause/how-to-play visibly stop the action)
+  updateCrowdVisual(dt);      // the crowd band glows/swells with the energy in the building
   const ring = document.getElementById('ring'); const ringW = (ring && ring.clientWidth) || 360;
   const L = SC3D.fighters.left, R = SC3D.fighters.right;
   if (L && R) {
