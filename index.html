@@ -10,7 +10,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#0a0a0d" />
-<title>SLAM CITY · v3.9 · CREATE-ON-SIGN-IN + OLD MAN ELI</title>
+<title>SLAM CITY · v4.0 · REAL 3D</title>
+<!-- Three.js (r128, vendored local · global THREE) powers the real-3D ring + jointed fighters (v4.0). Falls back to the CSS renderer if it fails to load. -->
+<script src="three.min.js"></script>
 <!-- retro arcade type: Press Start 2P for marquee, Oxanium for readable UI · safe fallback stack -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -487,6 +489,17 @@
   .prof-inbox-head { font-size: 9px; letter-spacing: 2px; color: var(--gold); font-weight: 800; margin-bottom: 7px; }
   .prof-inbox-msg { font-size: 12.5px; color: var(--cream); line-height: 1.5; margin-bottom: 6px; }
   .prof-inbox-t { color: var(--muted); font-size: 10px; }
+  /* 3D customization preview */
+  .portrait3d { width: 100%; height: 100%; display: block; }
+  .cust-head { text-align: center; margin-bottom: 12px; }
+  .cust3d { width: 170px; height: 200px; margin: 0 auto 6px; background: radial-gradient(circle at 50% 40%, rgba(40,30,40,0.5), rgba(8,8,12,0.2)); border: 1px solid var(--bg-3); border-radius: 12px; overflow: hidden; }
+  .cust3d canvas, .cust3d svg { width: 100%; height: 100%; display: block; }
+  .create-preview #create-svg canvas { width: 100%; height: 100%; display: block; }
+  /* public changes feed (hub) */
+  .chg-feed { margin-top: 12px; padding: 10px 12px; border: 1px solid var(--bg-3); border-left: 3px solid var(--gold); border-radius: 10px; background: rgba(40,28,12,0.25); text-align: left; max-width: 360px; }
+  .chg-head { font-size: 9px; letter-spacing: 1.5px; color: var(--gold); font-weight: 800; margin-bottom: 6px; }
+  .chg-row { font-size: 11px; color: var(--soft); line-height: 1.55; }
+  .chg-t { color: var(--muted); font-size: 9px; font-weight: 700; margin-right: 4px; }
   .hud-btns { position: absolute; top: 6px; right: 8px; z-index: 30; display: flex; gap: 6px; }
   .hud-btn { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--bg-3); background: rgba(20,20,26,0.9); color: var(--soft); font-weight: 900; font-size: 12px; cursor: pointer; line-height: 1; display: flex; align-items: center; justify-content: center; padding: 0; }
   #pause-btn { font-size: 10px; letter-spacing: -1px; color: var(--cream); border-color: var(--bg-3); }
@@ -745,7 +758,12 @@
   .cl-v { flex: 0 0 56px; font-family: var(--font-arcade); font-size: 9px; color: var(--gold); padding-top: 2px; }
   .cl-t { font-size: 11px; color: var(--soft); line-height: 1.4; }
 
-  /* ===== REAL 3D fighters — volumetric cuboid geometry in a perspective camera ===== */
+  /* ===== REAL 3D (v4.0): WebGL canvas draws the ring + jointed fighters. When active (.r3d), hide the CSS ring/cuboids. ===== */
+  #ring3d { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; display: none; }
+  .ring.r3d #ring3d { display: block; }
+  .ring.r3d .ring-post, .ring.r3d .ring-rope, .ring.r3d .arena-floor3d, .ring.r3d .floor-horizon { display: none; }   /* WebGL draws these */
+  .ring.r3d #ring-left-svg, .ring.r3d #ring-right-svg, .ring.r3d .guard-ring, .ring.r3d .impact-flash, .ring.r3d .impact-burst { display: none; }
+  /* ===== CSS-cuboid fighters (fallback when WebGL is unavailable) ===== */
   .ring { perspective: 1100px; perspective-origin: 50% 26%; }
   .ring-fighter { transform-style: preserve-3d; }
   #ring-left-svg, #ring-right-svg { width: 100%; height: 100%; transform-style: preserve-3d; }
@@ -813,7 +831,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v3.9 · build 2026-05-24·0857 · sign in with ANY name → makes your fighter · 👑 OLD MAN ELI on the roster · admin sign-out + messages (admin log + your inbox) · OG crew only (filler CPUs cut) · COMBO chain + more finishers · update log fixed · for AARON</div>
+  <div class="splash-foot">v4.0 · build 2026-05-24·0924 · REAL 3D — jointed humanoid fighters (head/arms/legs/joints) in a perspective ring, animations that connect · 3D customization preview · universal-changes feed (everyone sees edits) · more admin (announce/create/crown) · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -978,12 +996,13 @@
       <div class="arena-crowd"></div>
       <div class="arena-floor3d"><div class="floor-grid"></div></div>
       <div class="floor-horizon"></div>
-      <!-- 3D ring: posts converge (back pair small/high, front pair big/low) + trapezoid ropes -->
+      <!-- CSS ring (fallback / backdrop when WebGL 3D is unavailable) -->
       <div class="ring-post bl"></div><div class="ring-post br"></div>
       <div class="ring-post fl"></div><div class="ring-post fr"></div>
       <div class="ring-rope back"></div>
       <div class="ring-rope f1"></div><div class="ring-rope f2"></div><div class="ring-rope f3"></div>
     </div>
+    <canvas id="ring3d" aria-hidden="true"></canvas>
     <div class="ring-fighter left" id="ring-left">
       <div class="guard-ring" id="left-guard"></div>
       <div id="ring-left-svg"></div>
@@ -1103,7 +1122,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v3.9</div>
+    <div class="load-skip">tap to skip · v4.0</div>
   </div>
 </div>
 
@@ -1588,11 +1607,12 @@ function loadSave() {
       if (!('admin' in parsed)) parsed.admin = null;     // { pin } — the "Old Man Eli" master account
       if (!Array.isArray(parsed.adminLog)) parsed.adminLog = [];   // admin's audit log [{t,text}]
       if (!parsed.adminInbox) parsed.adminInbox = {};    // fighterId → [{t,text}] messages the affected person sees
+      if (!Array.isArray(parsed.changeFeed)) parsed.changeFeed = [];   // public "recent changes" feed [{t,text,key}] — everyone sees universal edits
       return parsed;
     }
   } catch(e) {}
   return { wins:0, losses:0, kos:0, finishers:0, scriptureStrikes:0, picks:{}, ovrDelta:{}, abilDelta:{},
-           difficulty:2, sfxOn:true, vol:0.9, captionsOn:true, platform:null, reducedMotion:false, tutorialSeen:false, seenVersion:null, customFighters:[], achievements:{}, belts:0, champion:null, profiles:{}, activeProfile:null, admin:null, adminLog:[], adminInbox:{} };
+           difficulty:2, sfxOn:true, vol:0.9, captionsOn:true, platform:null, reducedMotion:false, tutorialSeen:false, seenVersion:null, customFighters:[], achievements:{}, belts:0, champion:null, profiles:{}, activeProfile:null, admin:null, adminLog:[], adminInbox:{}, changeFeed:[] };
 }
 function persistSave() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch(e) {}
@@ -1691,6 +1711,8 @@ function goto(id) {
   if (id !== 'result' && typeof clearSounds === 'function') clearSounds();
   // Leaving the ring stops the real-time loop so it can't run against a hidden screen.
   if (id !== 'fight' && typeof rafId !== 'undefined' && rafId) { cancelAnimationFrame(rafId); rafId = null; if (match && !parkFight) match.over = true; }   // parkFight = visiting settings mid-fight, keep match alive
+  if (id !== 'fight' && typeof stop3DLoop === 'function' && !parkFight) stop3DLoop();   // pause the WebGL render loop when leaving the ring
+  if (id !== 'create' && id !== 'profile' && typeof stopPortrait === 'function') stopPortrait();   // pause the customization 3D preview
   if (id === 'hub') parkFight = false;
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -1753,7 +1775,16 @@ function renderHub() {
         const ap = save.activeProfile && save.profiles[save.activeProfile]; const f = ap && FIGHTERS.find(x => x.id === save.activeProfile);
         return `<div class="hub-signin" onclick="goto('profile')">${ap && f ? '👤 ' + ap.name + ' · signed in as ' + f.name : '👤 SIGN IN as your brother ›'}</div>`; })()
     + `<div class="hub-ver" onclick="showUpdateLog()">✦ v${GAME_VERSION} · update log</div>`
-    + `<div class="hub-ver" onclick="showAchievements()" style="margin-left:8px">🏆 achievements ${ACHIEVEMENTS.filter(a=>save.achievements[a[0]]).length}/${ACHIEVEMENTS.length}</div>`;
+    + `<div class="hub-ver" onclick="showAchievements()" style="margin-left:8px">🏆 achievements ${ACHIEVEMENTS.filter(a=>save.achievements[a[0]]).length}/${ACHIEVEMENTS.length}</div>`
+    + changeFeedHTML();
+}
+// PUBLIC changes feed — everyone sees who created/claimed/recolored a fighter (universal-changes visibility)
+function changeFeedHTML() {
+  const feed = save.changeFeed || [];
+  if (!feed.length) return '';
+  return `<div class="chg-feed"><div class="chg-head">🔔 RECENT CHANGES · everyone sees these</div>`
+    + feed.slice(0, 5).map(e => `<div class="chg-row"><span class="chg-t">${adminTimeAgo(e.t)}</span> ${e.text}</div>`).join('')
+    + `</div>`;
 }
 
 let gameMode = 'quick';
@@ -1897,7 +1928,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '3.9';
+const GAME_VERSION = '4.0';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -1931,6 +1962,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['4.0',  'REAL 3D — fighters are now jointed humanoid bodies (head, arms, legs, hands, joints) in a true perspective ring with posts + ropes; attack animations actually connect (strike, combo, grapple, finisher) · the customization menu shows your fighter in 3D too · NEW universal-changes feed on the hub so EVERYONE sees who recolored/created/claimed a fighter · more admin: announce to everyone, create a fighter, crown a champion · (changes were already universal — now they’re visible)'],
   ['3.9',  'Sign in with ANY name and it spins up your OWN fighter (not just the crew) · 👑 OLD MAN ELI joins the roster — the Architect · admin can now sign-out + message any fighter, so everyone sees what happened (admin log + your inbox) · roster trimmed to the OG crew (filler CPUs removed) · more moves + finishers (COMBO chain · 2nd signatures) · update log fixed (it was stuck on v3.7)'],
   ['3.8',  'ADMIN — sign in as "Old Man Eli" (master key): edit / reset / message any fighter · names are case-insensitive (aaron = AARON) · claimed brothers LOCK so only admin can reset them · recolors are now UNIVERSAL — everyone sees your look on the roster + in the ring'],
   ['3.7',  'Profiles + deeper customization — SIGN IN as your brother (PIN-secured · one profile each) and recolor him · 14 hairstyles + more skin/hair/gear colors · DELETE your customs · in-fight PAUSE menu (resume/settings/quit) · every OVR stat now levels up · downed fighters lie clean on the mat (no more jumble) · tightened UI so nothing overlaps · AI roams + does real footwork'],
@@ -2117,7 +2149,8 @@ function setCreator(key, val) {
 }
 function setCreatorStat(key, v) { creator[key] = parseInt(v, 10); const el = document.getElementById('cr-' + key + '-v'); if (el) el.textContent = creator[key]; updateCreatorPreview(); }
 function updateCreatorPreview() {
-  document.getElementById('create-svg').innerHTML = renderFighter(creatorArt());
+  const c = document.getElementById('create-svg');
+  if (!showPortraitIn(c, creatorArt())) c.innerHTML = renderFighter(creatorArt());   // 3D portrait, SVG fallback
   const ovr = Math.max(1, Math.min(99, Math.round((creator.striking + creator.grappling + creator.stamina + creator.heart + 80) / 5)));
   document.getElementById('create-ovr').textContent = 'OVR ~' + ovr;
 }
@@ -2247,7 +2280,9 @@ function profileSignIn() {
     }
     const prior = save.profiles[f.id];
     save.profiles[f.id] = { name: rawName, pin: pin, look: prior ? prior.look : null };
-    save.activeProfile = f.id; persistSave(); renderProfile();
+    save.activeProfile = f.id; persistSave();
+    logChange(rawName + ' claimed ' + f.name, 'claim:' + f.id);
+    renderProfile();
     setStatus && setStatus('CLAIMED ' + f.name + '!', 'var(--gold)', 1000);
     return;
   }
@@ -2255,6 +2290,7 @@ function profileSignIn() {
   const nf = createFighterForName(rawName);
   save.profiles[nf.id] = { name: rawName, pin: pin, look: null };
   save.activeProfile = nf.id; persistSave();
+  logChange('🆕 ' + rawName + ' joined the roster (new fighter)', 'create:' + nf.id);
   renderProfile();
   setStatus && setStatus('CREATED + CLAIMED ' + nf.name + '!', 'var(--gold)', 1300);
 }
@@ -2290,10 +2326,12 @@ function renderAdmin() {
   html += `<div class="adm-sec-label">CREW · ${roster.length} FIGHTERS</div>`;
   html += roster.map(f => {
     const claimed = isClaimed(f.id);
+    const isChamp = save.champion === f.id;
     const status = claimed ? `<span class="adm-lock">🔒 ${(save.profiles[f.id].name || '').toUpperCase()}</span>` : `<span class="adm-open">🔓 open</span>`;
-    return `<div class="adm-row"><span class="adm-rname">${f.name}${f.custom ? ' <span class="adm-tag">made</span>' : ''}</span>${status}`
+    return `<div class="adm-row"><span class="adm-rname">${isChamp ? '🏆 ' : ''}${f.name}${f.custom ? ' <span class="adm-tag">made</span>' : ''}</span>${status}`
       + `<span class="adm-acts"><button class="adm-mini" type="button" title="customize" onclick="adminEditBrother('${f.id}')">🎨</button>`
       + `<button class="adm-mini" type="button" title="message" onclick="adminMsgTo('${f.id}')">✉</button>`
+      + `<button class="adm-mini" type="button" title="crown champion" onclick="adminCrown('${f.id}')">👑</button>`
       + (claimed ? `<button class="adm-mini" type="button" title="sign out (release claim, keep look)" onclick="adminSignOutBrother('${f.id}')">⏏</button>` : '')
       + (claimed ? `<button class="adm-mini danger" type="button" title="reset to default" onclick="adminResetBrother('${f.id}')">RESET</button>` : '')
       + (f.custom ? `<button class="adm-mini danger" type="button" title="delete" onclick="adminDeleteCustom('${f.id}')">🗑</button>` : '')
@@ -2306,14 +2344,60 @@ function renderAdmin() {
     ? `<div class="adm-log">` + log.slice(0, 12).map(e => `<div class="adm-log-row"><span class="adm-log-t">${adminTimeAgo(e.t)}</span> ${e.text}</div>`).join('') + `</div>`
       + (log.length ? `<button class="adm-mini" type="button" style="margin-bottom:8px" onclick="adminClearLog()">clear log</button>` : '')
     : `<div class="adm-log-row" style="color:var(--muted)">no actions yet</div>`;
+  html += `<div class="adm-sec-label">🛠 ADMIN TOOLS</div>`
+    + `<button class="btn btn-secondary" type="button" onclick="adminAnnounce()">📣 ANNOUNCE TO EVERYONE</button>`
+    + `<button class="btn btn-secondary" type="button" onclick="adminCreateFighter()">➕ CREATE A FIGHTER</button>`;
   html += `<div class="adm-sec-label danger-label">⚠ MASTER CONTROLS</div>`
     + `<button class="btn btn-secondary adm-danger" type="button" onclick="adminResetAllLooks()">🎨 RESET ALL LOOKS TO DEFAULT</button>`
     + `<button class="btn btn-secondary adm-danger" type="button" onclick="adminResetAllProfiles()">♻ UNCLAIM EVERY FIGHTER</button>`
     + `<button class="btn btn-secondary" type="button" style="border-color:var(--gold);color:var(--gold)" onclick="profileSignOut()">SIGN OUT OF ADMIN</button>`;
   body.innerHTML = html;
 }
+// broadcast a message into EVERY claimed fighter's inbox + the public feed
+function adminAnnounce() {
+  if (!adminGuard()) return;
+  const text = (prompt('Announce to the whole crew (every signed-in fighter will see it):') || '').trim();
+  if (!text) return;
+  let n = 0;
+  for (const fid in (save.profiles || {})) { if (isClaimed(fid)) { inboxPush(fid, '📣 ' + text); n++; } }
+  adminLogPush('📣 Announced to ' + n + ' fighter(s): "' + text + '"');
+  logChange('📣 Old Man Eli announced: "' + text + '"', 'announce:' + Date.now());
+  persistSave(); renderAdmin();
+  setStatus && setStatus('ANNOUNCED TO ' + n, 'var(--gold)', 1000);
+}
+// admin creates a fighter straight from the panel
+function adminCreateFighter() {
+  if (!adminGuard()) return;
+  const name = (prompt('New fighter name:') || '').trim();
+  if (!name) return;
+  if (fighterByName(name)) { setStatus && setStatus('NAME ALREADY EXISTS', 'var(--red-bright)', 900); return; }
+  const nf = createFighterForName(name);
+  adminLogPush('➕ Created ' + nf.name);
+  logChange('🆕 Old Man Eli created ' + nf.name, 'create:' + nf.id);
+  persistSave(); renderAdmin();
+  setStatus && setStatus('CREATED ' + nf.name, 'var(--gold)', 1000);
+}
+function adminCrown(bid) {
+  if (!adminGuard()) return;
+  const f = FIGHTERS.find(x => x.id === bid); if (!f) return;
+  save.champion = bid; save.belts = Math.max(1, save.belts || 0);
+  inboxPush(bid, '👑 Old Man Eli crowned you CHAMPION of Slam City!');
+  adminLogPush('👑 Crowned ' + f.name + ' champion');
+  logChange('👑 ' + f.name + ' was crowned CHAMPION by Old Man Eli', 'crown:' + bid);
+  persistSave(); renderAdmin();
+  setStatus && setStatus('👑 ' + f.name + ' CROWNED', 'var(--gold)', 1100);
+}
 // ── admin message + log plumbing ──
 function adminLogPush(text) { save.adminLog = save.adminLog || []; save.adminLog.unshift({ t: Date.now(), text }); if (save.adminLog.length > 25) save.adminLog.length = 25; }
+// PUBLIC universal-changes feed — everyone sees who changed/created a fighter. Dedupe rapid repeats of the same edit.
+function logChange(text, key) {
+  save.changeFeed = save.changeFeed || [];
+  const top = save.changeFeed[0];
+  if (top && key && top.key === key && (Date.now() - top.t) < 8000) { top.t = Date.now(); top.text = text; }
+  else save.changeFeed.unshift({ t: Date.now(), text, key: key || '' });
+  if (save.changeFeed.length > 30) save.changeFeed.length = 30;
+  persistSave();
+}
 function inboxPush(fid, text) { save.adminInbox = save.adminInbox || {}; (save.adminInbox[fid] = save.adminInbox[fid] || []).unshift({ t: Date.now(), text }); }
 function adminTimeAgo(t) { const s = Math.max(0, Math.round((Date.now() - t) / 1000)); if (s < 60) return s + 's'; if (s < 3600) return Math.round(s / 60) + 'm'; if (s < 86400) return Math.round(s / 3600) + 'h'; return Math.round(s / 86400) + 'd'; }
 function adminEditBrother(bid) { if (!adminGuard()) return; profileEditLook(bid); }
@@ -2383,14 +2467,15 @@ function profileEditLook(bid) {
   const curHairC = look.hairColor || matchKey(HAIRC, f.art.hair, 'hair') || 'black';
   const body = document.getElementById('profile-body');
   body.innerHTML =
-      `<div class="prof-signed"><div class="prof-avatar" id="prof-preview">${renderFighter(f.art)}</div>`
-    + `<div class="prof-who"><div class="prof-hi">CUSTOMIZING</div><div class="prof-name">${f.name}</div></div></div>`
+      `<div class="cust-head"><div class="cust3d" id="prof-preview"></div><div class="prof-name">${f.name}</div><div class="prof-hi">CUSTOMIZING · drag-free 3D preview</div></div>`
     + crSwatch('SKIN', Object.keys(SKIN), curSkin, '__skin', k => SKIN[k].skin).replace(/setCreator/g, 'setProfileLook')
     + crSwatch('HAIR COLOR', Object.keys(HAIRC), curHairC, '__hairColor', k => HAIRC[k].hair).replace(/setCreator/g, 'setProfileLook')
     + crChips('HAIRSTYLE', HAIR_STYLES, look.hairStyle || f.art.hairStyle, '__hairStyle').replace(/setCreator/g, 'setProfileLook')
     + crSwatch('GEAR ACCENT', GEAR_COLORS, look.accent || f.art.accent, '__accent', k => k).replace(/setCreator/g, 'setProfileLook')
     + crSwatch('TRUNKS', GEAR_COLORS, look.trunks || f.art.shorts, '__trunks', k => k).replace(/setCreator/g, 'setProfileLook')
     + `<button class="btn" type="button" onclick="renderProfile()">✓ DONE</button>`;
+  const pv = document.getElementById('prof-preview');
+  if (!showPortraitIn(pv, f.art)) pv.innerHTML = renderFighter(f.art);   // 3D portrait, SVG fallback
 }
 function matchKey(map, val, field) { for (const k in map) if (map[k][field] === val) return k; return null; }
 function setProfileLook(key, val) {
@@ -2400,9 +2485,10 @@ function setProfileLook(key, val) {
   prof.look[key.replace('__', '')] = val;
   persistSave();
   applyProfileLooks();
-  const f = FIGHTERS.find(x => x.id === bid);
-  const pv = document.getElementById('prof-preview'); if (pv && f) pv.innerHTML = renderFighter(f.art);
-  profileEditLook(bid);   // re-render swatches to reflect selection
+  const who = save.activeProfile === ADMIN_KEY ? '👑 Old Man Eli' : ((save.profiles[bid] && save.profiles[bid].name) || 'Someone');
+  const whom = (FIGHTERS.find(x => x.id === bid) || {}).name || 'a fighter';
+  logChange(who + ' recolored ' + whom, 'look:' + bid);   // universal-changes feed (deduped)
+  profileEditLook(bid);   // re-render swatches + 3D preview to reflect selection
 }
 
 /* ========== DETAIL ========== */
@@ -2565,8 +2651,16 @@ function initFightVisuals() {
   document.getElementById('left-name').textContent = player.name;
   document.getElementById('right-name').textContent = opponent.name;
   document.getElementById('fight-round').textContent = match.round;
-  document.getElementById('ring-left-svg').innerHTML = make3DFighter(player.art);   // real 3D geometry in the ring
-  document.getElementById('ring-right-svg').innerHTML = make3DFighter(opponent.art);
+  const ringEl = document.getElementById('ring');
+  if (has3D() && init3D()) {                                   // REAL 3D (v4.0)
+    ringEl.classList.add('r3d');
+    mountFighters(player.art, opponent.art);
+    start3DLoop();
+  } else {                                                     // fallback: CSS cuboids
+    ringEl.classList.remove('r3d');
+    document.getElementById('ring-left-svg').innerHTML = make3DFighter(player.art);
+    document.getElementById('ring-right-svg').innerHTML = make3DFighter(opponent.art);
+  }
   // Clear any transient combat classes left over from the PREVIOUS match — otherwise a
   // KO'd fighter (the 'ko' class) stays collapsed/dead into the next fight ("die and stay dead").
   ['ring-left', 'ring-right'].forEach(id => {
@@ -2822,7 +2916,10 @@ const SIG_CLASSES = ['sig-suplex','sig-bomb','sig-aerial','sig-combo','sig-punch
 // signature (power) move = the fighter's archetype flavor; finisher keeps the big spectacular a-finisher (kept visually distinct from the sig)
 function sigAnimClass(f, move) { return (f && move && move.sig && !move.fin) ? (SIG_ANIM[f.arch] || '') : ''; }
 
+const ANIM3D_BY_TYPE = { jab: 'strike', cross: 'combo', power: 'grapple', finisher: 'finisher' };
+const ANIM3D_DUR = { jab: 300, cross: 480, power: 560, finisher: 820 };
 function triggerLunge(side, type, sigClass) {
+  if (SC3D.ok && SC3D.started) set3DAnim(side, ANIM3D_BY_TYPE[type] || 'strike', ANIM3D_DUR[type] || 340);  // REAL 3D anim
   const el = document.getElementById('ring-' + side);
   el.classList.remove('attack-jab', 'attack-cross', 'attack-power', 'attack-finisher', ...SIG_CLASSES);
   void el.offsetWidth;
@@ -2843,6 +2940,7 @@ function flashSig(name, isFin) {
 }
 
 function triggerHitReact(side, heavy) {
+  if (SC3D.ok && SC3D.started) set3DAnim(side, 'hit', heavy ? 440 : 320);   // REAL 3D recoil
   const el = document.getElementById('ring-' + side);
   el.classList.add(heavy ? 'hit-heavy' : 'hit');
   setTimeout(() => el.classList.remove(heavy ? 'hit-heavy' : 'hit'), heavy ? 600 : 460);
@@ -3342,6 +3440,7 @@ function resumeFight() {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('fight').classList.add('active');
   if (match && !match.over) { match.paused = false; match.lastT = performance.now(); if (!rafId) rafId = requestAnimationFrame(gameLoop); }
+  if (typeof start3DLoop === 'function') start3DLoop();   // resume the WebGL render loop
 }
 function quitToHub() {
   const el = document.getElementById('pause-menu'); el.classList.remove('on'); el.setAttribute('aria-hidden', 'true');
@@ -3657,6 +3756,251 @@ function fitViewport() {
 }
 window.addEventListener('resize', fitViewport);
 window.addEventListener('orientationchange', () => setTimeout(fitViewport, 120));
+
+/* ========================================================================
+   REAL 3D ENGINE (v4.0) · Three.js — jointed humanoid fighters in a
+   perspective ring. Driven by the existing combat state (match.pX/oX/pZ/oZ,
+   HP, attacks). Falls back to the CSS-cuboid renderer if THREE didn't load.
+   ====================================================================== */
+const SC3D = { ok: false, started: false, raf: null, last: 0, fighters: { left: null, right: null }, ringHalfX: 1.45, ringHalfZ: 0.85 };
+function has3D() { return typeof THREE !== 'undefined'; }
+
+function init3D() {
+  if (SC3D.ok || !has3D()) return SC3D.ok;
+  const canvas = document.getElementById('ring3d'); if (!canvas) return false;
+  const ring = document.getElementById('ring');
+  const w = ring.clientWidth || 360, h = ring.clientHeight || 480;
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(w, h, false);
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0x0a0a10, 8, 16);
+  const camera = new THREE.PerspectiveCamera(52, w / h, 0.1, 100);
+  camera.position.set(0, 2.0, 5.9);
+  camera.lookAt(0, 1.0, 0);
+  // lights
+  scene.add(new THREE.HemisphereLight(0xdfe6ff, 0x20202c, 0.95));
+  const key = new THREE.DirectionalLight(0xfff2e0, 0.9); key.position.set(3.5, 7, 4); scene.add(key);
+  const rim = new THREE.DirectionalLight(0xff5060, 0.35); rim.position.set(-4, 3, -3); scene.add(rim);
+  // ring mat
+  const RX = 1.95, RZ = 1.55;   // ring half-extents (mat reaches the posts)
+  const mat = new THREE.Mesh(new THREE.BoxGeometry(RX * 2, 0.28, RZ * 2), new THREE.MeshStandardMaterial({ color: 0x232633, roughness: 0.95 }));
+  mat.position.y = -0.14; scene.add(mat);
+  const center = new THREE.Mesh(new THREE.BoxGeometry(RX * 1.0, 0.02, RZ * 1.0), new THREE.MeshStandardMaterial({ color: 0x2e3344, roughness: 0.9 }));
+  center.position.y = 0.005; scene.add(center);
+  const skirt = new THREE.Mesh(new THREE.BoxGeometry(RX * 2 + 0.05, 0.5, RZ * 2 + 0.05), new THREE.MeshStandardMaterial({ color: 0x7a1820, roughness: 0.9 }));
+  skirt.position.y = -0.52; scene.add(skirt);
+  // posts + ropes
+  const postMat = new THREE.MeshStandardMaterial({ color: 0xc8a060, metalness: 0.5, roughness: 0.4 });
+  const ropeMat = new THREE.MeshStandardMaterial({ color: 0xd8d8e0, roughness: 0.7 });
+  [[-RX, -RZ], [RX, -RZ], [-RX, RZ], [RX, RZ]].forEach(([x, z]) => { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 1.6, 12), postMat); p.position.set(x, 0.8, z); scene.add(p); });
+  [0.5, 0.9, 1.3].forEach(y => {
+    const lr = () => new THREE.Mesh(new THREE.BoxGeometry(RX * 2 - 0.1, 0.03, 0.03), ropeMat);
+    const fb = () => new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.03, RZ * 2 - 0.1), ropeMat);
+    const a = lr(); a.position.set(0, y, -RZ); scene.add(a);
+    const b = lr(); b.position.set(0, y, RZ); scene.add(b);
+    const c = fb(); c.position.set(-RX, y, 0); scene.add(c);
+    const d = fb(); d.position.set(RX, y, 0); scene.add(d);
+  });
+  SC3D.renderer = renderer; SC3D.scene = scene; SC3D.camera = camera; SC3D.ok = true;
+  return true;
+}
+function resize3D() {
+  if (!SC3D.ok) return;
+  const ring = document.getElementById('ring'); if (!ring) return;
+  const w = ring.clientWidth || 360, h = ring.clientHeight || 480;
+  SC3D.renderer.setSize(w, h, false);
+  SC3D.camera.aspect = w / h; SC3D.camera.updateProjectionMatrix();
+}
+// one limb mesh
+function mkPart(w, h, d, color) { return new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshStandardMaterial({ color: new THREE.Color(color), roughness: 0.7 })); }
+// build a jointed humanoid rig facing +Z. Returns { group, parts, anim, blockPose, downed, lastX, walkPhase }
+function build3DFighter(art) {
+  const skin = art.skin || '#c8956a', hood = art.hoodie || '#23232c', sh = art.shorts || '#2a2a30', hair = art.hair || '#3a2418', acc = art.accent || '#e04050', build = art.build || 1.0;
+  const grp = new THREE.Group();
+  const P = {};
+  // torso + pelvis
+  const torso = mkPart(0.46 * build, 0.56, 0.27, hood); torso.position.y = 1.24; grp.add(torso); P.torso = torso;
+  const stripe = mkPart(0.10, 0.30, 0.02, acc); stripe.position.set(0, 1.26, 0.145); grp.add(stripe);
+  const pelvis = mkPart(0.42 * build, 0.26, 0.26, sh); pelvis.position.y = 0.92; grp.add(pelvis); P.pelvis = pelvis;
+  // head + hair
+  const neck = mkPart(0.12, 0.10, 0.12, skin); neck.position.y = 1.56; grp.add(neck);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.155, 16, 14), new THREE.MeshStandardMaterial({ color: new THREE.Color(skin), roughness: 0.6 })); head.position.y = 1.72; grp.add(head); P.head = head;
+  if ((art.hairStyle || 'short') !== 'bald') { const hr = new THREE.Mesh(new THREE.SphereGeometry(0.16, 14, 12, 0, Math.PI * 2, 0, Math.PI * 0.62), new THREE.MeshStandardMaterial({ color: new THREE.Color(hair), roughness: 0.8 })); hr.position.y = 1.75; grp.add(hr); }
+  // arms — shoulder joint groups (pivot at shoulder), forearm child
+  function arm(side) {
+    const sx = side * 0.30 * build;
+    const sh_ = new THREE.Group(); sh_.position.set(sx, 1.46, 0);
+    const upper = mkPart(0.13, 0.34, 0.14, hood); upper.position.y = -0.17; sh_.add(upper);
+    const elbow = new THREE.Group(); elbow.position.y = -0.34; sh_.add(elbow);
+    const fore = mkPart(0.115, 0.34, 0.125, skin); fore.position.y = -0.17; elbow.add(fore);
+    const hand = mkPart(0.13, 0.13, 0.14, skin); hand.position.y = -0.36; elbow.add(hand);
+    grp.add(sh_);
+    return { shoulder: sh_, elbow };
+  }
+  P.armL = arm(1); P.armR = arm(-1);
+  // legs — hip joint groups, knee child
+  function leg(side) {
+    const hx = side * 0.12 * build;
+    const hip = new THREE.Group(); hip.position.set(hx, 0.86, 0);
+    const thigh = mkPart(0.17, 0.42, 0.2, sh); thigh.position.y = -0.21; hip.add(thigh);
+    const knee = new THREE.Group(); knee.position.y = -0.42; hip.add(knee);
+    const shin = mkPart(0.15, 0.42, 0.17, skin); shin.position.y = -0.21; knee.add(shin);
+    const foot = mkPart(0.18, 0.1, 0.28, '#15151b'); foot.position.set(0, -0.42, 0.05); knee.add(foot);
+    grp.add(hip);
+    return { hip, knee };
+  }
+  P.legL = leg(1); P.legR = leg(-1);
+  return { group: grp, parts: P, anim: { name: 'idle', t0: 0, dur: 0 }, block: false, downed: false, hyped: false, lastX: null, walk: 0, cur: {}, art };
+}
+function mountFighters(pArt, oArt) {
+  if (!SC3D.ok) return;
+  ['left', 'right'].forEach(s => { if (SC3D.fighters[s]) { SC3D.scene.remove(SC3D.fighters[s].group); } });
+  SC3D.fighters.left = build3DFighter(pArt);
+  SC3D.fighters.right = build3DFighter(oArt);
+  SC3D.scene.add(SC3D.fighters.left.group);
+  SC3D.scene.add(SC3D.fighters.right.group);
+}
+function refresh3DLook(side, art) { if (!SC3D.ok || !SC3D.fighters[side]) return; SC3D.scene.remove(SC3D.fighters[side].group); SC3D.fighters[side] = build3DFighter(art); SC3D.scene.add(SC3D.fighters[side].group); }
+function set3DAnim(side, name, dur) {
+  const f = SC3D.fighters[side]; if (!f) return;
+  if (name === 'block') { f.block = true; return; }
+  if (name === 'unblock') { f.block = false; return; }
+  if (name === 'downed') { f.downed = true; return; }
+  if (name === 'up') { f.downed = false; return; }
+  f.anim = { name, t0: performance.now(), dur: dur || 380 };
+}
+function set3DHyped(side, on) { const f = SC3D.fighters[side]; if (f) f.hyped = on; }
+// world position from match px (0..ringW)
+function worldX(px, ringW) { return ((px / (ringW || 360)) - 0.5) * 2 * SC3D.ringHalfX; }
+function worldZ(pz) { return (0.5 - (pz != null ? pz : 0.5)) * 2 * SC3D.ringHalfZ; }
+const lerp = (a, b, t) => a + (b - a) * t;
+const damp = (cur, tgt, dt, rate) => lerp(cur, tgt, 1 - Math.exp(-rate * dt));
+
+// set a joint group's rotation, smoothed
+function jointTo(joint, key, rx, ry, rz, dt, rate) {
+  joint.rotation.x = damp(joint.rotation.x, rx, dt, rate);
+  joint.rotation.y = damp(joint.rotation.y, ry == null ? joint.rotation.y : ry, dt, rate);
+  joint.rotation.z = damp(joint.rotation.z, rz == null ? joint.rotation.z : rz, dt, rate);
+}
+// pose one fighter for this frame
+function poseFighter(f, dt, now, moving) {
+  const P = f.parts, A = f.anim;
+  const prog = A.dur ? Math.min(1, (now - A.t0) / A.dur) : 1;
+  const active = prog < 1 && ['strike', 'combo', 'grapple', 'finisher', 'hit'].includes(A.name);
+  const rate = 16;
+  // ---- DOWNED: lie back on the mat ----
+  if (f.downed) {
+    f.group.rotation.x = damp(f.group.rotation.x, -Math.PI / 2 * 0.92, dt, 9);
+    f.group.position.y = damp(f.group.position.y, 0.32, dt, 9);
+    return;
+  }
+  f.group.rotation.x = damp(f.group.rotation.x, 0, dt, 9);
+  f.group.position.y = damp(f.group.position.y, 0, dt, 9);
+  // ---- base idle / walk targets ----
+  const bob = Math.sin(now * 0.004) * 0.04;
+  let shLx = -0.25 + bob, shRx = -0.25 - bob;      // arms hang slightly forward (guard-ish)
+  let elLx = -0.5, elRx = -0.5;                     // elbows bent
+  let hipLx = 0, hipRx = 0, kneeLx = 0.1, kneeRx = 0.1;
+  let torsoX = 0, torsoZ = Math.sin(now * 0.004) * 0.03, rootStep = 0;
+  // walking: swing legs + opposite arms
+  if (moving) { f.walk += dt * 9; const s = Math.sin(f.walk); hipLx = s * 0.5; hipRx = -s * 0.5; shLx = -0.25 - s * 0.35; shRx = -0.25 + s * 0.35; kneeLx = 0.2 + Math.max(0, -s) * 0.4; kneeRx = 0.2 + Math.max(0, s) * 0.4; }
+  // ---- block: forearms up guarding the head ----
+  if (f.block && !active) { shLx = -1.7; shRx = -1.7; elLx = -1.5; elRx = -1.5; torsoX = 0.12; }
+  // ---- transient attack/hit overlays ----
+  if (active) {
+    const ease = Math.sin(prog * Math.PI);             // 0→1→0 punch curve
+    if (A.name === 'strike') { shRx = -0.25 - ease * 1.5; elRx = -0.5 + ease * 0.45; torsoX = ease * 0.12; rootStep = ease * 0.12; }
+    else if (A.name === 'combo') { const d = Math.sin(prog * Math.PI * 2); shRx = -0.25 - Math.max(0, d) * 1.5; shLx = -0.25 - Math.max(0, -d) * 1.5; elRx = -0.5 + Math.max(0, d) * 0.45; elLx = -0.5 + Math.max(0, -d) * 0.45; rootStep = ease * 0.1; }
+    else if (A.name === 'grapple') { shLx = -0.3 - ease * 1.25; shRx = -0.3 - ease * 1.25; elLx = -0.6 + ease * 0.5; elRx = -0.6 + ease * 0.5; torsoX = ease * 0.32; rootStep = ease * 0.2; }
+    else if (A.name === 'finisher') { const wind = prog < 0.4 ? prog / 0.4 : 0; const drive = prog >= 0.4 ? (prog - 0.4) / 0.6 : 0; shLx = -0.3 - drive * 1.6 + wind * 0.6; shRx = -0.3 - drive * 1.6 + wind * 0.6; torsoX = -wind * 0.3 + drive * 0.5; rootStep = drive * 0.34; }
+    else if (A.name === 'hit') { torsoX = -ease * 0.4; rootStep = -ease * 0.18; shLx = -0.1; shRx = -0.1; }
+  }
+  jointTo(P.armL.shoulder, 0, shLx, 0, 0.1, dt, rate); jointTo(P.armR.shoulder, 0, shRx, 0, -0.1, dt, rate);
+  jointTo(P.armL.elbow, 0, elLx, 0, 0, dt, rate); jointTo(P.armR.elbow, 0, elRx, 0, 0, dt, rate);
+  jointTo(P.legL.hip, 0, hipLx, 0, 0, dt, rate); jointTo(P.legR.hip, 0, hipRx, 0, 0, dt, rate);
+  jointTo(P.legL.knee, 0, kneeLx, 0, 0, dt, rate); jointTo(P.legR.knee, 0, kneeRx, 0, 0, dt, rate);
+  P.torso.rotation.x = damp(P.torso.rotation.x, torsoX, dt, rate); P.torso.rotation.z = damp(P.torso.rotation.z, torsoZ, dt, rate);
+  P.head.position.z = damp(P.head.position.z, A.name === 'hit' && active ? -0.06 : 0, dt, rate);
+  f._step = rootStep;
+}
+function update3D(now) {
+  if (!SC3D.ok || !match) return;
+  let dt = (now - (SC3D.last || now)) / 1000; SC3D.last = now; if (dt > 0.05) dt = 0.05;
+  const ring = document.getElementById('ring'); const ringW = (ring && ring.clientWidth) || 360;
+  const L = SC3D.fighters.left, R = SC3D.fighters.right;
+  if (L && R) {
+    const lx = worldX(match.pX, ringW), rx = worldX(match.oX, ringW);
+    const lz = worldZ(match.pZ), rz = worldZ(match.oZ);
+    const leftFacesRight = lx <= rx;
+    // facing (built facing +Z; rotate ±90° to face along X toward the other)
+    const lYaw = leftFacesRight ? -Math.PI / 2 : Math.PI / 2;
+    const rYaw = leftFacesRight ? Math.PI / 2 : -Math.PI / 2;
+    const lMoving = L.lastX != null && Math.abs(lx - L.lastX) > 0.004;
+    const rMoving = R.lastX != null && Math.abs(rx - R.lastX) > 0.004;
+    L.lastX = lx; R.lastX = rx;
+    // authoritative states straight from the match
+    L.block = !!match.pBlock; R.block = !!match.oBlock;
+    L.downed = match.pDowned > 0; R.downed = match.oDowned > 0;
+    poseFighter(L, dt, now, lMoving); poseFighter(R, dt, now, rMoving);
+    // a small step-forward on attacks, in facing direction
+    const lStep = (L._step || 0) * (leftFacesRight ? 1 : -1);
+    const rStep = (R._step || 0) * (leftFacesRight ? -1 : 1);
+    L.group.position.x = damp(L.group.position.x, lx + lStep, dt, 12);
+    R.group.position.x = damp(R.group.position.x, rx + rStep, dt, 12);
+    L.group.position.z = damp(L.group.position.z, lz, dt, 10);
+    R.group.position.z = damp(R.group.position.z, rz, dt, 10);
+    L.group.rotation.y = damp(L.group.rotation.y, lYaw, dt, 12);
+    R.group.rotation.y = damp(R.group.rotation.y, rYaw, dt, 12);
+  }
+  SC3D.renderer.render(SC3D.scene, SC3D.camera);
+}
+function loop3D() {
+  if (!SC3D.started) return;
+  update3D(performance.now());
+  SC3D.raf = requestAnimationFrame(loop3D);
+}
+function start3DLoop() { if (!SC3D.ok || SC3D.started) return; SC3D.started = true; SC3D.last = performance.now(); resize3D(); SC3D.raf = requestAnimationFrame(loop3D); }
+function stop3DLoop() { SC3D.started = false; if (SC3D.raf) cancelAnimationFrame(SC3D.raf); SC3D.raf = null; }
+window.addEventListener('resize', resize3D);
+
+/* ---- 3D PORTRAIT · the same jointed fighter, shown in the customization menus (creator + profile) ---- */
+const SC3DP = { ok: false, started: false, raf: null, spin: 0, fighter: null };
+function ensurePortrait() {
+  if (SC3DP.ok || !has3D()) return SC3DP.ok;
+  const canvas = document.createElement('canvas'); canvas.className = 'portrait3d';
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  const scene = new THREE.Scene();
+  scene.add(new THREE.HemisphereLight(0xdfe6ff, 0x20202c, 1.05));
+  const key = new THREE.DirectionalLight(0xfff2e0, 0.9); key.position.set(2.5, 4, 3.5); scene.add(key);
+  const cam = new THREE.PerspectiveCamera(38, 1, 0.1, 50); cam.position.set(0, 1.0, 3.5); cam.lookAt(0, 0.92, 0);
+  SC3DP.renderer = renderer; SC3DP.scene = scene; SC3DP.camera = cam; SC3DP.canvas = canvas; SC3DP.ok = true;
+  return true;
+}
+function setPortraitArt(art) {
+  if (!SC3DP.ok) return;
+  if (SC3DP.fighter) SC3DP.scene.remove(SC3DP.fighter.group);
+  SC3DP.fighter = build3DFighter(art);
+  SC3DP.scene.add(SC3DP.fighter.group);
+}
+function portraitLoop() {
+  if (!SC3DP.started) return;
+  if (SC3DP.fighter) { SC3DP.spin += 0.016; SC3DP.fighter.group.rotation.y = Math.sin(SC3DP.spin) * 0.7; poseFighter(SC3DP.fighter, 0.016, performance.now(), false); }
+  SC3DP.renderer.render(SC3DP.scene, SC3DP.camera);
+  SC3DP.raf = requestAnimationFrame(portraitLoop);
+}
+// mount the shared portrait canvas into a container + show this art; returns false if WebGL unavailable (caller uses SVG)
+function showPortraitIn(container, art) {
+  if (!container || !ensurePortrait()) return false;
+  if (SC3DP.canvas.parentElement !== container) { container.innerHTML = ''; container.appendChild(SC3DP.canvas); }
+  const w = container.clientWidth || 180, h = container.clientHeight || 200;
+  SC3DP.renderer.setSize(w, h, false); SC3DP.camera.aspect = w / h; SC3DP.camera.updateProjectionMatrix();
+  setPortraitArt(art);
+  if (!SC3DP.started) { SC3DP.started = true; SC3DP.raf = requestAnimationFrame(portraitLoop); }
+  return true;
+}
+function stopPortrait() { SC3DP.started = false; if (SC3DP.raf) cancelAnimationFrame(SC3DP.raf); SC3DP.raf = null; }
 
 /* ========== BOOT ========== */
 fitViewport();

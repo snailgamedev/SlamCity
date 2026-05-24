@@ -67,9 +67,13 @@ try {
   await fightBtn.first().click();
   await page.waitForTimeout(1600);                                                  // 'ENTERING THE RING' loading screen
   check('fight active after start', (await page.locator('#fight.active').count()) === 1);
-  const leftSvg = await page.locator('#ring-left-svg .f3d').count();               // CSS-3D cuboid rig (not SVG)
-  const rightSvg = await page.locator('#ring-right-svg .f3d').count();
-  check('both ring fighters render', leftSvg >= 1 && rightSvg >= 1, `L:${leftSvg} R:${rightSvg}`);
+  // real 3D (WebGL) when .r3d, else the CSS-cuboid fallback rig
+  const fighters = await page.evaluate(() => {
+    const r3d = document.getElementById('ring').classList.contains('r3d');
+    if (r3d) return { mode: '3D', ok: !!(typeof SC3D !== 'undefined' && SC3D.ok && SC3D.fighters.left && SC3D.fighters.right) };
+    return { mode: 'CSS', ok: document.querySelectorAll('#ring-left-svg .f3d').length >= 1 && document.querySelectorAll('#ring-right-svg .f3d').length >= 1 };
+  });
+  check('both ring fighters render', fighters.ok, fighters.mode);
   const hpStart = await page.locator('#left-hp').getAttribute('style').catch(() => '');
   check('HP bars initialized', /width/.test(hpStart || ''), hpStart || 'none');
   const moveBtns = await page.locator('#fight .atk-btn').count();
