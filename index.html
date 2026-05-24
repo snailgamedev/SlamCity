@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#0a0a0d" />
-<title>SLAM CITY · v2.20 · POLISHED</title>
+<title>SLAM CITY · v2.21 · HYPE</title>
 <!-- retro arcade type: Press Start 2P for marquee, Oxanium for readable UI · safe fallback stack -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -673,6 +673,16 @@
   .watch-badge.on { display: flex; }
   .watch-badge span { font-size: 11px; letter-spacing: 1px; color: var(--gold); font-weight: 800; }
   .watch-badge button { padding: 6px 14px; border-radius: 8px; border: 1px solid var(--bg-3); background: var(--bg-1); color: var(--cream); font-family: inherit; font-weight: 800; font-size: 11px; cursor: pointer; }
+
+  /* momentum / HYPE meter */
+  .bar-tag.mo { color: var(--warn); }
+  .mo-bar-outer { height: 5px; background: var(--bg-1); border: 1px solid var(--bg-3); border-radius: 2px; overflow: hidden; transition: box-shadow 0.2s, border-color 0.2s; }
+  .mo-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--gold), var(--warn)); transition: width 0.2s; }
+  .mo-bar-outer.hyped { border-color: var(--gold); box-shadow: 0 0 10px rgba(200,160,96,0.8); }
+  .mo-bar-outer.hyped .mo-bar-fill { background: linear-gradient(90deg, var(--gold), #fff, var(--red)); animation: hype-pulse 0.5s ease-in-out infinite; }
+  @keyframes hype-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+  /* hyped fighter aura (via the backlight ::before — doesn't clash with svg animation filters) */
+  .ring-fighter.hyped::before { background: radial-gradient(circle at 50% 55%, rgba(200,160,96,0.5), rgba(224,64,80,0.2) 50%, transparent 68%) !important; }
 </style>
 </head>
 <body>
@@ -690,7 +700,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v2.20 · build 2026-05-23·1953 · POLISH SWEEP (every setting verified · dead code cleaned · 14 test suites green) · 8 modes · 90/10 wrestling · BOARD CLEAR · for AARON</div>
+  <div class="splash-foot">v2.21 · build 2026-05-23·2001 · MOTTO PASS · MOMENTUM/HYPE meter (build → ON FIRE surge +18% dmg) + hit-stop freeze-frames · 8 modes · 90/10 wrestling · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -818,6 +828,9 @@
       <div class="bar-line"><span class="bar-tag st">STAMINA</span>
         <div class="st-bar-outer"><div class="st-bar-fill" id="left-st" style="width:100%"></div></div>
       </div>
+      <div class="bar-line"><span class="bar-tag mo">HYPE</span>
+        <div class="mo-bar-outer"><div class="mo-bar-fill" id="left-mo" style="width:0%"></div></div>
+      </div>
     </div>
     <div class="fighter-slot">
       <div class="fs-name right" id="right-name">—</div>
@@ -829,6 +842,9 @@
       </div>
       <div class="bar-line"><span class="bar-tag st">STAMINA</span>
         <div class="st-bar-outer"><div class="st-bar-fill right" id="right-st" style="width:100%"></div></div>
+      </div>
+      <div class="bar-line"><span class="bar-tag mo">HYPE</span>
+        <div class="mo-bar-outer"><div class="mo-bar-fill right" id="right-mo" style="width:0%"></div></div>
       </div>
     </div>
   </div>
@@ -948,7 +964,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v2.20</div>
+    <div class="load-skip">tap to skip · v2.21</div>
   </div>
 </div>
 
@@ -1631,7 +1647,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '2.20';
+const GAME_VERSION = '2.21';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -1886,6 +1902,9 @@ function startMatchWith(playerId, oppId) {
     training: gameMode === 'training',
     pAI: gameMode === 'watch',
     watchT: 0,
+    pMo: 0, oMo: 0,          // momentum meters (0-100)
+    pHype: 0, oHype: 0,      // HYPE-state timers (ms) when a meter fills
+    hitStop: 0,              // brief freeze-frame on heavy impact
     killFin: false,
     ai: { decision: 0, blockCD: 0, mood: 'neutral', moodT: 0, burst: 0, feintCD: 0, jukeDir: 0 },
     lastT: 0,
@@ -1977,6 +1996,9 @@ function syncBars() {
   document.getElementById('right-hp-num').textContent = Math.max(0, Math.round(match.oHP));
   document.getElementById('left-st').style.width = Math.max(0, match.pST) + '%';
   document.getElementById('right-st').style.width = Math.max(0, match.oST) + '%';
+  const lm = document.getElementById('left-mo'), rm = document.getElementById('right-mo');
+  if (lm) { lm.style.width = match.pMo + '%'; lm.parentElement.classList.toggle('hyped', match.pHype > 0); }
+  if (rm) { rm.style.width = match.oMo + '%'; rm.parentElement.classList.toggle('hyped', match.oHype > 0); }
 }
 
 let statusTimer = null;
@@ -2035,6 +2057,8 @@ function gameLoop(t) {
   if (dt > 0.05) dt = 0.05;                 // clamp tab-switch / first-frame spikes
   const dtms = dt * 1000;
 
+  if (match.hitStop > 0) { match.hitStop -= dtms; applyPositions(); rafId = requestAnimationFrame(gameLoop); return; } // freeze-frame punch
+
   const ring = document.getElementById('ring');
   const arenaW = ring.clientWidth;
   const fW = document.getElementById('ring-left').offsetWidth || arenaW * 0.42;
@@ -2049,6 +2073,10 @@ function gameLoop(t) {
   match.oCool = Math.max(0, match.oCool - dtms);
   match.pLockMove = Math.max(0, match.pLockMove - dtms);
   match.ai.blockCD = Math.max(0, match.ai.blockCD - dtms);
+  match.pHype = Math.max(0, match.pHype - dtms);
+  match.oHype = Math.max(0, match.oHype - dtms);
+  match.pMo = Math.max(0, match.pMo - dtms * 0.004);   // momentum slowly bleeds — use it
+  match.oMo = Math.max(0, match.oMo - dtms * 0.004);
   match.pDowned = Math.max(0, match.pDowned - dtms);
   match.oDowned = Math.max(0, match.oDowned - dtms);
   if (match.pDowned <= 0) setDowned('left', false);
@@ -2185,6 +2213,20 @@ function setDowned(side, on) {
   const el = document.getElementById('ring-' + side);
   if (el) el.classList.toggle('downed', !!on);
 }
+// MOMENTUM: build a fighter's meter; a full meter triggers a HYPE surge.
+function addMomentum(playerSide, amt) {
+  const k = playerSide ? 'pMo' : 'oMo';
+  match[k] = Math.max(0, Math.min(100, match[k] + amt));
+  if (match[k] >= 100) {
+    match[k] = 0;
+    match[playerSide ? 'pHype' : 'oHype'] = 5000;
+    const name = playerSide ? match.player.name : match.opponent.name;
+    setStatus('🔥 ' + name + ' IS HYPED!', 'var(--gold)', 1200);
+    caption('🔥 ' + name + ' IS ON FIRE!', 'big');
+    const el = document.getElementById('ring-' + (playerSide ? 'left' : 'right'));
+    if (el) { el.classList.add('hyped'); setTimeout(() => el.classList.remove('hyped'), 5000); }
+  }
+}
 function endMatchBy(result, by) {
   if (!match || match.over) return;
   match.over = true; cancelAnimationFrame(rafId); rafId = null; setBlock(false); match.joy = 0; match.pinning = false; match.subbing = false;
@@ -2278,6 +2320,7 @@ function resolveAttack(atk) {
   if (atkHP < 30)            dmg *= 1 + (atkAb.heart / 100) * 0.22;   // HEART = clutch when hurt
   dmg *= WEIGHT_CLASSES[defWC].tough;                                // weight class = toughness
   dmg *= Math.max(0.7, Math.min(1.25, 80 / defAb.chin));             // CHIN = damage/KO resistance
+  if (isPlayer ? match.pHype > 0 : match.oHype > 0) dmg *= 1.18;     // HYPE surge — momentum-fueled damage
   if (isPlayer) dmg /= curDiff().oTough;                             // harder = opponent tankier
   else          dmg *= curDiff().oDmg;                               // harder = opponent hits harder
   let blocked = false;
@@ -2322,6 +2365,13 @@ function resolveAttack(atk) {
 
   if (isPlayer) match.oStun = blocked ? 110 : (heavy ? 430 : 220);
   else          match.pStun = blocked ? 110 : (heavy ? 430 : 220);
+
+  // MOMENTUM: landing builds the attacker's meter + drains the defender's; full meter → HYPE.
+  if (!blocked) {
+    const gain = (move.fin ? 26 : atk.cfg.slam ? 16 : 9) + (heavy ? 4 : 0);
+    addMomentum(isPlayer, gain); addMomentum(!isPlayer, -7);
+    if (heavy) match.hitStop = move.fin ? 130 : 90;   // freeze-frame punch on big hits
+  } else { addMomentum(!isPlayer, 6); }               // a clean block builds the defender's meter
 
   // WRESTLING: a landed SLAM puts the defender DOWN (opens a pin). A REVERSED slam downs the attacker instead.
   if (atk.cfg.slam) {
