@@ -522,6 +522,21 @@
   .ins-row span { font-size: 11.5px; color: var(--soft); line-height: 1.5; }
   .ins-row.hot { border-color: var(--gold); box-shadow: 0 0 12px rgba(200,160,96,0.18); }
   .ins-row.hot b:first-child { color: var(--gold); }
+  /* admin fighters browser + editor */
+  .adm-sortseg { display: flex; gap: 4px; margin: 8px 0 10px; }
+  .adm-sortseg button { flex: 1; background: var(--bg-2); border: 1px solid var(--bg-3); color: var(--soft); font-family: inherit; font-size: 11px; font-weight: 700; padding: 7px 4px; border-radius: 6px; cursor: pointer; }
+  .adm-sortseg button.on { background: var(--gold); color: #1a1208; border-color: var(--gold); }
+  .adm-frow { cursor: pointer; }
+  .adm-frow:active { transform: scale(0.99); }
+  .adm-fovr { font-size: 11px; color: var(--gold); font-weight: 800; margin: 0 8px; }
+  .ef-head { text-align: center; margin-bottom: 10px; }
+  .ef-3d { width: 150px; height: 178px; margin: 0 auto 6px; background: radial-gradient(circle at 50% 40%, rgba(40,30,40,0.5), rgba(8,8,12,0.2)); border: 1px solid var(--bg-3); border-radius: 12px; overflow: hidden; }
+  .ef-3d canvas, .ef-3d svg { width: 100%; height: 100%; display: block; }
+  .ef-name-row #ef-name { max-width: 200px; margin: 0 auto; text-align: center; font-weight: 900; }
+  .ef-stat { display: flex; align-items: center; gap: 8px; margin: 5px 0; }
+  .ef-slabel { width: 96px; font-size: 11px; color: var(--soft); text-transform: uppercase; letter-spacing: 0.5px; flex: 0 0 96px; }
+  .ef-stat input[type=range] { flex: 1; }
+  .ef-sval { width: 26px; text-align: right; font-size: 12px; font-weight: 800; color: var(--cream); flex: 0 0 26px; }
   .hud-btns { position: absolute; top: 6px; right: 8px; z-index: 30; display: flex; gap: 6px; }
   .hud-btn { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--bg-3); background: rgba(20,20,26,0.9); color: var(--soft); font-weight: 900; font-size: 12px; cursor: pointer; line-height: 1; display: flex; align-items: center; justify-content: center; padding: 0; }
   #pause-btn { font-size: 10px; letter-spacing: -1px; color: var(--cream); border-color: var(--bg-3); }
@@ -738,6 +753,7 @@
   #create-form { display: flex; flex-direction: column; gap: 10px; max-width: 460px; width: 100%; margin: 0 auto; }
   .cr-row { background: linear-gradient(180deg, var(--bg-2), var(--bg-1)); border: 1px solid var(--bg-3); border-radius: 9px; padding: 9px 12px; }
   .cr-label { font-size: 10px; letter-spacing: 1px; color: var(--soft); font-weight: 800; margin-bottom: 7px; }
+  .cr-secLabel { font-size: 11px; letter-spacing: 2px; color: var(--gold); font-weight: 800; text-transform: uppercase; margin: 14px 0 4px; padding-bottom: 5px; border-bottom: 1px solid var(--bg-3); }
   .cr-label span { color: var(--gold); }
   .cr-opts { display: flex; gap: 7px; flex-wrap: wrap; }
   .cr-sw { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--bg-3); cursor: pointer; }
@@ -853,7 +869,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v4.1 · build 2026-05-24·0944 · rounder 3D fighters + snappier combat · ADMIN TIERS (Eli▸Aaron▸OG) + timeout/kick/ban + feedback inbox · profanity filter · new fighters random 60–80 · installable (all devices) + downloadable · revamped victory screen · for AARON</div>
+  <div class="splash-foot">v4.2 · build 2026-05-24·1005 · fighters face the right way + living camera · ALL hairstyles render in 3D · ADMIN: searchable FIGHTERS editor (change anything: stats/weight/moves/look) + 90-day UNDO + uncrown · creator: weight class + moves + full 1–99 stats · ratings move both ways · message claimed-only · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -1145,7 +1161,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v4.1</div>
+    <div class="load-skip">tap to skip · v4.2</div>
   </div>
 </div>
 
@@ -1634,11 +1650,13 @@ function loadSave() {
       if (!parsed.bans) parsed.bans = {};        // UPPERCASE name → { type:'ban'|'timeout', until, reason }
       if (!Array.isArray(parsed.feedback)) parsed.feedback = [];   // player feedback [{t,from,text}] — admin reads it
       if (!parsed.adminPins) parsed.adminPins = {};   // fighterId → pin for tier-2/3 admins (Aaron + OG brothers); Eli uses save.admin.pin
+      if (!Array.isArray(parsed.undo)) parsed.undo = [];   // 90-day admin undo stack [{t,label,...slices}]
+      if (!parsed.wcOverride) parsed.wcOverride = {};      // fighterId → weight-class key (admin override)
       return parsed;
     }
   } catch(e) {}
   return { wins:0, losses:0, kos:0, finishers:0, scriptureStrikes:0, picks:{}, ovrDelta:{}, abilDelta:{},
-           difficulty:2, sfxOn:true, vol:0.9, captionsOn:true, platform:null, reducedMotion:false, tutorialSeen:false, seenVersion:null, customFighters:[], achievements:{}, belts:0, champion:null, profiles:{}, activeProfile:null, admin:null, adminLog:[], adminInbox:{}, changeFeed:[], bans:{}, feedback:[], adminPins:{} };
+           difficulty:2, sfxOn:true, vol:0.9, captionsOn:true, platform:null, reducedMotion:false, tutorialSeen:false, seenVersion:null, customFighters:[], achievements:{}, belts:0, champion:null, profiles:{}, activeProfile:null, admin:null, adminLog:[], adminInbox:{}, changeFeed:[], bans:{}, feedback:[], adminPins:{}, undo:[], wcOverride:{} };
 }
 function persistSave() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch(e) {}
@@ -1660,7 +1678,7 @@ const WEIGHT_CLASSES = {
   HEAVY:  { name:'Heavyweight',  abbr:'HW', mods:{ power:12, blocking:5, finisher:4, speed:-10, stamina:-2 }, tough:0.88, knock:1.20, regen:0.9  }
 };
 const ARCH_WEIGHT = { POWERHOUSE:'HEAVY', WRESTLER:'HEAVY', BRAWLER:'MIDDLE', MMA:'MIDDLE', BOXER:'WELTER', STRIKER:'WELTER', KICKBOXER:'WELTER', HIGHFLYER:'LIGHT' };
-function weightClassOf(f) { return ARCH_WEIGHT[f.arch] || 'MIDDLE'; }
+function weightClassOf(f) { return (f && save.wcOverride && save.wcOverride[f.id]) || ARCH_WEIGHT[f.arch] || 'MIDDLE'; }
 
 // Position(archetype) tilt — what a style is naturally strong at.
 const ARCH_MODS = {
@@ -1958,7 +1976,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '4.1';
+const GAME_VERSION = '4.2';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -1992,6 +2010,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['4.2',  'Fixed "fighting backwards" — fighters now face each other + a living camera that tracks the action for a more 3D feel · ALL 14 hairstyles render distinctly in 3D (afro, mohawk, dreads, man-bun, spiky, long…) · ADMIN: a searchable/sortable FIGHTERS screen where you can change ANYTHING about any fighter (rename, weight class, archetype, every 1–99 rating, moves, finisher, look) + 90-DAY UNDO on admin commands + UNCROWN · you can only message a CLAIMED fighter · creator now sets weight class + your move names + full 1–99 stats & OVR · ratings now move UP and DOWN from how you fight (not just a couple) · everything capped 1–99'],
   ['4.1',  'Rounder 3D fighters (no more boxy limbs — same model in the ring + customizer) · SNAPPIER combat (windups/cooldowns cut, hits land crisp, clear red flash on contact) · ADMIN TIERS — Eli (supreme) ▸ Aaron (senior) ▸ OG crew (mod), each with the right powers · moderation: timeout, kick, ban + a ban list · profanity filter on new names · new fighters start RANDOM 60–80 OVR (everything still capped 1–99) · feedback system (send from your profile/hub → admins read it) · clearer messages (📬 badge) · INSTALLABLE app + downloadable file on every device · revamped victory screen with a 3D winner · Old Man Eli is your PIN-locked account + you can recolor him from the panel'],
   ['4.0',  'REAL 3D — fighters are now jointed humanoid bodies (head, arms, legs, hands, joints) in a true perspective ring with posts + ropes; attack animations actually connect (strike, combo, grapple, finisher) · the customization menu shows your fighter in 3D too · NEW universal-changes feed on the hub so EVERYONE sees who recolored/created/claimed a fighter · more admin: announce to everyone, create a fighter, crown a champion · (changes were already universal — now they’re visible)'],
   ['3.9',  'Sign in with ANY name and it spins up your OWN fighter (not just the crew) · 👑 OLD MAN ELI joins the roster — the Architect · admin can now sign-out + message any fighter, so everyone sees what happened (admin log + your inbox) · roster trimmed to the OG crew (filler CPUs removed) · more moves + finishers (COMBO chain · 2nd signatures) · update log fixed (it was stuck on v3.7)'],
@@ -2143,7 +2162,7 @@ function buildRoster() {
 const ARCH_BY_DISC = { wrestling: ['BRAWLER', 'POWERHOUSE', 'WRESTLER'], boxing: ['BOXER', 'STRIKER', 'KICKBOXER'] };
 const HAIR_STYLES = ['short', 'buzz', 'fade', 'short-afro', 'curly-afro', 'perm', 'waves', 'straight', 'spiky', 'mohawk', 'dreads', 'manbun', 'long', 'bald'];
 const GEAR_COLORS = ['#c8a060', '#e04050', '#4aa0c8', '#5ac84a', '#a04ac8', '#e0a020', '#e6dcb4', '#202028'];   // accent / trunk options
-const creator = { name: 'MY FIGHTER', skin: 'white', hairColor: 'black', hairStyle: 'short', disc: 'wrestling', arch: 'BRAWLER', striking: 80, grappling: 80, stamina: 80, heart: 80, finisher: 'Custom Bomb', accent: '#c8a060', trunks: '#26262e' };
+const creator = { name: 'MY FIGHTER', skin: 'white', hairColor: 'black', hairStyle: 'short', disc: 'wrestling', arch: 'BRAWLER', weightClass: 'auto', striking: 80, grappling: 80, stamina: 80, heart: 80, charisma: 80, finisher: 'Custom Bomb', mJab: 'Jab', mCombo: 'Combo', mSig: 'Signature', accent: '#c8a060', trunks: '#26262e' };
 const FIN_SCRIPT = { text: 'I can do all things through Christ which strengtheneth me.', ref: 'Philippians 4:13' };
 
 function creatorArt() {
@@ -2156,33 +2175,40 @@ function crChips(label, opts, cur, setter) {
   return `<div class="cr-row"><div class="cr-label">${label}</div><div class="cr-opts">` + opts.map(o => `<button class="cr-chip ${o === cur ? 'on' : ''}" onclick="setCreator('${setter}','${o}')">${o}</button>`).join('') + `</div></div>`;
 }
 function crSlider(label, key) {
-  return `<div class="cr-row"><div class="cr-label">${label} · <span id="cr-${key}-v">${creator[key]}</span></div><input type="range" class="set-slider" min="60" max="95" value="${creator[key]}" oninput="setCreatorStat('${key}',this.value)"></div>`;
+  return `<div class="cr-row"><div class="cr-label">${label} · <span id="cr-${key}-v">${creator[key]}</span></div><input type="range" class="set-slider" min="1" max="99" value="${creator[key]}" oninput="setCreatorStat('${key}',this.value)"></div>`;
 }
 function renderCreate() {
   document.getElementById('create-form').innerHTML =
       `<div class="cr-row"><div class="cr-label">NAME</div><input id="cr-name" class="roster-search" maxlength="14" value="${creator.name}" oninput="setCreator('name',this.value)" autocomplete="off"></div>`
     + crChips('DISCIPLINE', ['wrestling', 'boxing'], creator.disc, 'disc')
     + crChips('STYLE', ARCH_BY_DISC[creator.disc], creator.arch, 'arch')
+    + crChips('WEIGHT CLASS', ['auto'].concat(Object.keys(WEIGHT_CLASSES)), creator.weightClass, 'weightClass')
     + crSwatch('SKIN', Object.keys(SKIN), creator.skin, 'skin', k => SKIN[k].skin)
     + crSwatch('HAIR COLOR', Object.keys(HAIRC), creator.hairColor, 'hairColor', k => HAIRC[k].hair)
     + crChips('HAIRSTYLE', HAIR_STYLES, creator.hairStyle, 'hairStyle')
     + crSwatch('GEAR ACCENT', GEAR_COLORS, creator.accent, 'accent', k => k)
     + crSwatch('TRUNKS', GEAR_COLORS, creator.trunks, 'trunks', k => k)
-    + crSlider('STRIKING', 'striking') + crSlider('GRAPPLING', 'grappling') + crSlider('STAMINA', 'stamina') + crSlider('HEART', 'heart')
+    + `<div class="cr-secLabel">RATINGS · 1–99 (drives your full OVR)</div>`
+    + crSlider('STRIKING', 'striking') + crSlider('GRAPPLING', 'grappling') + crSlider('STAMINA', 'stamina') + crSlider('HEART', 'heart') + crSlider('CHARISMA', 'charisma')
+    + `<div class="cr-secLabel">YOUR MOVES</div>`
+    + `<div class="cr-row"><div class="cr-label">STRIKE move</div><input class="roster-search" maxlength="18" value="${creator.mJab}" oninput="setCreator('mJab',this.value)" autocomplete="off"></div>`
+    + `<div class="cr-row"><div class="cr-label">COMBO move</div><input class="roster-search" maxlength="18" value="${creator.mCombo}" oninput="setCreator('mCombo',this.value)" autocomplete="off"></div>`
+    + `<div class="cr-row"><div class="cr-label">SIGNATURE (grapple)</div><input class="roster-search" maxlength="18" value="${creator.mSig}" oninput="setCreator('mSig',this.value)" autocomplete="off"></div>`
     + `<div class="cr-row"><div class="cr-label">FINISHER</div><input id="cr-fin" class="roster-search" maxlength="20" value="${creator.finisher}" oninput="setCreator('finisher',this.value)" autocomplete="off"></div>`;
   updateCreatorPreview();
 }
+const CR_FREE = ['name', 'finisher', 'mJab', 'mCombo', 'mSig'];   // text fields → don't re-render (keep focus)
 function setCreator(key, val) {
   creator[key] = val;
   if (key === 'disc') creator.arch = ARCH_BY_DISC[val][0];
-  if (key === 'name' || key === 'finisher') { updateCreatorPreview(); return; }  // don't re-render (keep input focus)
+  if (CR_FREE.includes(key)) { updateCreatorPreview(); return; }
   renderCreate();
 }
 function setCreatorStat(key, v) { creator[key] = parseInt(v, 10); const el = document.getElementById('cr-' + key + '-v'); if (el) el.textContent = creator[key]; updateCreatorPreview(); }
 function updateCreatorPreview() {
   const c = document.getElementById('create-svg');
   if (!showPortraitIn(c, creatorArt())) c.innerHTML = renderFighter(creatorArt());   // 3D portrait, SVG fallback
-  const ovr = Math.max(1, Math.min(99, Math.round((creator.striking + creator.grappling + creator.stamina + creator.heart + 80) / 5)));
+  const ovr = Math.max(1, Math.min(99, Math.round((creator.striking + creator.grappling + creator.stamina + creator.heart + creator.charisma) / 5)));
   document.getElementById('create-ovr').textContent = 'OVR ~' + ovr;
 }
 function customSpecToFighter(spec) {
@@ -2191,7 +2217,7 @@ function customSpecToFighter(spec) {
     id: spec.id, name: spec.name, slot: 90, arch: spec.arch, ovr, custom: true,
     stats: spec.stats, finishers: [spec.finisher], vibe: 'your created fighter',
     walkout: { text: FIN_SCRIPT.text, ref: FIN_SCRIPT.ref + ' · KJV', label: 'Walkout' },
-    moves: [ { name: 'Jab', type: 'jab', dmg: [8, 14], cost: 7, acc: 0.9 }, { name: 'Combo', type: 'cross', dmg: [15, 22], cost: 17, acc: 0.85 }, { name: 'Signature', type: 'power', dmg: [24, 34], cost: 31, acc: 0.77, sig: true }, { name: spec.finisher, type: 'finisher', dmg: [56, 72], cost: 56, acc: 0.9, fin: true } ],
+    moves: [ { name: spec.mJab || 'Jab', type: 'jab', dmg: [8, 14], cost: 7, acc: 0.9 }, { name: spec.mCombo || 'Combo', type: 'cross', dmg: [15, 22], cost: 17, acc: 0.85 }, { name: spec.mSig || 'Signature', type: 'power', dmg: [24, 34], cost: 31, acc: 0.77, sig: true }, { name: spec.finisher, type: 'finisher', dmg: [56, 72], cost: 56, acc: 0.9, fin: true } ],
     art: Object.assign({ hoodie: '#1d1d24', hoodieDark: '#0a0a0d', accent: spec.accent || '#c8a060', shorts: spec.trunks || '#26262e', logo: ((spec.name || 'MY').replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase() || 'MY'), build: 1.0, scriptureFinisher: FIN_SCRIPT, hairStyle: spec.hairStyle }, SKIN[spec.skin], HAIRC[spec.hairColor])
   };
 }
@@ -2204,9 +2230,13 @@ function addCustomToRoster(spec) {
 }
 function loadCustomFighters() { (save.customFighters || []).forEach(addCustomToRoster); }
 function saveCustomFighter() {
+  const nm = (creator.name || 'MY FIGHTER').trim();
+  const cn = cleanName(nm); if (!cn.ok) { setStatus && setStatus(cn.why.toUpperCase(), 'var(--red-bright)', 1400); return; }
   const id = 'custom_' + Date.now();
-  const spec = { id, name: (creator.name || 'MY FIGHTER').toUpperCase().slice(0, 14), arch: creator.arch, skin: creator.skin, hairColor: creator.hairColor, hairStyle: creator.hairStyle, accent: creator.accent, trunks: creator.trunks, stats: { striking: creator.striking, grappling: creator.grappling, stamina: creator.stamina, heart: creator.heart, charisma: 80 }, finisher: (creator.finisher || 'Custom Finish') };
-  save.customFighters.push(spec); persistSave();
+  const spec = { id, name: nm.toUpperCase().slice(0, 14), arch: creator.arch, skin: creator.skin, hairColor: creator.hairColor, hairStyle: creator.hairStyle, accent: creator.accent, trunks: creator.trunks, stats: { striking: creator.striking, grappling: creator.grappling, stamina: creator.stamina, heart: creator.heart, charisma: creator.charisma }, finisher: (creator.finisher || 'Custom Finish'), mJab: creator.mJab, mCombo: creator.mCombo, mSig: creator.mSig };
+  save.customFighters.push(spec);
+  if (creator.weightClass && creator.weightClass !== 'auto') save.wcOverride[id] = creator.weightClass;   // chosen weight class
+  persistSave();
   unlockAch('creator');
   addCustomToRoster(spec);
   rosterFilter.disc = 'all';
@@ -2349,7 +2379,7 @@ function profileSignIn() {
     } else {
       save.admin = { pin: pin };   // first sign-in on THIS device claims the throne + locks the master PIN
     }
-    save.activeProfile = ADMIN_KEY; adminPanelOpen = false; persistSave(); renderProfile();
+    save.activeProfile = ADMIN_KEY; adminPanelOpen = false; adminView = 'panel'; persistSave(); renderProfile();
     setStatus && setStatus('👑 SUPREME ADMIN · OLD MAN ELI', 'var(--gold)', 1100);
     return;
   }
@@ -2359,12 +2389,15 @@ function profileSignIn() {
   // ===== EXISTING FIGHTER (a crew brother OR an already-created fighter) =====
   const f = fighterByName(rawName);
   if (f) {
-    if (isClaimed(f.id)) {   // HARD LOCK — once claimed, no re-sign-in; admin must reset
-      profileMsg('🔒 ' + f.name + ' is already claimed & locked. Only Old Man Eli (admin) can reset it.', false);
+    const ex = save.profiles[f.id];
+    if (ex && ex.pin) {   // CLAIMED — only the owner (correct PIN) gets back in; admin can reset
+      if (ex.pin !== pin) { profileMsg('🔒 ' + f.name + ' is claimed — wrong PIN. (Old Man Eli can reset it.)', false); return; }
+      save.activeProfile = f.id; persistSave(); renderProfile();
+      const t0 = adminTierOf(f.id);
+      setStatus && setStatus(t0 ? ('WELCOME BACK · ' + TIER_NAME[t0]) : ('WELCOME BACK, ' + f.name), 'var(--gold)', 1100);
       return;
     }
-    const prior = save.profiles[f.id];
-    save.profiles[f.id] = { name: rawName, pin: pin, look: prior ? prior.look : null };
+    save.profiles[f.id] = { name: rawName, pin: pin, look: ex ? ex.look : null };   // claim (or re-claim an admin-set look)
     save.activeProfile = f.id; persistSave();
     logChange(rawName + ' claimed ' + f.name, 'claim:' + f.id);
     renderProfile();
@@ -2404,14 +2437,16 @@ function createFighterForName(name) {
   addCustomToRoster(spec);
   return FIGHTERS.find(x => x.id === id) || customSpecToFighter(spec);
 }
-function profileSignOut() { save.activeProfile = null; persistSave(); renderProfile(); }
+function profileSignOut() { save.activeProfile = null; adminView = 'panel'; persistSave(); renderProfile(); }
 function dismissInbox(fid) { if (save.adminInbox) delete save.adminInbox[fid]; persistSave(); renderProfile(); }
 
 /* ---------- TIERED ADMIN PANEL · T1 Old Man Eli · T2 Aaron · T3 OG crew ---------- */
 function adminGuard() { return curAdminTier() > 0; }
-function openAdminPanel() { adminPanelOpen = true; renderProfile(); }
-function closeAdminPanel() { adminPanelOpen = false; renderProfile(); }
+function openAdminPanel() { adminPanelOpen = true; adminView = 'panel'; renderProfile(); }
+function closeAdminPanel() { adminPanelOpen = false; adminView = 'panel'; renderProfile(); }
 function renderAdmin() {
+  if (adminView === 'fighters') return renderAdminFighters();
+  if (adminView === 'editor') return renderFighterEditor(editingFighter);
   profileEditing = null;
   const tier = curAdminTier();
   const body = document.getElementById('profile-body');
@@ -2450,8 +2485,17 @@ function renderAdmin() {
         + (tier === 1 ? `<button class="adm-mini" type="button" style="margin-bottom:8px" onclick="adminClearLog()">clear log</button>` : '')
       : `<div class="adm-log-row" style="color:var(--muted)">no actions yet</div>`;
   }
+  // ── 90-day UNDO ──
+  pruneUndo();
+  const undo = save.undo || [];
+  html += `<div class="adm-sec-label">↩ UNDO · ${undo.length} (90-day)</div>`;
+  if (undo.length) {
+    html += `<button class="btn btn-secondary" type="button" style="border-color:var(--gold);color:var(--gold)" onclick="undoLast()">↩ UNDO LAST · ${undo[0].label}</button>`;
+    html += `<div class="adm-log">` + undo.slice(0, 8).map(u => `<div class="adm-log-row"><span class="adm-log-t">${adminTimeAgo(u.t)}</span> ${u.label}</div>`).join('') + `</div>`;
+  } else html += `<div class="adm-log-row" style="color:var(--muted)">nothing to undo</div>`;
   // ── tools ──
   html += `<div class="adm-sec-label">🛠 ADMIN TOOLS</div>`;
+  html += `<button class="btn" type="button" style="border-color:var(--gold);color:var(--gold);background:rgba(40,28,12,0.4)" onclick="openAdminFighters()">👥 MANAGE / SEARCH ALL FIGHTERS ›</button>`;
   if (can('announce')) html += `<button class="btn btn-secondary" type="button" onclick="adminAnnounce()">📣 ANNOUNCE TO EVERYONE</button>`;
   if (can('create')) html += `<button class="btn btn-secondary" type="button" onclick="adminCreateFighter()">➕ CREATE A FIGHTER</button>`;
   // ── banlist (tier 1 only) ──
@@ -2479,7 +2523,7 @@ function adminCrewRow(f) {
   const og = adminTierOf(f.id);
   let acts = '';
   if (can('edit')) acts += `<button class="adm-mini" type="button" title="customize" onclick="adminEditBrother('${f.id}')">🎨</button>`;
-  if (can('message')) acts += `<button class="adm-mini" type="button" title="message" onclick="adminMsgTo('${f.id}')">✉</button>`;
+  if (claimed && can('message')) acts += `<button class="adm-mini" type="button" title="message (claimed only)" onclick="adminMsgTo('${f.id}')">✉</button>`;
   if (can('crown')) acts += `<button class="adm-mini" type="button" title="crown champion" onclick="adminCrown('${f.id}')">👑</button>`;
   if (claimed && can('kick')) acts += `<button class="adm-mini" type="button" title="kick (sign out)" onclick="adminSignOutBrother('${f.id}')">⏏</button>`;
   if (can('timeout')) acts += `<button class="adm-mini" type="button" title="timeout" onclick="adminTimeout('${f.id}')">⏳</button>`;
@@ -2509,6 +2553,7 @@ function adminCreateFighter() {
   if (!name) return;
   const cn = cleanName(name); if (!cn.ok) { setStatus && setStatus(cn.why.toUpperCase(), 'var(--red-bright)', 1200); return; }
   if (fighterByName(name)) { setStatus && setStatus('NAME ALREADY EXISTS', 'var(--red-bright)', 900); return; }
+  snapshotForUndo('create a fighter');
   const nf = createFighterForName(name);
   adminLogPush('➕ ' + adminWho() + ' created ' + nf.name);
   logChange('🆕 ' + adminWho() + ' created ' + nf.name + ' (OVR ' + getCurrentOVR(nf.id) + ')', 'create:' + nf.id);
@@ -2518,6 +2563,7 @@ function adminCreateFighter() {
 function adminCrown(bid) {
   if (!can('crown')) return;
   const f = FIGHTERS.find(x => x.id === bid); if (!f) return;
+  snapshotForUndo('crown ' + f.name);
   save.champion = bid; save.belts = Math.max(1, save.belts || 0);
   inboxPush(bid, '👑 ' + adminWho() + ' crowned you CHAMPION of Slam City!');
   adminLogPush('👑 ' + adminWho() + ' crowned ' + f.name + ' champion');
@@ -2543,6 +2589,7 @@ function adminTimeout(bid) {
   const name = (isClaimed(bid) ? save.profiles[bid].name : f.name) || f.name;
   const mins = parseInt(prompt('Timeout ' + name + ' for how many minutes?', '10') || '0', 10);
   if (!mins || mins < 1) return;
+  snapshotForUndo('timeout ' + name);
   save.bans[name.toUpperCase()] = { type: 'timeout', until: Date.now() + mins * 60000, reason: 'timeout' };
   if (isClaimed(bid)) { const look = save.profiles[bid].look; save.profiles[bid] = { name: '(timed out)', pin: null, look }; }  // kick them off too
   inboxPush(bid, '⏳ ' + adminWho() + ' timed you out for ' + mins + ' min.');
@@ -2557,6 +2604,7 @@ function adminBan(bid) {
   const name = (isClaimed(bid) ? save.profiles[bid].name : f.name) || f.name;
   if (!confirm('BAN "' + name + '" permanently? They can’t sign in or be re-created until you lift it.')) return;
   const reason = (prompt('Reason (optional):') || '').trim();
+  snapshotForUndo('ban ' + name);
   save.bans[name.toUpperCase()] = { type: 'ban', until: Infinity, reason };
   if (f.custom) { deleteCustomFighter(bid); }   // remove their fighter
   else if (isClaimed(bid)) { delete save.profiles[bid]; restoreOriginalArt(bid); }
@@ -2573,6 +2621,152 @@ function adminUnban(nameUpper) {
   setStatus && setStatus('LIFTED · ' + nameUpper, 'var(--gold)', 900);
 }
 function adminClearFeedback() { if (curAdminTier() !== 1) return; save.feedback = []; persistSave(); renderAdmin(); }
+
+/* ---------- 90-DAY UNDO — snapshot the relevant state before each admin command ---------- */
+function snapshotForUndo(label) {
+  const snap = { t: Date.now(), label,
+    profiles: JSON.parse(JSON.stringify(save.profiles || {})),
+    customFighters: JSON.parse(JSON.stringify(save.customFighters || [])),
+    champion: save.champion, belts: save.belts,
+    bans: JSON.parse(JSON.stringify(save.bans || {})),
+    abilDelta: JSON.parse(JSON.stringify(save.abilDelta || {})),
+    wcOverride: JSON.parse(JSON.stringify(save.wcOverride || {})),
+    art: {}, arch: {} };
+  FIGHTERS.forEach(f => { if (!f.cpu) { snap.art[f.id] = JSON.parse(JSON.stringify(f.art)); snap.arch[f.id] = f.arch; } });
+  save.undo = save.undo || [];
+  save.undo.unshift(snap);
+  pruneUndo();
+}
+function pruneUndo() { const cut = Date.now() - 90 * 86400000; save.undo = (save.undo || []).filter(u => u.t >= cut).slice(0, 50); }   // 90 days, cap 50
+function undoLast() {
+  if (curAdminTier() < 1 && !can('reset')) return;
+  pruneUndo();
+  const u = (save.undo || []).shift();
+  if (!u) { setStatus && setStatus('NOTHING TO UNDO', 'var(--muted)', 900); return; }
+  save.profiles = u.profiles; save.customFighters = u.customFighters; save.champion = u.champion; save.belts = u.belts;
+  save.bans = u.bans; save.abilDelta = u.abilDelta; save.wcOverride = u.wcOverride;
+  for (let i = FIGHTERS.length - 1; i >= 0; i--) if (FIGHTERS[i].custom) FIGHTERS.splice(i, 1);   // rebuild customs from snapshot
+  (save.customFighters || []).forEach(addCustomToRoster);
+  Object.keys(u.arch || {}).forEach(id => { const f = FIGHTERS.find(x => x.id === id); if (f) f.arch = u.arch[id]; });
+  Object.keys(u.art || {}).forEach(id => { const f = FIGHTERS.find(x => x.id === id); if (f) f.art = JSON.parse(JSON.stringify(u.art[id])); });
+  applyProfileLooks();
+  adminLogPush('↩ Undid: ' + u.label);
+  persistSave(); renderAdmin();
+  setStatus && setStatus('↩ UNDONE · ' + u.label, 'var(--gold)', 1300);
+}
+function adminUncrown() {
+  if (!can('crown')) return;
+  if (!save.champion) { setStatus && setStatus('NO CHAMPION SET', 'var(--muted)', 900); return; }
+  snapshotForUndo('uncrowned champion');
+  const f = FIGHTERS.find(x => x.id === save.champion);
+  if (f) { inboxPush(f.id, '👑 ' + adminWho() + ' removed your champion status.'); logChange('👑 ' + f.name + ' was un-crowned by ' + adminWho(), 'crown:' + f.id); }
+  save.champion = null;
+  adminLogPush('👑✕ ' + adminWho() + ' un-crowned the champion');
+  persistSave(); renderAdmin();
+  setStatus && setStatus('CHAMPION REMOVED', 'var(--gold)', 1000);
+}
+
+/* ---------- ADMIN · FIGHTERS browser (search + sort + full editor) ---------- */
+let adminView = 'panel';     // 'panel' | 'fighters' | 'editor'
+let adminSearch = '';
+let adminSort = 'ovr';
+let editingFighter = null;
+function openAdminFighters() { adminView = 'fighters'; renderAdmin(); }
+function backToPanel() { adminView = 'panel'; editingFighter = null; renderAdmin(); }
+function adminSetSearch(v) { adminSearch = v; renderAdminFighters(); }
+function adminSetSort(v) { adminSort = v; renderAdminFighters(); }
+function allManageableFighters() { return FIGHTERS.filter(f => !f.cpu); }   // brothers + Old Man Eli + customs
+function renderAdminFighters() {
+  adminView = 'fighters';
+  const body = document.getElementById('profile-body');
+  let list = allManageableFighters();
+  const q = (adminSearch || '').trim().toLowerCase();
+  if (q) list = list.filter(f => f.name.toLowerCase().includes(q));
+  list.sort((a, b) => adminSort === 'name' ? a.name.localeCompare(b.name)
+    : adminSort === 'ovrasc' ? getCurrentOVR(a.id) - getCurrentOVR(b.id)
+      : getCurrentOVR(b.id) - getCurrentOVR(a.id));
+  let html = `<button class="adm-mini" type="button" style="margin-bottom:10px" onclick="backToPanel()">‹ admin panel</button>`
+    + `<div class="adm-sec-label">👥 ALL FIGHTERS · ${list.length}</div>`
+    + `<input class="roster-search" id="adm-search" placeholder="search fighters…" value="${adminSearch}" oninput="adminSetSearch(this.value)" autocomplete="off">`
+    + `<div class="seg adm-sortseg">` + [['ovr', 'OVR ↓'], ['ovrasc', 'OVR ↑'], ['name', 'A–Z']].map(s => `<button class="${adminSort === s[0] ? 'on' : ''}" type="button" onclick="adminSetSort('${s[0]}')">${s[1]}</button>`).join('') + `</div>`;
+  html += list.map(f => {
+    const claimed = isClaimed(f.id), champ = save.champion === f.id, tier = adminTierOf(f.id);
+    return `<div class="adm-row adm-frow" onclick="openFighterEditor('${f.id}')">`
+      + `<span class="adm-rname">${champ ? '🏆 ' : ''}${f.admin ? '👑 ' : tier ? '⭐ ' : ''}${f.name}${f.custom ? ' <span class="adm-tag">made</span>' : ''}</span>`
+      + `<span class="adm-fovr">OVR ${getCurrentOVR(f.id)}</span>`
+      + `<span class="adm-open">${claimed ? '🔒' : '›'}</span></div>`;
+  }).join('');
+  body.innerHTML = html;
+  body.scrollTop = 0;
+}
+function openFighterEditor(fid) { editingFighter = fid; adminView = 'editor'; renderFighterEditor(fid); }
+function renderFighterEditor(fid) {
+  adminView = 'editor';
+  const f = FIGHTERS.find(x => x.id === fid); if (!f) { backToPanel(); return; }
+  const body = document.getElementById('profile-body');
+  const claimed = isClaimed(fid), champ = save.champion === fid, canRename = f.custom || f.admin;
+  const allArch = ['BRAWLER', 'POWERHOUSE', 'WRESTLER', 'BOXER', 'STRIKER', 'KICKBOXER', 'HIGHFLYER', 'MMA'];
+  const wc = weightClassOf(f);
+  let html = `<button class="adm-mini" type="button" style="margin-bottom:8px" onclick="openAdminFighters()">‹ all fighters</button>`
+    + `<div class="ef-head"><div class="ef-3d" id="ef-3d"></div><div class="ef-name-row">`
+    + (canRename ? `<input class="roster-search" id="ef-name" value="${f.name}" maxlength="14" oninput="efRename(this.value)" autocomplete="off">` : `<div class="prof-name">${f.name} <span class="adm-tag">OG · name locked</span></div>`)
+    + `</div><div class="prof-as">OVR <b id="ef-ovr">${getCurrentOVR(fid)}</b> · base ${baseOVR(f)} · ${wc}</div></div>`;
+  // archetype + weight class
+  html += `<div class="adm-sec-label">STYLE</div>`
+    + crChips('ARCHETYPE', allArch, f.arch, '__arch').replace(/setCreator/g, 'efSetArch')
+    + crChips('WEIGHT CLASS', Object.keys(WEIGHT_CLASSES), wc, '__wc').replace(/setCreator/g, 'efSetWC');
+  // 12 ability sliders
+  html += `<div class="adm-sec-label">RATINGS · drag any (1–99) · OVR updates live</div>`;
+  html += ABILITY_KEYS.map(k => { const v = getAbility(f, k); return `<div class="ef-stat"><span class="ef-slabel">${ABILITY_LABELS[k]}</span><input type="range" class="set-slider" min="1" max="99" value="${v}" oninput="efSetAbil('${k}',this.value)"><span class="ef-sval" id="ef-${k}">${v}</span></div>`; }).join('');
+  // look + moves + finisher
+  html += `<div class="adm-sec-label">LOOK & MOVES</div>`
+    + `<button class="btn btn-secondary" type="button" onclick="profileEditLook('${fid}')">🎨 CUSTOMIZE LOOK</button>`;
+  if (f.custom) html += `<div class="cr-row"><div class="cr-label">FINISHER NAME</div><input class="roster-search" id="ef-fin" maxlength="20" value="${(f.finishers && f.finishers[0]) || ''}" oninput="efSetFinisher(this.value)" autocomplete="off"></div>`;
+  // commands
+  html += `<div class="adm-sec-label">COMMANDS</div>`;
+  if (can('crown')) html += champ ? `<button class="btn btn-secondary" type="button" onclick="adminUncrown()">👑✕ UNCROWN (remove champion)</button>` : `<button class="btn btn-secondary" type="button" onclick="efCmd('crown')">👑 CROWN CHAMPION</button>`;
+  if (claimed && can('message')) html += `<button class="btn btn-secondary" type="button" onclick="efCmd('msg')">✉ MESSAGE (claimed)</button>`;
+  if (claimed && can('kick')) html += `<button class="btn btn-secondary" type="button" onclick="efCmd('kick')">⏏ KICK (sign out)</button>`;
+  if (can('timeout')) html += `<button class="btn btn-secondary" type="button" onclick="efCmd('timeout')">⏳ TIMEOUT</button>`;
+  if (can('ban') && !adminTierOf(fid)) html += `<button class="btn btn-secondary adm-danger" type="button" onclick="efCmd('ban')">⛔ BAN</button>`;
+  if (claimed && can('reset')) html += `<button class="btn btn-secondary adm-danger" type="button" onclick="efCmd('reset')">♻ RESET PROFILE</button>`;
+  if (f.custom && can('reset')) html += `<button class="btn btn-secondary adm-danger" type="button" onclick="efCmd('delete')">🗑 DELETE FIGHTER</button>`;
+  body.innerHTML = html;
+  body.scrollTop = 0;
+  const pv = document.getElementById('ef-3d'); if (pv && !showPortraitIn(pv, f.art)) pv.innerHTML = renderFighter(f.art);
+}
+function efFighter() { return FIGHTERS.find(x => x.id === editingFighter); }
+function efRename(v) {
+  const f = efFighter(); if (!f || !(f.custom || f.admin)) return;
+  const nm = (v || '').toUpperCase().slice(0, 14);
+  f.name = nm || f.name;
+  if (f.custom) { const s = (save.customFighters || []).find(x => x.id === f.id); if (s) s.name = f.name; }
+  persistSave();
+}
+function efSetArch(key, val) { const f = efFighter(); if (!f) return; snapshotForUndo('edit ' + f.name); f.arch = val; if (f.custom) { const s = (save.customFighters || []).find(x => x.id === f.id); if (s) s.arch = val; } persistSave(); renderFighterEditor(f.id); }
+function efSetWC(key, val) { const f = efFighter(); if (!f) return; save.wcOverride[f.id] = val; persistSave(); renderFighterEditor(f.id); }
+function efSetAbil(key, v) {
+  const f = efFighter(); if (!f) return;
+  const target = Math.max(1, Math.min(99, parseInt(v, 10)));
+  if (!save.abilDelta[f.id]) save.abilDelta[f.id] = {};
+  save.abilDelta[f.id][key] = target - baseAbility(f, key);   // delta so getAbility returns target
+  const el = document.getElementById('ef-' + key); if (el) el.textContent = target;
+  const ov = document.getElementById('ef-ovr'); if (ov) ov.textContent = getCurrentOVR(f.id);
+  persistSave();
+}
+function efSetFinisher(v) { const f = efFighter(); if (!f || !f.custom) return; const nm = (v || '').slice(0, 20); f.finishers = [nm]; const fin = f.moves.find(m => m.fin); if (fin) fin.name = nm; const s = (save.customFighters || []).find(x => x.id === f.id); if (s) s.finisher = nm; persistSave(); }
+function efCmd(cmd) {
+  const f = efFighter(); if (!f) return;
+  const id = f.id;
+  if (cmd === 'crown') adminCrown(id);            // each action snapshots for undo itself
+  else if (cmd === 'msg') adminMsgTo(id);
+  else if (cmd === 'kick') adminSignOutBrother(id);
+  else if (cmd === 'timeout') adminTimeout(id);
+  else if (cmd === 'ban') adminBan(id);
+  else if (cmd === 'reset') adminResetBrother(id);
+  else if (cmd === 'delete') { adminDeleteCustom(id); return; }   // → roster
+  if (FIGHTERS.find(x => x.id === id)) renderFighterEditor(id); else backToPanel();
+}
 // ── feedback (anyone can send; admins read it in the panel) ──
 function openFeedback() {
   const text = (prompt('Send feedback to the admins — bugs, ideas, anything 🙏') || '').trim();
@@ -2644,6 +2838,7 @@ function adminEditBrother(bid) { if (!can('edit')) return; profileEditLook(bid);
 function adminMsgTo(bid) {
   if (!can('message')) return;
   const f = FIGHTERS.find(x => x.id === bid); if (!f) return;
+  if (!isClaimed(bid)) { setStatus && setStatus('CAN ONLY MESSAGE A CLAIMED FIGHTER', 'var(--muted)', 1300); return; }   // no real person on an unclaimed/made fighter
   const text = (prompt('Message to ' + f.name + ' (they\'ll see it next time they sign in):') || '').trim();
   if (!text) return;
   inboxPush(bid, '✉ ' + adminWho() + ': ' + text);
@@ -2655,6 +2850,7 @@ function adminSignOutBrother(bid) {
   if (!can('kick')) return;
   const f = FIGHTERS.find(x => x.id === bid); if (!f || !isClaimed(bid)) return;
   if (!confirm('Kick (sign out) ' + f.name + '? Releases the claim — look is kept, they can sign in again.')) return;
+  snapshotForUndo('kick ' + f.name);
   const look = save.profiles[bid] ? save.profiles[bid].look : null;
   save.profiles[bid] = { name: '(signed out)', pin: null, look };   // unclaimed but look preserved
   inboxPush(bid, '⏏ ' + adminWho() + ' signed you out. Your look was kept — sign in again to take ' + f.name + ' back.');
@@ -2666,6 +2862,7 @@ function adminResetBrother(bid) {
   if (!can('reset')) return;
   const f = FIGHTERS.find(x => x.id === bid); if (!f) return;
   if (!confirm('Reset ' + f.name + '? Unclaims the profile + restores the default look.')) return;
+  snapshotForUndo('reset ' + f.name);
   delete save.profiles[bid];
   restoreOriginalArt(bid);
   inboxPush(bid, '♻ ' + adminWho() + ' reset ' + f.name + ' — profile freed + look restored. Sign in to claim again.');
@@ -2675,13 +2872,14 @@ function adminResetBrother(bid) {
 }
 function adminDeleteCustom(id) {
   if (!can('reset')) return;
-  const f = FIGHTERS.find(x => x.id === id); if (f) adminLogPush('🗑 ' + adminWho() + ' deleted ' + f.name);
+  const f = FIGHTERS.find(x => x.id === id); if (f) { snapshotForUndo('delete ' + f.name); adminLogPush('🗑 ' + adminWho() + ' deleted ' + f.name); }
   deleteCustomFighter(id);   // shared deleter (confirms, persists, → roster)
 }
 function adminClearLog() { if (curAdminTier() !== 1) return; save.adminLog = []; persistSave(); renderAdmin(); }
 function adminResetAllLooks() {
   if (curAdminTier() !== 1) return;
   if (!confirm('Restore EVERY fighter to a default look? (Claims stay — only looks reset.)')) return;
+  snapshotForUndo('reset ALL looks');
   for (const bid in (save.profiles || {})) { save.profiles[bid].look = null; restoreOriginalArt(bid); }
   adminLogPush('🎨 Reset ALL looks to default');
   persistSave(); renderAdmin();
@@ -2690,6 +2888,7 @@ function adminResetAllLooks() {
 function adminResetAllProfiles() {
   if (curAdminTier() !== 1) return;
   if (!confirm('UNCLAIM every fighter + wipe all looks? This frees every profile.')) return;
+  snapshotForUndo('unclaim ALL fighters');
   for (const bid in (save.profiles || {})) restoreOriginalArt(bid);
   save.profiles = {};
   adminLogPush('♻ Unclaimed EVERY fighter');
@@ -3781,31 +3980,46 @@ function applyProgression(result) {
   const pNudge = (k, a) => { if (a) { const x = adjustAbility(pid, k, a); if (x) pCh[k] = (pCh[k] || 0) + x; } };
   const oNudge = (k, a) => { if (a) { const x = adjustAbility(oid, k, a); if (x) oCh[k] = (oCh[k] || 0) + x; } };
 
-  if (t.strikesLanded >= 8 && t.strikesWhiff <= t.strikesLanded * 0.5) pNudge('striking', +1);
+  const won = result === 'win';
+  const dominate = won && match.pHP > 70;                  // won barely scratched
+  const blowout  = !won && match.pHP <= 0 && match.oHP > 65; // got blown out
+  const lostBy = match.winBy;                              // how the OPPONENT won (on a loss)
+  // ── STRIKING ── sharp when you land clean, dulls when you whiff / barely throw
+  if (t.strikesLanded >= 8 && t.strikesWhiff <= t.strikesLanded * 0.5) pNudge('striking', dominate ? +2 : +1);
   else if (t.strikesWhiff >= 5 && t.strikesWhiff > t.strikesLanded)    pNudge('striking', -1);
-  if (t.heavyLanded >= 4)        pNudge('power', +1);
-  if (t.finisherLanded)          pNudge('finisher', +2);
-  if (t.blocked >= 4)            pNudge('blocking', +1);
+  else if (t.strikesLanded <= 2 && !won)                              pNudge('striking', -1);   // passive + lost = rusty
+  // ── POWER ── heavy shots build it; never landing a heavy in a loss drops it
+  if (t.heavyLanded >= 4)         pNudge('power', +1);
+  else if (!won && t.heavyLanded === 0) pNudge('power', -1);
+  // ── FINISHER ──
+  if (t.finisherLanded)           pNudge('finisher', +2);
+  // ── BLOCKING ── absorbing builds it; eating damage open drops it
+  if (t.blocked >= 4)             pNudge('blocking', +1);
   else if (t.dmgTaken >= 80 && t.blocked <= 1) pNudge('blocking', -1);
+  // ── GRAPPLING / SUBMISSION / PIN POWER ── wrestling paths both ways
+  if (t.grappleLanded >= 3)       pNudge('grappling', +1);
+  else if (!won && t.grappleLanded === 0) pNudge('grappling', -1);
+  if (t.winMethod === 'SUBMISSION') pNudge('submission', +2);
+  else if (lostBy === 'SUBMISSION') pNudge('submission', -1);          // got tapped = leakier subs
+  if (t.winMethod === 'PINFALL')    pNudge('pinPower', +2);
+  else if (lostBy === 'PINFALL')    pNudge('pinPower', -1);            // got pinned = weaker hold-down
+  // ── CHIN ── survive a beating & win = iron; get KO'd = glassier
+  if (won && t.dmgTaken >= 55)    pNudge('chin', +1);
+  else if (!won && (t.dmgTaken >= 90 || (match.pHP <= 0 && !lostBy))) pNudge('chin', -1);
+  // ── STAMINA / CONDITIONING ── gas tank
   pNudge('stamina', t.gassed ? -1 : +1);
-  if (t.dodgedClean >= 3)        pNudge('speed', +1);
-  // the wrestling + endurance abilities now have their own upgrade paths (every OVR stat can rise)
-  if (t.grappleLanded >= 3)      pNudge('grappling', +1);                 // landed slams = better mat control
-  if (t.winMethod === 'SUBMISSION') pNudge('submission', +2);            // tapped 'em out
-  if (t.winMethod === 'PINFALL')    pNudge('pinPower', +2);              // held the 3-count
-  if (result === 'win' && t.dmgTaken >= 55) pNudge('chin', +1);          // took a beating, still won = iron chin
-  else if (result !== 'win' && t.dmgTaken >= 90) pNudge('chin', -1);
-  if (!t.gassed && (t.strikesLanded + t.heavyLanded) >= 12) pNudge('conditioning', +1);  // sustained output, never gassed
-  else if (t.gassed)             pNudge('conditioning', -1);
-  if (result === 'win') {
-    pNudge('heart', lowHPwin ? +2 : +1);
-    if (Object.keys(pCh).length === 0) pNudge('striking', +1);   // a win always teaches something
-  } else {
-    pNudge('heart', -1);
-  }
+  if (!t.gassed && (t.strikesLanded + t.heavyLanded) >= 12) pNudge('conditioning', +1);
+  else if (t.gassed)              pNudge('conditioning', -1);
+  // ── SPEED ── dodging sharpens; getting tagged repeatedly dulls
+  if (t.dodgedClean >= 3)         pNudge('speed', +1);
+  else if (t.dmgTaken >= 85 && t.dodgedClean === 0) pNudge('speed', -1);
+  // ── HEART ── wins lift it (more in a gut-check), losses cost it (more in a blowout)
+  if (won) { pNudge('heart', lowHPwin ? +2 : +1); if (Object.keys(pCh).length === 0) pNudge('striking', +1); }
+  else { pNudge('heart', blowout ? -2 : -1); }
 
-  if (result === 'win') { oNudge('heart', -1); oNudge(ABILITY_KEYS[Math.floor(Math.random() * ABILITY_KEYS.length)], -1); }
-  else { oNudge('striking', +1); oNudge('heart', +1); }
+  // OPPONENT moves too (both directions) — the AI fighter grows/shrinks from the same bout
+  if (won) { oNudge('heart', -1); oNudge('chin', t.heavyLanded >= 3 ? -1 : 0); oNudge(ABILITY_KEYS[Math.floor(Math.random() * ABILITY_KEYS.length)], -1); }
+  else { oNudge('heart', +1); oNudge('striking', +1); if (match.oHP > 80) oNudge('chin', +1); }
 
   persistSave();
   return { pCh, oCh, pBefore, pAfter: getCurrentOVR(pid), oBefore, oAfter: getCurrentOVR(oid), lowHPwin };
@@ -4020,9 +4234,9 @@ function init3D() {
   renderer.setSize(w, h, false);
   const scene = new THREE.Scene();
   scene.fog = new THREE.Fog(0x0a0a10, 8, 16);
-  const camera = new THREE.PerspectiveCamera(52, w / h, 0.1, 100);
-  camera.position.set(0, 2.0, 5.9);
-  camera.lookAt(0, 1.0, 0);
+  const camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 100);
+  camera.position.set(0.9, 1.7, 5.3);   // lower + slightly off-axis = more dimensional / 3D
+  camera.lookAt(0, 1.05, 0);
   // lights
   scene.add(new THREE.HemisphereLight(0xdfe6ff, 0x20202c, 0.95));
   const key = new THREE.DirectionalLight(0xfff2e0, 0.9); key.position.set(3.5, 7, 4); scene.add(key);
@@ -4061,6 +4275,26 @@ function resize3D() {
 function mkPart(w, h, d, color) { return new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshStandardMaterial({ color: new THREE.Color(color), roughness: 0.7 })); }
 function mkCyl(rt, rb, h, color, rough) { return new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, 14), new THREE.MeshStandardMaterial({ color: new THREE.Color(color), roughness: rough == null ? 0.65 : rough })); }
 function mkBall(r, color, rough) { return new THREE.Mesh(new THREE.SphereGeometry(r, 14, 12), new THREE.MeshStandardMaterial({ color: new THREE.Color(color), roughness: rough == null ? 0.55 : rough })); }
+// distinct 3D hair per style (group positioned on the head)
+function buildHair3D(style, color) {
+  const c = new THREE.Color(color);
+  const mat = () => new THREE.MeshStandardMaterial({ color: c, roughness: 0.88 });
+  const g = new THREE.Group();
+  const cap = (r, span, flatY) => { const m = new THREE.Mesh(new THREE.SphereGeometry(r, 16, 12, 0, Math.PI * 2, 0, Math.PI * (span || 0.6)), mat()); m.scale.z = 0.96; if (flatY) m.scale.y = flatY; return m; };
+  switch (style || 'short') {
+    case 'bald': return null;
+    case 'buzz': case 'fade': g.add(cap(0.158, 0.42, 0.7)); break;
+    case 'short-afro': g.add(cap(0.188, 0.9)); break;
+    case 'curly-afro': { const m = mkBall(0.205, color, 0.95); m.position.y = 0.04; g.add(m); break; }
+    case 'spiky': { g.add(cap(0.155, 0.5, 0.8)); for (let i = 0; i < 7; i++) { const s = new THREE.Mesh(new THREE.ConeGeometry(0.034, 0.12, 6), mat()); const a = i / 7 * Math.PI * 2; s.position.set(Math.cos(a) * 0.07, 0.15, Math.sin(a) * 0.065); s.rotation.x = Math.sin(a) * 0.3; g.add(s); } break; }
+    case 'mohawk': { const strip = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.2, 0.32), mat()); strip.position.y = 0.12; g.add(strip); break; }
+    case 'dreads': { g.add(cap(0.16, 0.62)); for (let i = 0; i < 9; i++) { const d = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.018, 0.32, 6), mat()); const a = i / 9 * Math.PI * 2; d.position.set(Math.cos(a) * 0.14, -0.07, Math.sin(a) * 0.12); g.add(d); } break; }
+    case 'manbun': { g.add(cap(0.16, 0.62)); const bun = mkBall(0.072, color, 0.85); bun.position.set(0, 0.12, -0.13); g.add(bun); break; }
+    case 'long': { g.add(cap(0.166, 0.72)); const back = new THREE.Mesh(new THREE.BoxGeometry(0.27, 0.36, 0.09), mat()); back.position.set(0, -0.14, -0.1); g.add(back); [-0.15, 0.15].forEach(x => { const s = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.3, 0.2), mat()); s.position.set(x, -0.1, 0); g.add(s); }); break; }
+    case 'waves': case 'straight': case 'perm': default: g.add(cap(0.163, 0.64));
+  }
+  return g;
+}
 // build a jointed humanoid rig facing +Z — ROUNDED (cylinders + sphere joints), not blocky. Returns { group, parts, anim, ... }
 function build3DFighter(art) {
   const skin = art.skin || '#c8956a', hood = art.hoodie || '#23232c', sh = art.shorts || '#2a2a30', hair = art.hair || '#3a2418', acc = art.accent || '#e04050', build = art.build || 1.0;
@@ -4074,7 +4308,7 @@ function build3DFighter(art) {
   // neck + head + hair
   const neck = mkCyl(0.058, 0.07, 0.12, skin); neck.position.y = 1.55; grp.add(neck);
   const head = mkBall(0.15, skin); head.position.y = 1.71; head.scale.z = 0.94; grp.add(head); P.head = head;
-  if ((art.hairStyle || 'short') !== 'bald') { const hr = new THREE.Mesh(new THREE.SphereGeometry(0.158, 14, 12, 0, Math.PI * 2, 0, Math.PI * 0.6), new THREE.MeshStandardMaterial({ color: new THREE.Color(hair), roughness: 0.85 })); hr.position.y = 1.74; grp.add(hr); }
+  const hairObj = buildHair3D(art.hairStyle || 'short', hair); if (hairObj) { hairObj.position.y = 1.73; grp.add(hairObj); }   // distinct per style
   // arms — cylinders w/ sphere shoulders, elbows, and glove hands (accent)
   function arm(side) {
     const sx = side * 0.25 * build;
@@ -4191,9 +4425,9 @@ function update3D(now) {
     const lx = worldX(match.pX, ringW), rx = worldX(match.oX, ringW);
     const lz = worldZ(match.pZ), rz = worldZ(match.oZ);
     const leftFacesRight = lx <= rx;
-    // facing (built facing +Z; rotate ±90° to face along X toward the other)
-    const lYaw = leftFacesRight ? -Math.PI / 2 : Math.PI / 2;
-    const rYaw = leftFacesRight ? Math.PI / 2 : -Math.PI / 2;
+    // facing (rig built facing +Z; +90° turns its front toward +X). They must face EACH OTHER (was inverted → "fighting backwards").
+    const lYaw = leftFacesRight ? Math.PI / 2 : -Math.PI / 2;
+    const rYaw = leftFacesRight ? -Math.PI / 2 : Math.PI / 2;
     const lMoving = L.lastX != null && Math.abs(lx - L.lastX) > 0.004;
     const rMoving = R.lastX != null && Math.abs(rx - R.lastX) > 0.004;
     L.lastX = lx; R.lastX = rx;
@@ -4210,6 +4444,13 @@ function update3D(now) {
     R.group.position.z = damp(R.group.position.z, rz, dt, 10);
     L.group.rotation.y = damp(L.group.rotation.y, lYaw, dt, 12);
     R.group.rotation.y = damp(R.group.rotation.y, rYaw, dt, 12);
+    // LIVING CAMERA — gently track the action (midpoint) + ease in when they clinch, for a more 3D feel
+    const midX = (lx + rx) / 2, sep = Math.abs(rx - lx);
+    const camTX = 0.9 + midX * 0.35, camTZ = 4.7 + Math.min(1.1, sep * 0.5);
+    SC3D.camera.position.x = damp(SC3D.camera.position.x, camTX, dt, 3);
+    SC3D.camera.position.z = damp(SC3D.camera.position.z, camTZ, dt, 3);
+    SC3D._lookX = damp(SC3D._lookX || 0, midX * 0.5, dt, 3);
+    SC3D.camera.lookAt(SC3D._lookX, 1.05, 0);
   }
   SC3D.renderer.render(SC3D.scene, SC3D.camera);
 }

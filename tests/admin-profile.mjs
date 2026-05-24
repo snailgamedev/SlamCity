@@ -66,18 +66,23 @@ try {
   const look = await page.evaluate(id => FIGHTERS.find(f => f.id === id).art.skin, setup.id);
   check('look change is universal (roster art mutated)', look === setup.altSkinHex, look);
 
-  // 4 · LOCK — sign out, then re-sign-in is refused
+  // 4 · LOCK — sign out, WRONG pin refused; CORRECT pin (the owner) re-enters
   await page.evaluate(() => profileSignOut());
   await page.waitForTimeout(100);
   await page.evaluate(() => goto('profile'));
   await page.waitForTimeout(100);
   await page.fill('#prof-name', setup.name);
-  await page.fill('#prof-pin', '1234');   // even the CORRECT pin must be refused now
+  await page.fill('#prof-pin', '9999');   // wrong PIN
   await page.click('button:has-text("SIGN IN / CLAIM")');
   await page.waitForTimeout(120);
-  const lockRes = await page.evaluate(() => ({ active: save.activeProfile, msg: document.getElementById('prof-msg').textContent }));
-  check('locked brother refuses re-sign-in', lockRes.active === null);
-  check('lock message shown', /locked/i.test(lockRes.msg), lockRes.msg);
+  const wrongRes = await page.evaluate(() => ({ active: save.activeProfile, msg: document.getElementById('prof-msg').textContent }));
+  check('wrong PIN refused on a claimed brother', wrongRes.active === null && /wrong pin|claimed/i.test(wrongRes.msg), wrongRes.msg);
+  await page.fill('#prof-pin', '1234');   // correct PIN → owner returns
+  await page.click('button:has-text("SIGN IN / CLAIM")');
+  await page.waitForTimeout(120);
+  const okRes = await page.evaluate(() => save.activeProfile);
+  check('owner re-enters with correct PIN', okRes === setup.id, okRes || 'null');
+  await page.evaluate(() => profileSignOut());
 
   // 5 · ADMIN claim (mixed-case name) + panel renders
   await page.fill('#prof-name', 'old man Eli');

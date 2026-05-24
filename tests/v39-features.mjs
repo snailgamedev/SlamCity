@@ -83,7 +83,8 @@ try {
   check('sign-out left an inbox message', so.inbox >= 1);
   check('sign-out wrote to admin log', so.log >= 1);
 
-  // 4 · ADMIN message → claimer sees it in inbox
+  // 4 · ADMIN message → claimer sees it in inbox (messaging is claimed-only now, so re-claim first)
+  await page.evaluate(b => { save.profiles[b] = { name: FIGHTERS.find(f => f.id === b).name, pin: '5555', look: (save.profiles[b] || {}).look || null }; persistSave(); }, broId);
   await page.evaluate(() => { window.prompt = () => 'yo welcome to the crew'; });
   await page.evaluate(b => adminMsgTo(b), broId);
   await page.waitForTimeout(120);
@@ -91,7 +92,7 @@ try {
   await page.evaluate(() => { save.activeProfile = null; persistSave(); });
   await page.evaluate(() => goto('profile')); await page.waitForTimeout(120);
   await page.fill('#prof-name', await page.evaluate(id => FIGHTERS.find(f => f.id === id).name, broId));
-  await page.fill('#prof-pin', '2222');
+  await page.fill('#prof-pin', '5555');   // owner re-enters with the matching PIN
   await page.click('button:has-text("SIGN IN / CLAIM")'); await page.waitForTimeout(150);
   const inboxShown = await page.locator('.prof-inbox').count();
   const inboxText = inboxShown ? await page.locator('.prof-inbox').first().innerText() : '';
