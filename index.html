@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#0a0a0d" />
-<title>SLAM CITY · v2.24 · MOTTO-COMPLETE</title>
+<title>SLAM CITY · v2.25 · AUDIO FIXED</title>
 <!-- retro arcade type: Press Start 2P for marquee, Oxanium for readable UI · safe fallback stack -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -712,7 +712,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v2.24 · build 2026-05-23·2024 · MOTTO PASS COMPLETE (PAS sweep · 18 suites green · 0 console errors · clean loop) · HYPE·champion·announcer · 8 modes · 90/10 wrestling · for AARON</div>
+  <div class="splash-foot">v2.25 · build 2026-05-23·2047 · AUDIO RELIABILITY FIX (WebAudio resumes on gesture · all 9 SFX verified firing · sfx/vol gating works) · 90/10 wrestling · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -976,7 +976,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v2.24</div>
+    <div class="load-skip">tap to skip · v2.25</div>
   </div>
 </div>
 
@@ -1680,7 +1680,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '2.24';
+const GAME_VERSION = '2.25';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -2939,6 +2939,8 @@ function setResultButtons(result) {
 let actx = null;
 function ensureCtx() {
   if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){} }
+  // Autoplay policy: a context can start/stay SUSPENDED and play nothing — always try to resume.
+  if (actx && actx.state === 'suspended') { try { actx.resume(); } catch(e){} }
   return actx;
 }
 function tone(freq, dur, type='sine', vol=0.15, slide=0) {
@@ -3006,6 +3008,8 @@ window.addEventListener('orientationchange', () => setTimeout(fitViewport, 120))
 
 /* ========== BOOT ========== */
 fitViewport();
+// Unlock WebAudio on the very FIRST interaction (any input) so all SFX reliably play (autoplay policy).
+['pointerdown', 'keydown', 'touchstart'].forEach(ev => window.addEventListener(ev, () => ensureCtx(), { capture: true }));
 // Global click feedback: menu buttons, cards + toggles all play a tick (combat buttons keep their own sounds).
 document.addEventListener('pointerdown', (e) => {
   const b = e.target.closest('button:not(.atk-btn), .mode-card, .platform-card, .roster-card, .toggle');
