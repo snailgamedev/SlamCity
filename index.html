@@ -808,6 +808,17 @@
   .cr-chip.on { background: linear-gradient(180deg, #3a1a1e, #260f12); border-color: var(--red); color: #ffd0d0; }
 
   /* watch-mode badge */
+  /* CINEMATIC FINISH — letterbox bars + slow-mo FINISH stamp over the ring */
+  .finish-cinema { position: absolute; inset: 0; pointer-events: none; z-index: 30; opacity: 0; }
+  .finish-cinema.on { animation: cine-fade 2.1s ease forwards; }
+  .finish-cinema .cine-bar { position: absolute; left: 0; right: 0; height: 0; background: #000; transition: none; }
+  .finish-cinema.on .cine-bar.top { top: 0; animation: cine-bar-in 2.1s ease forwards; }
+  .finish-cinema.on .cine-bar.bot { bottom: 0; animation: cine-bar-in 2.1s ease forwards; }
+  .finish-cinema .cine-stamp { position: absolute; left: 0; right: 0; top: 50%; text-align: center; transform: translateY(-50%) scale(0.7); font-weight: 900; font-size: clamp(28px, 9vw, 64px); letter-spacing: 4px; color: var(--gold); text-shadow: 0 0 22px rgba(255,196,64,0.85), 0 4px 10px #000; opacity: 0; }
+  .finish-cinema.on .cine-stamp { animation: cine-stamp-in 2.1s cubic-bezier(.2,.9,.2,1) forwards; }
+  @keyframes cine-fade { 0% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+  @keyframes cine-bar-in { 0% { height: 0; } 22% { height: 13%; } 82% { height: 13%; } 100% { height: 0; } }
+  @keyframes cine-stamp-in { 0% { opacity: 0; transform: translateY(-50%) scale(1.7); letter-spacing: 22px; } 18% { opacity: 1; transform: translateY(-50%) scale(1); letter-spacing: 4px; } 78% { opacity: 1; } 100% { opacity: 0; transform: translateY(-50%) scale(1.05); } }
   .watch-badge { display: none; align-items: center; justify-content: space-between; gap: 10px; margin: 6px 8px; padding: 8px 14px; border-radius: 12px; border: 1px solid var(--gold); background: rgba(40,28,12,0.85); }
   .watch-badge.on { display: flex; }
   .watch-badge span { font-size: 11px; letter-spacing: 1px; color: var(--gold); font-weight: 800; }
@@ -916,7 +927,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v4.9 · build 2026-05-24·1200 · 🔄 REVERSALS — time REVERSE as a hit lands to counter + stun them · 🔥 TAUNT (tap the FINISH button while it’s locked) builds HYPE · both with their own animations · for AARON</div>
+  <div class="splash-foot">v4.10 · build 2026-05-24·1212 · 👤 FACES on every fighter · 🚶 WALK-IN ENTRANCES from the ropes · 🎬 SLOW-MO FINISH CAM with letterbox + ★ FINISH ★ stamp · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -1108,6 +1119,11 @@
       <div class="impact-flash" id="right-flash"></div>
       <div class="impact-burst" id="right-burst"></div>
     </div>
+    <!-- CINEMATIC FINISH overlay: letterbox bars + slow-mo FINISH stamp on a KO/finisher -->
+    <div class="finish-cinema" id="finish-cinema" aria-hidden="true">
+      <div class="cine-bar top"></div><div class="cine-bar bot"></div>
+      <div class="cine-stamp">★ FINISH ★</div>
+    </div>
   </div>
 
   <div class="captions" id="captions" aria-live="polite" aria-atomic="true"></div>
@@ -1218,7 +1234,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v4.9</div>
+    <div class="load-skip">tap to skip · v4.10</div>
   </div>
 </div>
 
@@ -2079,7 +2095,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '4.9';
+const GAME_VERSION = '4.10';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -2113,6 +2129,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['4.10', 'Cinematic + photoreal step (creative green-light): 👤 FACES — every fighter now has eyes, brows, and a nose (no more faceless heads — shows in the ring, on roster cards, and the customizer) · 🚶 WALK-IN ENTRANCES — fighters stride in from the ropes as the bell rings instead of just appearing · 🎬 SLOW-MO FINISH CAM — end a match and a cinematic letterbox + “★ FINISH ★” stamp drops while the camera orbits low and slow around the fallen fighter before the result screen'],
   ['4.9',  'Combat depth (built on the creative green-light): 🔄 REVERSALS — tap REVERSE right as the opponent’s attack is about to land and you COUNTER it, negating the hit and stunning them wide open · 🔥 TAUNT — the FINISH button becomes a TAUNT while your finisher is locked; call them on to pump your HYPE meter (leaves you briefly open, so pick your moment) · both moves have their own 3D animations + on-screen callouts'],
   ['4.8',  'Knocked down? A big ⤴ GET UP button now appears — MASH it to climb off the mat faster (you’re never just stuck waiting) · the downed state is fully animated now: you writhe, roll, and struggle on the mat, then play a real push-up rise back to your stance instead of snapping upright · the read-aloud voice now speaks at a clearer, easier-to-follow pace'],
   ['4.7',  'DEEP animations — fighters now hold a real stance and throw with their whole body: punches drive from a hip + torso twist with weight transfer (not just a lean), the rear-hand straight + a 1-2, grapples drop level → grab → LIFT into the slam, and getting hit snaps you back with a stagger · the STALL + instant-pinfall is fixed everywhere — when you’re pinned you MASH ⟳/STRIKE to KICK OUT (real agency, pins build instead of ending instantly) · every Bible verse in the game now shows ONE WAY TO LIVE IT and WHAT IT MEANS — framed humbly as one read (others may differ; go to the Word yourself)'],
@@ -4181,6 +4198,7 @@ function endPrefight() {
   match.started = true;
   match.paused = false;
   match.lastT = performance.now();
+  SC3D.entranceT0 = performance.now();   // fighters stride in from the ropes as the bell rings (walk-in entrance)
   setStatus('FIGHT!', 'var(--gold)', 900);
   // cinematic "news" beat per mode
   const m = match.mode;
@@ -4325,11 +4343,22 @@ function rhymeResult(result, player, opponent) {
   return line.split('{P}').join(player).split('{O}').join(opponent);
 }
 
+function triggerFinishCam(result) {
+  if (!SC3D.ok || !SC3D.started) return false;
+  const winner = result === 'win' ? 'left' : 'right';
+  SC3D.finishCam = { t0: performance.now(), dur: 1900, winner };
+  set3DAnim(winner, 'taunt', 1900);   // winner stands tall in a victory pose; loser collapses (forced in update3D)
+  const ov = document.getElementById('finish-cinema');
+  if (ov) { ov.classList.remove('on'); void ov.offsetWidth; ov.classList.add('on'); ov.setAttribute('aria-hidden', 'false'); setTimeout(() => { ov.classList.remove('on'); ov.setAttribute('aria-hidden', 'true'); }, 2100); }
+  return true;
+}
 function finishMatch(result) {
   const lossSide = result === 'win' ? 'right' : 'left';
   document.getElementById('ring-' + lossSide).classList.add('ko');
   playKOSound();
   flash(lossSide, true); shakeRing(true);   // big finish flash + shake
+  const cineOn = triggerFinishCam(result);   // slow-mo cinematic finish before the result screen
+  const revealDelay = cineOn ? 2300 : 1400;  // let the finish cam play out
   const m = match.winBy === 'PINFALL' ? ' by pinfall' : match.winBy === 'SUBMISSION' ? ' by submission' : ' by KO';
   caption((result === 'win' ? match.player.name : match.opponent.name) + ' wins' + m, 'big');
   if (!match.training && !match.pAI) {                // TRAINING + WATCH don't touch your record
@@ -4385,7 +4414,7 @@ function finishMatch(result) {
     const winnerArt = (result === 'win' ? match.player.art : match.opponent.art);
     const av = document.getElementById('result-avatar');
     if (av) { if (!showPortraitIn(av, winnerArt)) av.innerHTML = renderFighter(winnerArt); }
-  }, 1400);
+  }, revealDelay);
 }
 
 // Result buttons adapt to the mode: chain modes continue on a win, training always continues.
@@ -4503,7 +4532,7 @@ window.addEventListener('orientationchange', () => setTimeout(fitViewport, 120))
    perspective ring. Driven by the existing combat state (match.pX/oX/pZ/oZ,
    HP, attacks). Falls back to the CSS-cuboid renderer if THREE didn't load.
    ====================================================================== */
-const SC3D = { ok: false, started: false, raf: null, last: 0, fighters: { left: null, right: null }, ringHalfX: 1.45, ringHalfZ: 0.85 };
+const SC3D = { ok: false, started: false, raf: null, last: 0, fighters: { left: null, right: null }, ringHalfX: 1.45, ringHalfZ: 0.85, entranceT0: 0, finishCam: null };
 function has3D() { return typeof THREE !== 'undefined'; }
 
 function init3D() {
@@ -4603,6 +4632,14 @@ function build3DFighter(art) {
   // neck + head + hair
   const neck = mkCyl(0.058, 0.07, 0.12, skin); neck.position.y = 1.55; grp.add(neck);
   const head = mkBall(0.15, skin); head.position.y = 1.71; head.scale.z = 0.94; grp.add(head); P.head = head;
+  // FACE (children of head so they turn with it) — eyes, brows, nose → fighters aren't faceless
+  const eyeMat = new THREE.MeshStandardMaterial({ color: 0x14141c, roughness: 0.35 });
+  const browMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(hair), roughness: 0.9 });
+  [-0.055, 0.055].forEach(x => {
+    const e = new THREE.Mesh(new THREE.SphereGeometry(0.027, 8, 8), eyeMat); e.position.set(x, 0.025, 0.135); head.add(e);
+    const br = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.018, 0.03), browMat); br.position.set(x, 0.085, 0.13); head.add(br);
+  });
+  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.025, 8, 8), new THREE.MeshStandardMaterial({ color: new THREE.Color(skin), roughness: 0.6 })); nose.position.set(0, -0.01, 0.152); nose.scale.set(0.8, 1.1, 0.9); head.add(nose);
   const hairObj = buildHair3D(art.hairStyle || 'short', hair); if (hairObj) { hairObj.position.y = 1.73; grp.add(hairObj); }   // distinct per style
   // arms — cylinders w/ sphere shoulders, elbows, and glove hands (accent)
   function arm(side) {
@@ -4797,28 +4834,53 @@ function update3D(now) {
     if (L._wasDowned && !ld) set3DAnim('left', 'getup', 650);    // rise animation on the down→up transition
     if (R._wasDowned && !rd) set3DAnim('right', 'getup', 650);
     L._wasDowned = ld; R._wasDowned = rd; L.downed = ld; R.downed = rd;
-    poseFighter(L, dt, now, lMoving); poseFighter(R, dt, now, rMoving);
+    if (SC3D.finishCam) { const w = SC3D.finishCam.winner; L.downed = (w !== 'left'); R.downed = (w !== 'right'); }   // loser stays collapsed under the finish cam
+    // WALK-IN ENTRANCE — fighters start out at the ropes and stride to center as the fight begins
+    const enT = SC3D.entranceT0 ? (now - SC3D.entranceT0) : 1e9;
+    const enP = Math.min(1, enT / 950);
+    const enWalk = SC3D.entranceT0 !== 0 && enP < 1;
+    const enE = enP * enP * (3 - 2 * enP);                            // smoothstep ease-in
+    const enOff = (1 - enE) * SC3D.ringHalfX * 1.7;                   // outward stride distance (→0)
+    if (enP >= 1) SC3D.entranceT0 = 0;
+    // SLOW-MO on the finisher cam — the KO collapse plays in dramatic slow motion
+    const poseDt = SC3D.finishCam ? dt * 0.32 : dt;
+    poseFighter(L, poseDt, now, lMoving || enWalk); poseFighter(R, poseDt, now, rMoving || enWalk);
     // a small step-forward on attacks, in facing direction
     const lStep = (L._step || 0) * (leftFacesRight ? 1 : -1);
     const rStep = (R._step || 0) * (leftFacesRight ? -1 : 1);
-    L.group.position.x = damp(L.group.position.x, lx + lStep, dt, 12);
-    R.group.position.x = damp(R.group.position.x, rx + rStep, dt, 12);
+    const lEnt = leftFacesRight ? -enOff : enOff;                     // left fighter strides from its own side
+    const rEnt = leftFacesRight ? enOff : -enOff;
+    L.group.position.x = damp(L.group.position.x, lx + lStep + lEnt, dt, enWalk ? 7 : 12);
+    R.group.position.x = damp(R.group.position.x, rx + rStep + rEnt, dt, enWalk ? 7 : 12);
     L.group.position.z = damp(L.group.position.z, lz, dt, 10);
     R.group.position.z = damp(R.group.position.z, rz, dt, 10);
     L.group.rotation.y = damp(L.group.rotation.y, lYaw, dt, 12);
     R.group.rotation.y = damp(R.group.rotation.y, rYaw, dt, 12);
-    // CINEMATIC CAMERA — track the action midpoint + a slow orbital drift + a punch-in on big hits
     const midX = (lx + rx) / 2, sep = Math.abs(rx - lx);
-    const orbit = Math.sin(now * 0.00016) * 0.55;                     // gentle dolly across
-    const punch = (match.hitStop > 0 || match.pHype > 0 || match.oHype > 0) ? 0.55 : 0;   // zoom in on freeze-frames / hype
-    const camTX = 0.9 + midX * 0.32 + orbit;
-    const camTZ = 4.6 + Math.min(1.0, sep * 0.45) - punch;
-    const camTY = 1.7 + Math.sin(now * 0.00011) * 0.12 - punch * 0.1;
-    SC3D.camera.position.x = damp(SC3D.camera.position.x, camTX, dt, punch ? 9 : 2.6);
-    SC3D.camera.position.z = damp(SC3D.camera.position.z, camTZ, dt, punch ? 9 : 2.6);
-    SC3D.camera.position.y = damp(SC3D.camera.position.y, camTY, dt, 2.2);
-    SC3D._lookX = damp(SC3D._lookX || 0, midX * 0.5, dt, 3);
-    SC3D.camera.lookAt(SC3D._lookX, 1.05, 0);
+    if (SC3D.finishCam) {
+      // CINEMATIC FINISH CAM — a slow dramatic orbit + push-in on the downed fighter
+      const fc = SC3D.finishCam; const p = Math.min(1, (now - fc.t0) / fc.dur);
+      if (p >= 1) { SC3D.finishCam = null; }
+      const ang = -0.55 + p * 1.5;                                    // sweep around the action
+      const rad = 3.7 - p * 1.4;                                      // push in tight
+      SC3D.camera.position.x = midX * 0.5 + Math.sin(ang) * rad * 0.5;
+      SC3D.camera.position.z = Math.cos(ang) * rad + 1.0;
+      SC3D.camera.position.y = 1.35 + Math.sin(p * Math.PI) * 0.55 - p * 0.55;   // dip to a low hero angle
+      SC3D.camera.lookAt(midX * 0.5, 0.75, 0);                        // look low — at the fallen fighter
+    } else {
+      // CINEMATIC CAMERA — track the action midpoint + a slow orbital drift + a punch-in on big hits
+      const orbit = Math.sin(now * 0.00016) * 0.55;                   // gentle dolly across
+      const punch = (match.hitStop > 0 || match.pHype > 0 || match.oHype > 0) ? 0.55 : 0;   // zoom in on freeze-frames / hype
+      const entWide = enWalk ? 0.7 : 0;                               // pull back for the establishing entrance shot
+      const camTX = 0.9 + midX * 0.32 + orbit;
+      const camTZ = 4.6 + Math.min(1.0, sep * 0.45) - punch + entWide;
+      const camTY = 1.7 + Math.sin(now * 0.00011) * 0.12 - punch * 0.1 + entWide * 0.15;
+      SC3D.camera.position.x = damp(SC3D.camera.position.x, camTX, dt, punch ? 9 : 2.6);
+      SC3D.camera.position.z = damp(SC3D.camera.position.z, camTZ, dt, punch ? 9 : 2.6);
+      SC3D.camera.position.y = damp(SC3D.camera.position.y, camTY, dt, 2.2);
+      SC3D._lookX = damp(SC3D._lookX || 0, midX * 0.5, dt, 3);
+      SC3D.camera.lookAt(SC3D._lookX, 1.05, 0);
+    }
   }
   SC3D.renderer.render(SC3D.scene, SC3D.camera);
 }
