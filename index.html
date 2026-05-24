@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#0a0a0d" />
-<title>SLAM CITY · v2.25 · AUDIO FIXED</title>
+<title>SLAM CITY · v3.0 · UPDATE LOG</title>
 <!-- retro arcade type: Press Start 2P for marquee, Oxanium for readable UI · safe fallback stack -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -695,6 +695,13 @@
   .ach-row span { font-size: 10px; color: var(--muted); }
   .hp-belt { color: var(--gold); font-weight: 900; }
   .rc-champ { position: absolute; top: 4px; left: 6px; font-size: 13px; }
+
+  /* update log */
+  .cl-list { display: flex; flex-direction: column; gap: 7px; margin-bottom: 16px; max-height: 56vh; overflow-y: auto; text-align: left; }
+  .cl-row { display: flex; gap: 9px; padding: 7px 9px; border-radius: 8px; background: var(--bg-1); border-left: 2px solid var(--bg-3); }
+  .cl-row.latest { border-left-color: var(--gold); background: linear-gradient(180deg, #2a2012, var(--bg-1)); }
+  .cl-v { flex: 0 0 56px; font-family: var(--font-arcade); font-size: 9px; color: var(--gold); padding-top: 2px; }
+  .cl-t { font-size: 11px; color: var(--soft); line-height: 1.4; }
 </style>
 </head>
 <body>
@@ -712,7 +719,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v2.25 · build 2026-05-23·2047 · AUDIO RELIABILITY FIX (WebAudio resumes on gesture · all 9 SFX verified firing · sfx/vol gating works) · 90/10 wrestling · for AARON</div>
+  <div class="splash-foot">v3.0 · build 2026-05-23·2052 · IN-GAME UPDATE LOG + version clarity (v2.x → v3.0) · audio fixed · 90/10 wrestling · 8 modes · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -976,7 +983,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v2.25</div>
+    <div class="load-skip">tap to skip · v3.0</div>
   </div>
 </div>
 
@@ -997,6 +1004,15 @@
 
 <!-- achievement toast -->
 <div class="ach-toast" id="ach-toast"></div>
+
+<!-- update log modal -->
+<div class="tutorial" id="updatelog" aria-hidden="true">
+  <div class="tut-card">
+    <div class="tut-title">UPDATE LOG</div>
+    <div class="cl-list" id="cl-list"></div>
+    <button class="btn" type="button" onclick="hideUpdateLog()">CLOSE</button>
+  </div>
+</div>
 
 <!-- achievements modal -->
 <div class="tutorial" id="achievements" aria-hidden="true">
@@ -1537,7 +1553,7 @@ function renderHub() {
     + (save.belts > 0 ? `<span class="hp-stat hp-belt"><b>${save.belts}</b>🏆</span>` : '')
     + `<span class="hp-stat"><b>${curDiff().name}</b></span>`
     + `</div>`
-    + `<div class="hub-ver" onclick="showWhatsNew()">✦ v${GAME_VERSION} · what's new</div>`
+    + `<div class="hub-ver" onclick="showUpdateLog()">✦ v${GAME_VERSION} · update log</div>`
     + `<div class="hub-ver" onclick="showAchievements()" style="margin-left:8px">🏆 achievements ${ACHIEVEMENTS.filter(a=>save.achievements[a[0]]).length}/${ACHIEVEMENTS.length}</div>`;
 }
 
@@ -1627,6 +1643,7 @@ function renderSettings() {
     + settingRow('HOW TO PLAY', 'replay the tutorial', `<button class="set-btn" onclick="showTutorial()">VIEW TUTORIAL</button>`)
     + settingRow('ACHIEVEMENTS', 'milestones + belts you\'ve earned', `<button class="set-btn" onclick="showAchievements()">VIEW</button>`)
     + settingRow('WHAT\'S NEW / ABOUT', 'version ' + GAME_VERSION + ' · the game + latest changes', `<button class="set-btn" onclick="showWhatsNew()">VIEW</button>`)
+    + settingRow('UPDATE LOG', 'full version history (always moving forward)', `<button class="set-btn" onclick="showUpdateLog()">VIEW</button>`)
     + settingRow('RESET PROGRESS', 'wipes ratings, record + settings', `<button class="set-btn danger" onclick="resetProgress()">RESET EVERYTHING</button>`);
 }
 function setDifficulty(i) { save.difficulty = i; persistSave(); document.querySelectorAll('#seg-diff button').forEach((b, j) => b.classList.toggle('on', j === i)); }
@@ -1680,7 +1697,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '2.25';
+const GAME_VERSION = '3.0';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -1709,6 +1726,36 @@ function showWhatsNew() {
   el.classList.add('on'); el.setAttribute('aria-hidden', 'false');
 }
 function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el) { el.classList.remove('on'); el.setAttribute('aria-hidden', 'true'); } }
+
+/* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
+const CHANGELOG = [
+  ['3.0',  'Audio reliability fix · in-game UPDATE LOG · version reset to 3.0 for clarity'],
+  ['2.25', 'All sound effects verified firing (WebAudio resume fix)'],
+  ['2.24', 'Final polish sweep · 18 test suites green · 0 console errors'],
+  ['2.23', 'Announcer hype + crowd pops + verse-of-the-match'],
+  ['2.22', 'Champion belt + 10 achievements'],
+  ['2.21', 'Momentum / HYPE meter + hit-stop'],
+  ['2.20', 'Polish sweep · every setting verified'],
+  ['2.19', 'Balance pass (fair across 5 difficulties)'],
+  ['2.18', 'AI Watch mode (CPU v CPU) + Franchise season'],
+  ['2.17', 'Custom character creator'],
+  ['2.16', 'Roster search/filter + 6 CPU fighters + discipline labels'],
+  ['2.15', '12 living stats (grappling/submission/pin-power/chin/conditioning)'],
+  ['2.14', 'True responsive · portrait + landscape'],
+  ['2.13', 'Real appearances (skin tones + hairstyles render)'],
+  ['2.12', 'Main-menu + loading-screen glow-up'],
+  ['2.11', 'Update system + what\'s-new'],
+  ['2.10', '3D ring (perspective floor + sprites)'],
+  ['2.9',  '90/10 WRESTLING combat (grapple/slam/pin/submission)'],
+  ['2.8',  'Rhyming victory/defeat text'],
+  ['2.0–2.7', 'Real-time combat · arena + impact juice · 5 difficulties · pre-fight VS · retro font · unpredictable AI · captions · hub + settings + 6 modes']
+];
+function renderChangelog() {
+  document.getElementById('cl-list').innerHTML = CHANGELOG.map((c, i) =>
+    `<div class="cl-row${i === 0 ? ' latest' : ''}"><span class="cl-v">v${c[0]}</span><span class="cl-t">${c[1]}</span></div>`).join('');
+}
+function showUpdateLog() { renderChangelog(); const el = document.getElementById('updatelog'); el.classList.add('on'); el.setAttribute('aria-hidden', 'false'); }
+function hideUpdateLog() { const el = document.getElementById('updatelog'); el.classList.remove('on'); el.setAttribute('aria-hidden', 'true'); }
 
 /* ========== ACHIEVEMENTS + CHAMPION ========== */
 const ACHIEVEMENTS = [
