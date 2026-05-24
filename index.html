@@ -1030,7 +1030,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v4.24 · build 2026-05-24·1713 · 🐛 search-typing + tutorial-button fixed · 🎥 consistent close camera · 🥊 bigger ring + full roam · ⚡ lag fixed · 🛡 admin sees owners · for AARON</div>
+  <div class="splash-foot">v4.25 · build 2026-05-24·1808 · 🎲 SPECIAL MATCHES — 6 stipulations (Iron Man · Sudden Death · Hardcore · Glass Cannon · Comeback · Even Steven) · 🛡 admin Lift-All + 🧬 Clone fighter · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -1072,6 +1072,15 @@
     <button class="mode-card" onclick="startMode('survival')"><span class="mode-ic">💀</span><span class="mode-txt"><b>SURVIVAL</b><i>endless · foes scale up, you stay worn</i></span></button>
     <button class="mode-card" onclick="startMode('rumble')"><span class="mode-ic">🔔</span><span class="mode-txt"><b>ROYAL RUMBLE</b><i>whole crew, random draw · TOSS them over the top · your wear carries</i></span></button>
     <button class="mode-card" onclick="startMode('franchise')"><span class="mode-ic">📅</span><span class="mode-txt"><b>FRANCHISE</b><i>8-match season · win or lose, you advance</i></span></button>
+  </div>
+  <div class="hub-grp-label">🎲 SPECIAL MATCHES · stipulations</div>
+  <div class="hub-modes">
+    <button class="mode-card" onclick="startStip('iron')"><span class="mode-ic">⏱️</span><span class="mode-txt"><b>IRON MAN</b><i>75-second clock · most knockdowns wins</i></span></button>
+    <button class="mode-card" onclick="startStip('sudden')"><span class="mode-ic">💀</span><span class="mode-txt"><b>SUDDEN DEATH</b><i>one knockdown ends it · all or nothing</i></span></button>
+    <button class="mode-card" onclick="startStip('hardcore')"><span class="mode-ic">🔥</span><span class="mode-txt"><b>HARDCORE</b><i>everything hits 70% harder · no mercy</i></span></button>
+    <button class="mode-card" onclick="startStip('glass')"><span class="mode-ic">💥</span><span class="mode-txt"><b>GLASS CANNON</b><i>huge damage · thin HP · blink and it’s over</i></span></button>
+    <button class="mode-card" onclick="startStip('comeback')"><span class="mode-ic">🦅</span><span class="mode-txt"><b>COMEBACK KING</b><i>the more hurt you are, the harder you hit</i></span></button>
+    <button class="mode-card" onclick="startStip('even')"><span class="mode-ic">⚖️</span><span class="mode-txt"><b>EVEN STEVEN</b><i>ratings equalized · pure skill</i></span></button>
   </div>
   <div class="hub-grp-label">🥊 PRACTICE & SPECTATE</div>
   <div class="hub-modes">
@@ -1336,7 +1345,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v4.24</div>
+    <div class="load-skip">tap to skip · v4.25</div>
   </div>
 </div>
 
@@ -2040,6 +2049,31 @@ function changeFeedHTML() {
 
 let gameMode = 'quick';
 const MODE_LABEL = { quick:'QUICK FIGHT', career:'CAREER', gauntlet:'GAUNTLET', survival:'SURVIVAL', rumble:'ROYAL RUMBLE', title:'TITLE DEFENSE', versus:'VERSUS', training:'TRAINING', franchise:'FRANCHISE', watch:'WATCH', tournament:'CPU TOURNAMENT' };
+// STIPULATIONS — bolt-on rule changes that make a fight a totally different version of itself
+const STIPS = {
+  iron:     { name: 'IRON MAN', ic: '⏱️', desc: '75-second clock · most knockdowns wins' },
+  sudden:   { name: 'SUDDEN DEATH', ic: '💀', desc: 'one knockdown ends it — all or nothing' },
+  hardcore: { name: 'HARDCORE', ic: '🔥', desc: 'everything hits 70% harder · no mercy' },
+  glass:    { name: 'GLASS CANNON', ic: '💥', desc: 'huge damage + thin HP · blink and it’s over' },
+  comeback: { name: 'COMEBACK KING', ic: '🦅', desc: 'the more hurt you are, the harder you hit' },
+  even:     { name: 'EVEN STEVEN', ic: '⚖️', desc: 'ratings equalized — pure skill, no advantage' }
+};
+let pendingStip = null;
+function startStip(s) { pendingStip = s; gameMode = 'quick'; modeCtx.queue = []; modeCtx.idx = 0; modeCtx.pickingOpponent = false; setRosterLabel(false); goto('roster'); }
+function stipDmgMult(atkHP) {
+  if (!match || !match.stip) return 1;
+  if (match.stip === 'hardcore') return 1.7;
+  if (match.stip === 'glass') return 2.1;
+  if (match.stip === 'comeback' && atkHP < 35) return 1.35;
+  return 1;
+}
+function applyStip(m) {
+  if (!m.stip) return;
+  m.pFalls = 0; m.oFalls = 0;
+  if (m.stip === 'glass') { m.pHP = 60; m.oHP = 60; }
+  else if (m.stip === 'iron') { m.ironClock = 75000; }
+  else if (m.stip === 'even') { for (const k in m.pAb) { const a = Math.round((m.pAb[k] + m.oAb[k]) / 2); m.pAb[k] = a; m.oAb[k] = a; } }
+}
 const modeCtx = { queue: [], idx: 0, streak: 0, playerId: null, pickingOpponent: false, season: null };
 function shuffled(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
@@ -2236,7 +2270,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '4.24';
+const GAME_VERSION = '4.25';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -2270,6 +2304,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['4.25', 'MORE MODES + DEEPER ADMIN: 🎲 NEW SPECIAL MATCHES — six STIPULATIONS that turn a fight into a totally different version of itself: ⏱️ IRON MAN (75s clock, most knockdowns wins), 💀 SUDDEN DEATH (one knockdown ends it), 🔥 HARDCORE (everything hits 70% harder), 💥 GLASS CANNON (huge damage, thin HP), 🦅 COMEBACK KING (hurt = hit harder), ⚖️ EVEN STEVEN (ratings equalized, pure skill). 🛡 ADMIN: ⚖ LIFT ALL bans/timeouts in one tap, and 🧬 CLONE any fighter into a fresh editable custom (instant variants). (Still on deck: more move options.)'],
   ['4.24', 'BIG FIX-IT + GAMEPLAY PASS (no sandbagging): 🐛 the search bar no longer stops you from typing (admin + roster). 🐛 the VIEW TUTORIAL / HOW TO PLAY button now actually opens (it was trapped inside the fight screen). 🎥 the camera stays a CONSISTENT close front view — no more drifting to a sideview. 🥊 bigger ring + you can roam the whole mat (way more front↔back room). ⚡ fight lag fixed (lighter render + one shadow caster + fewer per-frame repaints). 🛡 the admin “all fighters” page now shows WHO is using each fighter (owner name) and lists created fighters. 🖼 roster/detail avatars now refresh the moment an owner changes their look. (Next drop: more move/customization options + a batch of fresh ideas.)'],
   ['4.23', 'POLISH PASS + DEEPER ADMIN: ✨ every screen now fades in smoothly, a slow living glow drifts behind the menus, and the buttons catch a sheen — the whole app feels more premium (all of it respects reduced-motion). 🛡 ADMIN got deeper: a 📊 at-a-glance dashboard (claimed · bans · made · logged · notes), 📝 STAFF NOTES you can pin to any fighter (collaborative mod memory, shows right on their row), and ⎘ EXPORT the audit log to your clipboard as a real paper-trail.'],
   ['4.22', 'FIGHT READABILITY (you said you still couldn’t tell what’s happening): 🎥 the camera now stays CLOSE the WHOLE time — before, it zoomed back out whenever you drifted apart (which is most of a fight), so it felt like nothing changed. Now it stays tight and PANS to follow, with a wider lens so BOTH fighters always fill the frame, near or far. 📛 LIVE ACTION READOUT — a chip next to each fighter’s name calls out exactly what they’re doing every moment: ▶ their move, ◆ BLOCKING, ● STUNNED, ● DOWN, 🔥 HYPED. No more guessing what just happened.'],
@@ -2905,6 +2940,7 @@ function renderAdmin() {
     html += `<div class="adm-sec-label danger-label">⛔ BANS / TIMEOUTS · ${banned.length}</div>`;
     html += banned.length
       ? banned.map(n => { const b = save.bans[n]; return `<div class="adm-row"><span class="adm-rname">${n}</span><span class="adm-open">${b.type === 'ban' ? '⛔ banned' : '⏳ ' + fmtLeft(b.until)}</span><span class="adm-acts"><button class="adm-mini" type="button" onclick="adminUnban('${n.replace(/'/g, "")}')">lift</button></span></div>`; }).join('')
+        + `<button class="adm-mini" type="button" style="margin-bottom:8px" onclick="adminLiftAll()">⚖ lift ALL (${banned.length})</button>`
       : `<div class="adm-log-row" style="color:var(--muted)">nobody’s banned</div>`;
     html += `<div class="adm-sec-label danger-label">⚠ MASTER CONTROLS</div>`
       + `<button class="btn btn-secondary adm-danger" type="button" onclick="adminResetAllLooks()">🎨 RESET ALL LOOKS TO DEFAULT</button>`
@@ -3101,6 +3137,32 @@ function adminUnban(nameUpper) {
   persistSave(); renderAdmin();
   setStatus && setStatus('LIFTED · ' + nameUpper, 'var(--gold)', 900);
 }
+function adminLiftAll() {
+  if (curAdminTier() !== 1) return;
+  const n = Object.keys(save.bans || {}).length; if (!n) return;
+  if (!confirm('Lift ALL ' + n + ' bans + timeouts at once?')) return;
+  snapshotForUndo('lift all bans (' + n + ')');
+  save.bans = {}; adminLogPush('✅ lifted ALL ' + n + ' bans/timeouts'); persistSave(); renderAdmin();
+  setStatus && setStatus('CLEARED ALL ' + n + ' BANS', 'var(--gold)', 1100);
+}
+// CLONE — duplicate any fighter into a brand-new editable custom (great for variants / quick rosters)
+function adminClone(id) {
+  if (!can('create')) return;
+  const f = FIGHTERS.find(x => x.id === id); if (!f) return;
+  const nid = 'custom_' + Date.now();
+  const spec = {
+    id: nid, name: (f.name + ' II').slice(0, 14), arch: f.arch,
+    skin: matchKey(SKIN, f.art.skin, 'skin') || 'white', hairColor: matchKey(HAIRC, f.art.hair, 'hair') || 'black',
+    hairStyle: f.art.hairStyle || 'short', beard: f.art.beard || 'none', eyeColor: f.art.eyeColor || '#14141c',
+    accent: f.art.accent, trunks: f.art.shorts,
+    stats: { striking: getAbility(f, 'striking'), grappling: getAbility(f, 'grappling'), stamina: getAbility(f, 'stamina'), heart: getAbility(f, 'heart'), charisma: getAbility(f, 'charisma') },
+    finisher: (f.finishers && f.finishers[0]) || 'Clone Bomb', mJab: 'Jab', mCombo: 'Combo', mSig: 'Signature'
+  };
+  save.customFighters = save.customFighters || []; save.customFighters.push(spec); addCustomToRoster(spec);
+  adminLogPush('🧬 cloned ' + f.name + ' → ' + spec.name); persistSave();
+  setStatus && setStatus('CLONED ' + f.name, 'var(--gold)', 1100);
+  openFighterEditor(nid);
+}
 function adminClearFeedback() { if (curAdminTier() !== 1) return; save.feedback = []; persistSave(); renderAdmin(); }
 
 /* ---------- 90-DAY UNDO — snapshot the relevant state before each admin command ---------- */
@@ -3213,6 +3275,7 @@ function renderFighterEditor(fid) {
   if (f.custom) html += `<div class="cr-row"><div class="cr-label">FINISHER NAME</div><input class="roster-search" id="ef-fin" maxlength="20" value="${(f.finishers && f.finishers[0]) || ''}" oninput="efSetFinisher(this.value)" autocomplete="off"></div>`;
   // commands
   html += `<div class="adm-sec-label">COMMANDS</div>`;
+  if (can('create')) html += `<button class="btn btn-secondary" type="button" onclick="adminClone('${fid}')">🧬 CLONE THIS FIGHTER</button>`;   // duplicate into a new editable custom
   if (can('crown')) html += champ ? `<button class="btn btn-secondary" type="button" onclick="adminUncrown()">👑✕ UNCROWN (remove champion)</button>` : `<button class="btn btn-secondary" type="button" onclick="efCmd('crown')">👑 CROWN CHAMPION</button>`;
   if (claimed && can('message')) html += `<button class="btn btn-secondary" type="button" onclick="efCmd('msg')">✉ MESSAGE (claimed)</button>`;
   if (claimed && can('kick')) html += `<button class="btn btn-secondary" type="button" onclick="efCmd('kick')">⏏ KICK (sign out)</button>`;
@@ -3540,6 +3603,7 @@ function applyModeRules(m) {
     m.rumbleElims = e; m.rumbleNum = e + 2;             // your entry was #1; #2,#3… come after
     m.rumbleLeft = (modeCtx.queue ? modeCtx.queue.length : 0) - (modeCtx.idx || 0);
   }
+  applyStip(m);   // stipulations layer ON TOP of any mode
 }
 function startMatchWith(playerId, oppId) {
   const player = FIGHTERS.find(f => f.id === playerId);
@@ -3562,7 +3626,7 @@ function startMatchWith(playerId, oppId) {
     pZ: 0.5, oZ: 0.5,        // DEPTH (0 = far/back, 1 = near/front) — the real 3rd dimension
     paused: false,
     started: false,
-    mode: gameMode,
+    mode: gameMode, stip: pendingStip, ironClock: 0, pFalls: 0, oFalls: 0,
     training: gameMode === 'training',
     pAI: gameMode === 'watch' || gameMode === 'tournament',
     watchT: 0,
@@ -3583,6 +3647,7 @@ function startMatchWith(playerId, oppId) {
     comboCount: 0, comboUntil: 0, comboHitUntil: 0, biggestHit: 0, lastActionT: 0
   };
   applyModeRules(match);                 // per-mode feel: scaling, worn HP, training dummy
+  pendingStip = null;                    // consumed — don't leak the stipulation into the next fight
   save.picks[playerId] = (save.picks[playerId] || 0) + 1;
   persistSave();
   goto('fight');
@@ -3698,6 +3763,11 @@ function syncBars() {
   if (lm) { lm.style.width = match.pMo + '%'; lm.parentElement.classList.toggle('hyped', match.pHype > 0); }
   if (rm) { rm.style.width = match.oMo + '%'; rm.parentElement.classList.toggle('hyped', match.oHype > 0); }
   updateFightState();
+  // IRON MAN clock + knockdown tally in the round slot
+  if (match.stip === 'iron') {
+    const rd = document.getElementById('fight-round');
+    if (rd) { const s = Math.ceil((match.ironClock || 0) / 1000); rd.textContent = '⏱ ' + Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2) + '  ' + match.pFalls + '–' + match.oFalls; }
+  }
 }
 // LIVE ACTION READOUT — a chip by each name that says exactly what that fighter is doing right now
 function fightStateOf(p) {
@@ -3795,6 +3865,20 @@ function gameLoop(t) {
   const dtms = dt * 1000;
 
   if (match.hitStop > 0) { match.hitStop -= dtms; applyPositions(); rafId = requestAnimationFrame(gameLoop); return; } // freeze-frame punch
+
+  // STIPULATION win-conditions
+  if (match.started && match.stip) {
+    if (match.stip === 'sudden' && (match.pDowned > 0 || match.oDowned > 0)) {   // one knockdown ends it
+      endMatchBy(match.oDowned > 0 ? 'win' : 'loss', 'KO'); return;
+    }
+    if (match.stip === 'iron') {
+      match.ironClock = Math.max(0, (match.ironClock || 0) - dtms);
+      if (match.ironClock <= 0) {                                                 // clock's up → most knockdowns wins (HP tiebreak)
+        const pWin = match.pFalls > match.oFalls || (match.pFalls === match.oFalls && match.pHP >= match.oHP);
+        endMatchBy(pWin ? 'win' : 'loss', 'IRON MAN'); return;
+      }
+    }
+  }
 
   const ring = document.getElementById('ring');
   const arenaW = ring.clientWidth;
@@ -4260,6 +4344,7 @@ function resolveAttack(atk) {
   dmg *= WEIGHT_CLASSES[defWC].tough;                                // weight class = toughness
   dmg *= Math.max(0.7, Math.min(1.25, 80 / defAb.chin));             // CHIN = damage/KO resistance
   if (isPlayer ? match.pHype > 0 : match.oHype > 0) dmg *= 1.18;     // HYPE surge — momentum-fueled damage
+  dmg *= stipDmgMult(atkHP);                                         // STIPULATIONS (hardcore/glass/comeback) bend the damage
   if (isPlayer) dmg /= curDiff().oTough;                             // harder = opponent tankier
   else          dmg *= curDiff().oDmg;                               // harder = opponent hits harder
   // OVERALL MATTERS — the higher-OVR fighter hits a touch harder; the gap swings damage up to ±18%
@@ -4345,7 +4430,7 @@ function resolveAttack(atk) {
       caption((isPlayer ? match.player.name : match.opponent.name) + ' got REVERSED!', isPlayer ? 'enemy' : 'player');
       playKOSound();
     } else {
-      if (isPlayer) { match.oDowned = DOWN_MS; setDowned('right', true); } else { match.pDowned = DOWN_MS; setDowned('left', true); }
+      if (isPlayer) { match.oDowned = DOWN_MS; setDowned('right', true); match.oFalls++; } else { match.pDowned = DOWN_MS; setDowned('left', true); match.pFalls++; }
       caption(defName + ' is DOWN — ' + (isPlayer ? 'go for the PIN!' : 'get up!'), isPlayer ? 'big' : 'enemy');
     }
   }
@@ -4699,6 +4784,7 @@ function endPrefight() {
   else if (m === 'rumble') caption('🔔 RUMBLE · ENTRY #' + (match.rumbleNum || 2) + ' — ' + match.opponent.name + ' charges the ring! (' + (match.rumbleElims || 0) + ' tossed)', 'big');
   else if (m === 'tournament') caption('🏟️ ' + tournProgress() + ' — ' + match.player.name + ' vs ' + match.opponent.name, 'big');
   else if (m === 'gauntlet') caption('🏆 GAUNTLET ' + (match.gauntletNum || 1) + '/' + (modeCtx.queue ? modeCtx.queue.length : 11), 'big');
+  if (match.stip && STIPS[match.stip]) caption(STIPS[match.stip].ic + ' ' + STIPS[match.stip].name + ' — ' + STIPS[match.stip].desc, 'big');   // stipulation call-out
 }
 
 function flash(side, heavy) {
@@ -4868,7 +4954,7 @@ function finishMatch(result) {
   flash(lossSide, true); shakeRing(true);   // big finish flash + shake
   const cineOn = triggerFinishCam(result);   // slow-mo cinematic finish before the result screen
   const revealDelay = cineOn ? 2300 : 1400;  // let the finish cam play out
-  const m = match.winBy === 'PINFALL' ? ' by pinfall' : match.winBy === 'SUBMISSION' ? ' by submission' : match.winBy === 'TOSS' ? ' — over the top rope!' : ' by KO';
+  const m = match.winBy === 'PINFALL' ? ' by pinfall' : match.winBy === 'SUBMISSION' ? ' by submission' : match.winBy === 'TOSS' ? ' — over the top rope!' : match.winBy === 'IRON MAN' ? ' on the Iron Man clock' : ' by KO';
   caption((result === 'win' ? match.player.name : match.opponent.name) + ' wins' + m, 'big');
   if (!match.training && !match.pAI) {                // TRAINING + WATCH don't touch your record
     if (result === 'win') { save.wins++; save.kos++; unlockAch('firstWin'); if (save.wins >= 10) unlockAch('wins10'); }
