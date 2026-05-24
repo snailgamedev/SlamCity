@@ -13,7 +13,7 @@
 <title>SLAM CITY · v4.1 · REAL 3D</title>
 <!-- PWA: installable on phone/desktop + offline -->
 <link rel="manifest" href="manifest.json" />
-<link rel="apple-touch-icon" href="icon.svg" />
+<link rel="apple-touch-icon" href="icon-180.png" />
 <meta name="mobile-web-app-capable" content="yes" />
 <script>
   // capture the install prompt (Android / desktop Chrome) for the in-game INSTALL button
@@ -963,7 +963,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v4.16 · build 2026-05-24·1317 · 🎥 FIGHT CLARITY — close eye-level camera (no more tiny fighters) · 🔵🔴 blue=YOU / red=FOE rings · ⚠️ attack telegraph · for AARON</div>
+  <div class="splash-foot">v4.17 · build 2026-05-24·1335 · ⬇ INSTALL + OFFLINE verified — full game plays with no internet · 📱 crisp iPhone home-screen icon (real PNGs) · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -1272,7 +1272,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v4.16</div>
+    <div class="load-skip">tap to skip · v4.17</div>
   </div>
 </div>
 
@@ -2154,7 +2154,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '4.16';
+const GAME_VERSION = '4.17';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -2188,6 +2188,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['4.17', 'INSTALL / OFFLINE polish: verified the whole game plays fully OFFLINE (the 3D engine, fighters, every mode — all cached, no internet needed once loaded). Fixed the iPhone home-screen icon — “Add to Home Screen” now shows a crisp SLAM CITY app icon instead of a blank one (real PNG icons at 180/192/512 instead of an SVG iOS ignored). Install + offline are solid.'],
   ['4.16', 'FIGHT CLARITY OVERHAUL (you said it was hard to tell what’s happening — fixed): 🎥 NEW CAMERA — pulled in close at near eye-level so the fighters FILL the screen instead of being tiny specks in a sea of black, and the constant floaty sway is gone — it’s a stable broadcast angle that keeps BOTH fighters framed whether they’re close or far · 🔵🔴 WHO’S WHO — a blue ring under YOU, a red ring under your FOE, so you never lose track of yourself · ⚠️ ATTACK TELEGRAPH — a fighter’s ring flashes bright the instant they commit an attack, so you can SEE the hit coming and time your REVERSE/BLOCK · fighters no longer fully overlap at contact so you can read the action. The whole fight is way easier to follow now.'],
   ['4.15', 'ADMIN TOOLS cluster (cooking the list · you flagged this one): 📢 MESSAGE OF THE DAY — an admin posts a banner that stays on the hub for EVERYONE until changed (separate from the one-shot announce) · 🏆 ADMIN ACTIVITY — the panel now ranks who’s been moderating, tallied from the audit log · 🔍 LOG SEARCH — filter the admin log by action or by which admin did it. Every logged action now records WHO did it.'],
   ['4.14', 'FACE CUSTOMIZATION (cooking the list): now that every fighter has a face, you can shape it — 🧔 BEARD (none · stubble · goatee · full) and 👁 EYE COLOR (dark · brown · hazel · amber · blue · green · ruby), both in the CREATE-A-FIGHTER screen AND the per-fighter look editor, so you can give anyone in the crew a beard. Eyes now have pupils so the color reads. Live 3D preview updates instantly and it saves with the fighter.'],
