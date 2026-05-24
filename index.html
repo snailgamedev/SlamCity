@@ -433,12 +433,19 @@
     .hub-modes { grid-template-columns: repeat(3, 1fr); }
   }
   @media (min-width: 1200px) {
-    .screen { max-width: 1040px; }
+    .screen { max-width: 1120px; }
     #fight.screen { max-width: 1440px; }
     .ring { min-height: 66vh; }
     .roster-grid { grid-template-columns: repeat(auto-fill, minmax(184px, 1fr)); }
     .name { font-size: clamp(56px, 6vw, 92px); }
   }
+  /* DESKTOP: fill the room — dense admin lists + tool buttons flow into TWO columns instead of one sparse strip */
+  @media (min-width: 720px) {
+    .adm-crewlist { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: start; }
+    .adm-crewcell .adm-row { margin: 0; }
+    .rank-body, .faith-body { max-width: 620px; }
+  }
+  .adm-crewcell { min-width: 0; }
   /* labeled HP + Stamina bars so it's clear what each is */
   /* LIVE ACTION READOUT chip beside each fighter's name — tells you what they're doing right now */
   .fs-state { display: inline-block; min-height: 14px; font-size: 10px; font-weight: 800; letter-spacing: 0.5px; margin-top: 2px; padding: 1px 6px; border-radius: 6px; white-space: nowrap; }
@@ -1063,7 +1070,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v4.27 · build 2026-05-24·1850 · ✝ FAITH CORNER WAY DEEPER — daily blessing + streak · 🧠 memorize · 📚 collection · 🕊 devotionals · ✝ the gospel · ⭐ Faith Stars · for AARON</div>
+  <div class="splash-foot">v4.28 · build 2026-05-24·1928 · 😀 fighters got real FACES (eyes · brow · nose · mouth) · 🖥 desktop fills the screen (2-column admin) · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -1388,7 +1395,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v4.27</div>
+    <div class="load-skip">tap to skip · v4.28</div>
   </div>
 </div>
 
@@ -2316,7 +2323,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '4.27';
+const GAME_VERSION = '4.28';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -2350,6 +2357,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['4.28', 'FACES + DESKTOP POLISH: 😀 fighters finally have a real FACE — bigger eyes with iris/pupil/glint, an angled brow, a nose and a mouth — so they read as people in the ring instead of blank mannequins (shows everywhere: ring, roster, customizer). 🖥 DESKTOP no longer wastes the screen — the admin panel’s crew list flows into TWO columns and the menus use the width instead of a thin lonely strip down the middle. Honest note: a full “redo the whole gameplay” is a bigger build — see the splash/notes; tell me which direction to take it.'],
   ['4.27', 'FAITH CORNER — WAY DEEPER (you asked to make the G way better): now a real space with 5 tabs → 📖 VERSE OF THE DAY with a 🙏 daily blessing + 🔥 day-streak, 🧠 MEMORIZE (fill-the-blank scripture challenge), 📚 COLLECTION (every verse you read or nail gets gathered — build your set), 🕊 DEVO (5 game-tied devotionals: Courage · Brotherhood · Perseverance · Identity · Humility), and ✝ THE REAL WIN (a clear, warm, no-pressure gospel — John 3:16). Earn ⭐ Faith Stars for showing up in the Word; they ride on your hub profile. Still humble: “go to the Word for yourself.”'],
   ['4.26', 'FAITH + DEEPER ADMIN (the last drop skipped the faith — fixing that): ✝ NEW FAITH CORNER off the hub — a VERSE OF THE DAY with “one way to live it / what it means”, the heart behind the game (iron sharpening iron · John 3:16), and every brother’s walkout scripture in one place, with a humble “go to the Word for yourself” note. 🛡 ADMIN got deeper: Old Man Eli can now PROMOTE any fighter to a CREW admin (or revoke it) on the fly, and 🧊 FREEZE a fighter’s ratings so wins/losses stop moving them (perfect for a benchmark fighter).'],
   ['4.25', 'MORE MODES + DEEPER ADMIN: 🎲 NEW SPECIAL MATCHES — six STIPULATIONS that turn a fight into a totally different version of itself: ⏱️ IRON MAN (75s clock, most knockdowns wins), 💀 SUDDEN DEATH (one knockdown ends it), 🔥 HARDCORE (everything hits 70% harder), 💥 GLASS CANNON (huge damage, thin HP), 🦅 COMEBACK KING (hurt = hit harder), ⚖️ EVEN STEVEN (ratings equalized, pure skill). 🛡 ADMIN: ⚖ LIFT ALL bans/timeouts in one tap, and 🧬 CLONE any fighter into a fresh editable custom (instant variants). (Still on deck: more move options.)'],
@@ -3021,7 +3029,7 @@ function renderAdmin() {
   }
   // ── crew list (actions gated by tier) ──
   html += `<div class="adm-sec-label">CREW · ${roster.length} FIGHTERS</div>`;
-  html += roster.map(f => adminCrewRow(f)).join('');
+  html += `<div class="adm-crewlist">` + roster.map(f => adminCrewRow(f)).join('') + `</div>`;
   // ── feedback (tier 1/2/3 can view) ──
   if (can('viewfeed')) {
     const fb = save.feedback || [];
@@ -3107,7 +3115,7 @@ function adminCrewRow(f) {
   }
   const badge = og === 1 ? '👑 ' : og === 2 ? '🥈 ' : og === 3 ? '🛡 ' : (isChamp ? '' : '');
   const noteLine = note ? `<div class="adm-noteline">📝 ${escapeHTML(note)}</div>` : '';
-  return `<div class="adm-row"><span class="adm-rname">${isChamp ? '🏆 ' : ''}${badge}${f.name}${f.custom ? ' <span class="adm-tag">made</span>' : ''}</span>${status}<span class="adm-acts">${acts}</span></div>${noteLine}`;
+  return `<div class="adm-crewcell"><div class="adm-row"><span class="adm-rname">${isChamp ? '🏆 ' : ''}${badge}${f.name}${f.custom ? ' <span class="adm-tag">made</span>' : ''}</span>${status}<span class="adm-acts">${acts}</span></div>${noteLine}</div>`;
 }
 // who is acting (for logs + inbox text)
 function adminWho() { return save.activeProfile === ADMIN_KEY ? 'Old Man Eli' : ((FIGHTERS.find(f => f.id === save.activeProfile) || {}).name || 'an admin'); }
@@ -5432,17 +5440,23 @@ function build3DFighter(art) {
   // neck + head + hair
   const neck = mkCyl(0.058, 0.07, 0.12, skin); neck.position.y = 1.55; grp.add(neck);
   const head = mkBall(0.15, skin); head.position.y = 1.71; head.scale.z = 0.94; grp.add(head); P.head = head;
-  // FACE (children of head so they turn with it) — eyes, brows, nose → fighters aren't faceless
-  const eyeColor = art.eyeColor || '#14141c';                  // customizable iris color
-  const eyeMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(eyeColor), roughness: 0.35 });
-  const pupilMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0e, roughness: 0.3 });
-  const browMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(hair), roughness: 0.9 });
-  [-0.055, 0.055].forEach(x => {
-    const e = new THREE.Mesh(new THREE.SphereGeometry(0.027, 8, 8), eyeMat); e.position.set(x, 0.025, 0.135); head.add(e);
-    const pu = new THREE.Mesh(new THREE.SphereGeometry(0.013, 6, 6), pupilMat); pu.position.set(x, 0.025, 0.158); head.add(pu);   // pupil pops the iris color
-    const br = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.018, 0.03), browMat); br.position.set(x, 0.085, 0.13); head.add(br);
+  // FACE — bigger, defined features that READ at fight distance (was too subtle → fighters looked like blank mannequins)
+  const eyeColor = art.eyeColor || '#26323f';                  // customizable iris color (default a readable dark slate, not near-black)
+  const scleraMat = new THREE.MeshStandardMaterial({ color: 0xf4f0e8, roughness: 0.4 });   // eye-white
+  const irisMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(eyeColor), roughness: 0.3 });
+  const pupilMat = new THREE.MeshStandardMaterial({ color: 0x07070a, roughness: 0.25 });
+  const glintMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  const browMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(hair), roughness: 0.95 });
+  const darkMat = new THREE.MeshStandardMaterial({ color: 0x2a1418, roughness: 0.9 });       // mouth
+  [-0.058, 0.058].forEach((x, i) => {
+    const sc = new THREE.Mesh(new THREE.SphereGeometry(0.034, 10, 10), scleraMat); sc.position.set(x, 0.028, 0.125); sc.scale.set(1, 0.85, 0.7); head.add(sc);  // eye-white
+    const ir = new THREE.Mesh(new THREE.SphereGeometry(0.019, 10, 10), irisMat); ir.position.set(x, 0.026, 0.152); head.add(ir);                                  // iris
+    const pu = new THREE.Mesh(new THREE.SphereGeometry(0.0095, 8, 8), pupilMat); pu.position.set(x, 0.026, 0.166); head.add(pu);                                   // pupil
+    const gl = new THREE.Mesh(new THREE.SphereGeometry(0.004, 6, 6), glintMat); gl.position.set(x + 0.007, 0.034, 0.17); head.add(gl);                             // glint (life in the eye)
+    const br = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.02, 0.035), browMat); br.position.set(x, 0.088, 0.125); br.rotation.z = (x < 0 ? 1 : -1) * 0.12; head.add(br);  // angled brow
   });
-  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.025, 8, 8), new THREE.MeshStandardMaterial({ color: new THREE.Color(skin), roughness: 0.6 })); nose.position.set(0, -0.01, 0.152); nose.scale.set(0.8, 1.1, 0.9); head.add(nose);
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.07, 8), new THREE.MeshStandardMaterial({ color: new THREE.Color(skin), roughness: 0.6 })); nose.rotation.x = Math.PI / 2; nose.position.set(0, -0.005, 0.155); head.add(nose);
+  const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.072, 0.014, 0.03), darkMat); mouth.position.set(0, -0.072, 0.14); head.add(mouth);
   // BEARD — facial hair, customizable (none / stubble / goatee / full)
   const beard = art.beard || 'none';
   if (beard !== 'none') {
