@@ -927,7 +927,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v4.10 · build 2026-05-24·1212 · 👤 FACES on every fighter · 🚶 WALK-IN ENTRANCES from the ropes · 🎬 SLOW-MO FINISH CAM with letterbox + ★ FINISH ★ stamp · for AARON</div>
+  <div class="splash-foot">v4.11 · build 2026-05-24·1227 · 🔔 NEW: ROYAL RUMBLE — whole crew, random draw · TOSS them over the top (wear them down first) · your damage carries · last one standing wins · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -966,6 +966,7 @@
     <button class="mode-card" onclick="startMode('career')"><span class="mode-ic">📈</span><span class="mode-txt"><b>CAREER</b><i>ranked ladder · climb to the title</i></span></button>
     <button class="mode-card" onclick="startMode('gauntlet')"><span class="mode-ic">🏆</span><span class="mode-txt"><b>GAUNTLET</b><i>whole crew in a row · full heal between</i></span></button>
     <button class="mode-card" onclick="startMode('survival')"><span class="mode-ic">💀</span><span class="mode-txt"><b>SURVIVAL</b><i>endless · foes scale up, you stay worn</i></span></button>
+    <button class="mode-card" onclick="startMode('rumble')"><span class="mode-ic">🔔</span><span class="mode-txt"><b>ROYAL RUMBLE</b><i>whole crew, random draw · TOSS them over the top · your wear carries</i></span></button>
     <button class="mode-card" onclick="startMode('franchise')"><span class="mode-ic">📅</span><span class="mode-txt"><b>FRANCHISE</b><i>8-match season · win or lose, you advance</i></span></button>
   </div>
   <div class="hub-grp-label">🥊 PRACTICE & SPECTATE</div>
@@ -1234,7 +1235,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v4.10</div>
+    <div class="load-skip">tap to skip · v4.11</div>
   </div>
 </div>
 
@@ -1909,7 +1910,7 @@ function changeFeedHTML() {
 }
 
 let gameMode = 'quick';
-const MODE_LABEL = { quick:'QUICK FIGHT', career:'CAREER', gauntlet:'GAUNTLET', survival:'SURVIVAL', versus:'VERSUS', training:'TRAINING', franchise:'FRANCHISE', watch:'WATCH', tournament:'CPU TOURNAMENT' };
+const MODE_LABEL = { quick:'QUICK FIGHT', career:'CAREER', gauntlet:'GAUNTLET', survival:'SURVIVAL', rumble:'ROYAL RUMBLE', versus:'VERSUS', training:'TRAINING', franchise:'FRANCHISE', watch:'WATCH', tournament:'CPU TOURNAMENT' };
 const modeCtx = { queue: [], idx: 0, streak: 0, playerId: null, pickingOpponent: false, season: null };
 function shuffled(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
@@ -1974,6 +1975,11 @@ function beginMode(playerId) {
   } else if (gameMode === 'survival') {
     modeCtx.streak = 0;
     launchFight(playerId);
+  } else if (gameMode === 'rumble') {          // ROYAL RUMBLE — whole crew in a random draw; toss to eliminate; wear carries
+    modeCtx.queue = shuffled(FIGHTERS.filter(f => f.id !== playerId && !f.admin).map(f => f.id));
+    modeCtx.idx = 0; modeCtx.elims = 0; modeCtx.rumbleHP = null;
+    modeCtx.field = modeCtx.queue.length + 1;  // +1 = you
+    launchFight(playerId, modeCtx.queue[0]);
   } else if (gameMode === 'franchise') {
     modeCtx.season = { idx: 0, total: 8, wins: 0, losses: 0 };
     modeCtx.queue = shuffled(FIGHTERS.filter(f => f.id !== playerId).map(f => f.id)).slice(0, 8);
@@ -1996,6 +2002,12 @@ function nextInMode() {
     modeCtx.streak++;
     if (modeCtx.streak % 2 === 0 && save.difficulty < 4) { save.difficulty++; persistSave(); }  // escalate
     launchFight(modeCtx.playerId);
+  } else if (gameMode === 'rumble') {
+    modeCtx.rumbleHP = match ? Math.max(15, Math.round(match.pHP)) : 70;   // carry your wear into the next entrant
+    modeCtx.elims = (modeCtx.elims || 0) + 1;
+    modeCtx.idx++;
+    if (modeCtx.idx >= modeCtx.queue.length) { unlockAch('gauntlet'); crownChampion(modeCtx.playerId); goto('hub'); return; }  // LAST ONE STANDING → CHAMPION
+    launchFight(modeCtx.playerId, modeCtx.queue[modeCtx.idx]);
   } else if (gameMode === 'franchise') {
     modeCtx.season.idx++;
     if (modeCtx.season.idx >= modeCtx.season.total) {   // season complete
@@ -2095,7 +2107,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '4.10';
+const GAME_VERSION = '4.11';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -2129,6 +2141,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['4.11', 'NEW MODE — 🔔 ROYAL RUMBLE: the whole crew, drawn in random order, one at a time against the clock. No pins here — you WIN by tossing them OVER THE TOP ROPE, but a toss only sticks once you’ve worn them down (otherwise they “skin the cat” and hang on). Your wear CARRIES between entrants (only a small breather, never a full heal), and every fighter you dump makes the next one a touch meaner. Outlast the entire field to be the LAST ONE STANDING. They can dump you too — get knocked down while worn and you’re gone.'],
   ['4.10', 'Cinematic + photoreal step (creative green-light): 👤 FACES — every fighter now has eyes, brows, and a nose (no more faceless heads — shows in the ring, on roster cards, and the customizer) · 🚶 WALK-IN ENTRANCES — fighters stride in from the ropes as the bell rings instead of just appearing · 🎬 SLOW-MO FINISH CAM — end a match and a cinematic letterbox + “★ FINISH ★” stamp drops while the camera orbits low and slow around the fallen fighter before the result screen'],
   ['4.9',  'Combat depth (built on the creative green-light): 🔄 REVERSALS — tap REVERSE right as the opponent’s attack is about to land and you COUNTER it, negating the hit and stunning them wide open · 🔥 TAUNT — the FINISH button becomes a TAUNT while your finisher is locked; call them on to pump your HYPE meter (leaves you briefly open, so pick your moment) · both moves have their own 3D animations + on-screen callouts'],
   ['4.8',  'Knocked down? A big ⤴ GET UP button now appears — MASH it to climb off the mat faster (you’re never just stuck waiting) · the downed state is fully animated now: you writhe, roll, and struggle on the mat, then play a real push-up rise back to your stance instead of snapping upright · the read-aloud voice now speaks at a clearer, easier-to-follow pace'],
@@ -3153,6 +3166,7 @@ function statRow(label, val, delta = 0) {
 /* rAF game loop drives positions, stamina, AI, and hit resolution.          */
 /* ====================================================================== */
 const FIN_UNLOCK = 40;          // finisher unlocks once the TARGET drops to/below this HP
+const TOSS_HP = 55;             // ROYAL RUMBLE: a foe must be worn to ≤ this HP before a toss-over-the-top sticks
 const RT = { moveSpeed: 240, aiSpeed: 205, stRegen: 17, blockDrain: 24, backStep: 48 };
 // ~90% WRESTLING / 10% boxing. GRAPPLE (slam) is the bread-and-butter; STRIKE is the light 10%.
 // A landed `slam` knocks the opponent DOWN → opens a PIN. Win by KO, PINFALL, or SUBMISSION.
@@ -3198,6 +3212,13 @@ function applyModeRules(m) {
     m.careerRung = r + 1;
   } else if (m.mode === 'gauntlet') {
     m.gauntletNum = (modeCtx.idx || 0) + 1;             // GAUNTLET: full HP each round but the crew gets harder
+  } else if (m.mode === 'rumble') {                     // ROYAL RUMBLE: your wear CARRIES (small breather only), field gets meaner
+    const e = modeCtx.elims || 0;
+    m.pHP = (modeCtx.rumbleHP != null) ? Math.min(100, modeCtx.rumbleHP + 18) : 100;  // a small recovery between entrants — not a full heal
+    const boost = e * 2;                                // each fighter you've tossed, the next is a touch tougher
+    if (boost) for (const k in m.oAb) m.oAb[k] = Math.min(99, m.oAb[k] + boost);
+    m.rumbleElims = e; m.rumbleNum = e + 2;             // your entry was #1; #2,#3… come after
+    m.rumbleLeft = (modeCtx.queue ? modeCtx.queue.length : 0) - (modeCtx.idx || 0);
   }
 }
 function startMatchWith(playerId, oppId) {
@@ -3402,9 +3423,16 @@ function updateButtons() {
   document.getElementById('btn-jab').classList.toggle('dim', match.pST < moveOf(match.player, 'strike').cost);
   document.getElementById('btn-power').classList.toggle('dim', match.pST < moveOf(match.player, 'grapple').cost);
   // PIN lights up when the opponent is down (or gassed for a submission)
-  const pinReady = match.oDowned > 0 || match.oST < 18;
   const pinBtn = document.getElementById('btn-dodge');
-  pinBtn.textContent = match.oDowned > 0 ? 'PIN!' : (match.oST < 18 ? 'SUBMIT' : 'PIN');
+  let pinReady;
+  if (match.mode === 'rumble') {                         // RUMBLE: heave them over the top — only sticks once they're worn down
+    const tossable = (match.oDowned > 0 || match.oST < 18) && match.oHP <= TOSS_HP;
+    pinReady = tossable;
+    pinBtn.textContent = tossable ? '🔔 TOSS!' : 'TOSS';
+  } else {
+    pinReady = match.oDowned > 0 || match.oST < 18;
+    pinBtn.textContent = match.oDowned > 0 ? 'PIN!' : (match.oST < 18 ? 'SUBMIT' : 'PIN');
+  }
   pinBtn.classList.toggle('dim', !pinReady);
   pinBtn.classList.toggle('ready', pinReady);
 }
@@ -3701,7 +3729,28 @@ function playerPin() {
   if (gap <= fW * 1.05 && match.oST < 18 && match.pStun <= 0) { doSubmission(true); return; }
   setStatus('not in position', 'var(--muted)', 600);
 }
+// ROYAL RUMBLE elimination — heave the downed/gassed foe OVER THE TOP ROPE (replaces the pin/sub in rumble).
+function doToss(byPlayer) {
+  if (!match || match.over || match.pinning) return;
+  const victimName = byPlayer ? match.opponent.name : match.player.name;
+  const victimHP = byPlayer ? match.oHP : match.pHP;
+  if (victimHP > TOSS_HP) {                           // not worn enough — they grab the rope and SKIN THE CAT back in
+    flashSig('HANGS ON!');
+    caption('🔔 ' + victimName + ' skins the cat — still in it! (wear them down first)', byPlayer ? 'enemy' : 'player');
+    if (byPlayer) { match.oDowned = 0; setDowned('right', false); match.oStun = 320; }
+    else { match.pDowned = 0; setDowned('left', false); match.pStun = 320; }
+    return;
+  }
+  match.pinning = true;                               // reuse the lock so nothing else fires mid-toss
+  const thrower = byPlayer ? 'left' : 'right';
+  set3DAnim(thrower, 'finisher', 720);               // a big two-handed heave
+  flashSig('OVER THE TOP! 🔔');
+  caption('🔔 ' + victimName + ' GOES OVER THE TOP — ELIMINATED!', byPlayer ? 'player' : 'enemy');
+  shakeRing(true); playKOSound();
+  setTimeout(() => { if (match && !match.over) endMatchBy(byPlayer ? 'win' : 'loss', 'TOSS'); }, 680);
+}
 function doPin(byPlayer) {
+  if (match.mode === 'rumble') { doToss(byPlayer); return; }   // RUMBLE: no pins — toss them over the top
   match.pinning = true;
   match.pinVictim = byPlayer ? 'opp' : 'player';   // who's being pinned (drives mash-to-kickout)
   match.kickMash = 0;
@@ -3735,6 +3784,7 @@ function doPin(byPlayer) {
   setTimeout(tick, 260);
 }
 function doSubmission(byPlayer) {
+  if (match.mode === 'rumble') { doToss(byPlayer); return; }   // RUMBLE: a gassed foe gets dumped over the top too
   match.subbing = true;
   setStatus('SUBMISSION LOCKED!', 'var(--gold)', 1200);
   caption((byPlayer ? match.player.name : match.opponent.name) + ' sinks in the hold!', 'big');
@@ -4204,6 +4254,7 @@ function endPrefight() {
   const m = match.mode;
   if (m === 'career') caption('📰 TITLE RUN · Rank ' + (match.careerRung || 1) + ' — ' + match.opponent.name + ' stands in the way', 'big');
   else if (m === 'survival') caption('💀 ROUND ' + (match.survRound || 1) + ' — they hit harder, you’re already worn', 'big');
+  else if (m === 'rumble') caption('🔔 RUMBLE · ENTRY #' + (match.rumbleNum || 2) + ' — ' + match.opponent.name + ' charges the ring! (' + (match.rumbleElims || 0) + ' tossed)', 'big');
   else if (m === 'tournament') caption('🏟️ ' + tournProgress() + ' — ' + match.player.name + ' vs ' + match.opponent.name, 'big');
   else if (m === 'gauntlet') caption('🏆 GAUNTLET ' + (match.gauntletNum || 1) + '/' + (modeCtx.queue ? modeCtx.queue.length : 11), 'big');
 }
@@ -4359,7 +4410,7 @@ function finishMatch(result) {
   flash(lossSide, true); shakeRing(true);   // big finish flash + shake
   const cineOn = triggerFinishCam(result);   // slow-mo cinematic finish before the result screen
   const revealDelay = cineOn ? 2300 : 1400;  // let the finish cam play out
-  const m = match.winBy === 'PINFALL' ? ' by pinfall' : match.winBy === 'SUBMISSION' ? ' by submission' : ' by KO';
+  const m = match.winBy === 'PINFALL' ? ' by pinfall' : match.winBy === 'SUBMISSION' ? ' by submission' : match.winBy === 'TOSS' ? ' — over the top rope!' : ' by KO';
   caption((result === 'win' ? match.player.name : match.opponent.name) + ' wins' + m, 'big');
   if (!match.training && !match.pAI) {                // TRAINING + WATCH don't touch your record
     if (result === 'win') { save.wins++; save.kos++; unlockAch('firstWin'); if (save.wins >= 10) unlockAch('wins10'); }
@@ -4443,6 +4494,11 @@ function setResultButtons(result) {
     prim.textContent = last ? `SEASON DONE · ${s.wins}-${s.losses}` : `NEXT MATCH (${s.idx + 2}/${s.total}) · ${s.wins}-${s.losses}`;
     prim.onclick = last ? () => goto('hub') : nextInMode;
     sec.textContent = 'END SEASON'; sec.onclick = () => goto('hub');
+  } else if (m === 'rumble' && won) {
+    const left = (modeCtx.queue ? modeCtx.queue.length : 0) - (modeCtx.idx + 1);
+    prim.textContent = left <= 0 ? '👑 LAST ONE STANDING' : 'NEXT ENTRANT › ' + left + ' LEFT';
+    prim.onclick = nextInMode;
+    sec.textContent = 'WALK OUT (HOME)'; sec.onclick = () => goto('hub');
   } else if (m === 'training') {
     prim.textContent = 'KEEP TRAINING'; prim.onclick = nextInMode;
     sec.textContent = 'HOME / MODES'; sec.onclick = () => goto('hub');
