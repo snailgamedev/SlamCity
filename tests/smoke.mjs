@@ -37,10 +37,14 @@ try {
   check('ENTER THE RING button present', (await enterBtn.count()) >= 1);
   await page.screenshot({ path: `${OUT}/smoke-1-splash.png` });
 
-  // SCREEN 2 · ROSTER
+  // SCREEN 2 · ROSTER  (real flow: ENTER → platform pick → hub → roster)
   await enterBtn.first().click();
-  await page.waitForTimeout(300);
-  check('roster active after ENTER', (await page.locator('#roster.active').count()) === 1);
+  await page.waitForTimeout(400);
+  const platCard = page.locator('#platform .platform-card, #platform button');
+  if (await platCard.count()) { await platCard.first().click(); await page.waitForTimeout(400); }  // mobile / pc-mac pick
+  await page.evaluate(() => goto('roster'));   // from hub → roster
+  await page.waitForTimeout(350);
+  check('roster active', (await page.locator('#roster.active').count()) === 1);
   const cardCount = await page.locator('.roster-card').count();
   check('roster cards rendered (expect 11)', cardCount >= 1, `${cardCount} cards`);
   // verify each card has a portrait SVG (fighters actually render, not blank)
@@ -58,32 +62,29 @@ try {
   check('FIGHT WITH THIS ONE button present', (await fightBtn.count()) >= 1);
   await page.screenshot({ path: `${OUT}/smoke-3-detail.png` });
 
-  // SCREEN 4 · FIGHT
+  // SCREEN 4 · FIGHT (real-time: joystick + attack buttons; not turn-based)
+  // After "FIGHT WITH THIS ONE": loading screen → fight screen with the prefight countdown overlay.
   await fightBtn.first().click();
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(1600);                                                  // 'ENTERING THE RING' loading screen
   check('fight active after start', (await page.locator('#fight.active').count()) === 1);
-  const leftSvg = await page.locator('#ring-left-svg svg, #ring-left svg').count();
-  const rightSvg = await page.locator('#ring-right-svg svg, #ring-right svg').count();
+  const leftSvg = await page.locator('#ring-left-svg .f3d').count();               // CSS-3D cuboid rig (not SVG)
+  const rightSvg = await page.locator('#ring-right-svg .f3d').count();
   check('both ring fighters render', leftSvg >= 1 && rightSvg >= 1, `L:${leftSvg} R:${rightSvg}`);
   const hpStart = await page.locator('#left-hp').getAttribute('style').catch(() => '');
   check('HP bars initialized', /width/.test(hpStart || ''), hpStart || 'none');
-  const moveBtns = await page.locator('#fight .action-row .btn, #fight button').count();
-  check('move buttons present', moveBtns >= 1, `${moveBtns} buttons`);
+  const moveBtns = await page.locator('#fight .atk-btn').count();
+  check('attack buttons present', moveBtns >= 1, `${moveBtns} buttons`);
+  check('in-fight pause button present', (await page.locator('#pause-btn').count()) === 1);
   await page.screenshot({ path: `${OUT}/smoke-4-fight.png` });
 
-  // SCREEN 4b · COMBAT RESPONDS
-  if (moveBtns >= 1) {
-    const beforeTurn = await page.locator('#fight-turn-indicator').textContent().catch(() => '');
-    await page.locator('#fight .action-row .btn, #fight button').first().click();
-    await page.waitForTimeout(1200); // let attack animation + opponent turn resolve
-    // combat responded if: opponent HP dropped OR turn indicator changed OR round advanced
-    const rightHp = await page.locator('#right-hp').getAttribute('style').catch(() => '');
-    const afterTurn = await page.locator('#fight-turn-indicator').textContent().catch(() => '');
-    const hpNum = await page.locator('#right-hp-num').textContent().catch(() => '100');
-    const combatResponded = (rightHp && !/width:\s*100%/.test(rightHp)) || (afterTurn !== beforeTurn) || (parseInt(hpNum) < 100);
-    check('combat responds to move', combatResponded, `rightHP:${hpNum} turn:"${afterTurn}"`);
-    await page.screenshot({ path: `${OUT}/smoke-4b-combat.png` });
-  }
+  // SCREEN 4b · LOOP IS LIVE — unpausing the prefight makes the rAF loop advance fighter positions
+  const posA = await page.evaluate(() => (typeof match !== 'undefined' && match) ? { p: match.pX, o: match.oX } : null);
+  await page.evaluate(() => { if (typeof match !== 'undefined' && match) { match.started = true; match.paused = false; match.lastT = performance.now(); } });
+  await page.waitForTimeout(550);
+  const posB = await page.evaluate(() => (typeof match !== 'undefined' && match) ? { p: match.pX, o: match.oX } : null);
+  const loopLive = posA && posB && (Math.abs(posA.o - posB.o) > 0.5 || Math.abs(posA.p - posB.p) > 0.5);
+  check('real-time loop is live (positions update)', !!loopLive, posA && posB ? `pX ${Math.round(posA.p)}→${Math.round(posB.p)} · oX ${Math.round(posA.o)}→${Math.round(posB.o)}` : 'no match');
+  await page.screenshot({ path: `${OUT}/smoke-4b-combat.png` });
 
   // CONSOLE ERROR GATE · the big one
   check('ZERO console/page errors during walk', errors.length === 0, errors.length ? errors.slice(0, 3).join(' | ') : 'clean');

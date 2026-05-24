@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#0a0a0d" />
-<title>SLAM CITY · v3.7 · PROFILES + CUSTOMIZATION</title>
+<title>SLAM CITY · v3.8 · ADMIN + UNIVERSAL LOOKS</title>
 <!-- retro arcade type: Press Start 2P for marquee, Oxanium for readable UI · safe fallback stack -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -459,6 +459,25 @@
   .prof-hi { font-size: 9px; letter-spacing: 2px; color: var(--muted); }
   .prof-name { font-size: 18px; font-weight: 900; color: var(--cream); }
   .prof-as { font-size: 11px; color: var(--gold); }
+  /* ===== ADMIN PANEL · fiya gold throne ===== */
+  .adm-crown { font-size: 42px; text-align: center; margin: 0 0 -4px; filter: drop-shadow(0 0 14px rgba(200,160,96,0.7)); animation: adm-crown-float 3.4s ease-in-out infinite; }
+  @keyframes adm-crown-float { 0%,100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-5px) rotate(4deg); } }
+  .adm-hero { text-align: center; margin-bottom: 16px; padding: 14px; border-radius: 12px; border: 1px solid rgba(200,160,96,0.4); background: linear-gradient(180deg, rgba(60,44,16,0.55), rgba(20,14,8,0.4)); box-shadow: 0 0 30px rgba(200,160,96,0.18), inset 0 0 0 1px rgba(200,160,96,0.1); }
+  .adm-hi { font-size: 9px; letter-spacing: 3px; color: var(--gold); }
+  .adm-name { font-size: 27px; font-weight: 900; letter-spacing: 2px; background: linear-gradient(180deg, #f4e6c8, #c8a060 60%, #a07820); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 2px 14px rgba(200,160,96,0.35); line-height: 1.05; }
+  .adm-sub { font-size: 10px; color: var(--muted); letter-spacing: 1px; margin-top: 3px; text-transform: uppercase; }
+  .adm-sec-label { font-size: 10px; letter-spacing: 2px; color: var(--gold); text-transform: uppercase; margin: 16px 0 8px; padding-bottom: 5px; border-bottom: 1px solid var(--bg-3); font-weight: 700; }
+  .adm-sec-label.danger-label { color: var(--red-bright); border-bottom-color: rgba(224,64,80,0.3); }
+  .adm-row { display: flex; align-items: center; gap: 8px; padding: 9px 11px; border: 1px solid var(--bg-3); border-radius: 8px; margin-bottom: 6px; background: var(--bg-1); }
+  .adm-rname { font-weight: 900; color: var(--cream); font-size: 13px; letter-spacing: 1px; flex: 1; text-transform: uppercase; }
+  .adm-lock { font-size: 10px; color: var(--gold); font-weight: 700; letter-spacing: 0.5px; }
+  .adm-open { font-size: 10px; color: var(--muted); letter-spacing: 0.5px; }
+  .adm-acts { display: flex; gap: 5px; flex: 0 0 auto; }
+  .adm-mini { -webkit-appearance: none; appearance: none; min-height: 32px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--bg-3); background: var(--bg-2); color: var(--cream); font-family: inherit; font-weight: 800; font-size: 11px; letter-spacing: 0.5px; cursor: pointer; }
+  .adm-mini:active { transform: scale(0.94); }
+  .adm-mini.danger { border-color: var(--red); color: var(--red-bright); }
+  .adm-danger { border-color: rgba(224,64,80,0.5) !important; color: var(--red-bright) !important; }
+  .admin-chip { color: var(--gold) !important; border-color: rgba(200,160,96,0.5) !important; background: linear-gradient(180deg, rgba(60,44,16,0.5), rgba(40,28,12,0.4)) !important; font-weight: 800; box-shadow: 0 0 14px rgba(200,160,96,0.2); }
   .hud-btns { position: absolute; top: 6px; right: 8px; z-index: 30; display: flex; gap: 6px; }
   .hud-btn { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--bg-3); background: rgba(20,20,26,0.9); color: var(--soft); font-weight: 900; font-size: 12px; cursor: pointer; line-height: 1; display: flex; align-items: center; justify-content: center; padding: 0; }
   #pause-btn { font-size: 10px; letter-spacing: -1px; color: var(--cream); border-color: var(--bg-3); }
@@ -785,7 +804,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v3.7 · build 2026-05-23·2239 · PROFILES (sign-in as a brother · PIN · customize) + 14 hairstyles + gear colors + delete customs + in-fight PAUSE + all 12 stats level + clean downed pose + no UI overlap + AI footwork · for AARON</div>
+  <div class="splash-foot">v3.8 · build 2026-05-24·0820 · 👑 ADMIN (Old Man Eli · master key) + case-insensitive sign-in + claimed brothers LOCK + UNIVERSAL looks (everyone sees them) · on top of v3.7 profiles/customization · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -1075,7 +1094,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v3.7</div>
+    <div class="load-skip">tap to skip · v3.8</div>
   </div>
 </div>
 
@@ -1548,11 +1567,12 @@ function loadSave() {
       if (!('champion' in parsed)) parsed.champion = null;
       if (!parsed.profiles) parsed.profiles = {};        // brotherId → { name, pin, look }
       if (!('activeProfile' in parsed)) parsed.activeProfile = null;
+      if (!('admin' in parsed)) parsed.admin = null;     // { pin } — the "Old Man Eli" master account
       return parsed;
     }
   } catch(e) {}
   return { wins:0, losses:0, kos:0, finishers:0, scriptureStrikes:0, picks:{}, ovrDelta:{}, abilDelta:{},
-           difficulty:2, sfxOn:true, vol:0.9, captionsOn:true, platform:null, reducedMotion:false, tutorialSeen:false, seenVersion:null, customFighters:[], achievements:{}, belts:0, champion:null, profiles:{}, activeProfile:null };
+           difficulty:2, sfxOn:true, vol:0.9, captionsOn:true, platform:null, reducedMotion:false, tutorialSeen:false, seenVersion:null, customFighters:[], achievements:{}, belts:0, champion:null, profiles:{}, activeProfile:null, admin:null };
 }
 function persistSave() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch(e) {}
@@ -1708,7 +1728,9 @@ function renderHub() {
     + (save.belts > 0 ? `<span class="hp-stat hp-belt"><b>${save.belts}</b>🏆</span>` : '')
     + `<span class="hp-stat"><b>${curDiff().name}</b></span>`
     + `</div>`
-    + (() => { const ap = save.activeProfile && save.profiles[save.activeProfile]; const f = ap && FIGHTERS.find(x => x.id === save.activeProfile);
+    + (() => {
+        if (save.activeProfile === ADMIN_KEY) return `<div class="hub-signin admin-chip" onclick="goto('profile')">👑 OLD MAN ELI · ADMIN ›</div>`;
+        const ap = save.activeProfile && save.profiles[save.activeProfile]; const f = ap && FIGHTERS.find(x => x.id === save.activeProfile);
         return `<div class="hub-signin" onclick="goto('profile')">${ap && f ? '👤 ' + ap.name + ' · signed in as ' + f.name : '👤 SIGN IN as your brother ›'}</div>`; })()
     + `<div class="hub-ver" onclick="showUpdateLog()">✦ v${GAME_VERSION} · update log</div>`
     + `<div class="hub-ver" onclick="showAchievements()" style="margin-left:8px">🏆 achievements ${ACHIEVEMENTS.filter(a=>save.achievements[a[0]]).length}/${ACHIEVEMENTS.length}</div>`;
@@ -1855,7 +1877,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '3.7';
+const GAME_VERSION = '3.8';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -2098,14 +2120,29 @@ function saveCustomFighter() {
   goto('roster');
 }
 
-/* ========== PROFILE SYSTEM · sign in as your brother + customize him (one profile per brother, PIN-secured) ========== */
+/* ========== PROFILE + ADMIN SYSTEM ==========
+   Sign in as your brother by name (CASE-INSENSITIVE), claim with a PIN, then customize him.
+   Looks are UNIVERSAL — they show on the roster, the card + in fights for everyone.
+   ONE profile per brother: once claimed it LOCKS — nobody can sign in again. Only the ADMIN
+   ("Old Man Eli") can reset a brother. Admin = master key over the whole crew. */
+const ADMIN_NAME = 'OLD MAN ELI';
+const ADMIN_KEY  = '__admin';
+const ORIGINAL_ART = {};   // pristine brother art snapshotted at boot (before any look applies) so admin can RESET to default
+function snapshotOriginalArt() {
+  FIGHTERS.forEach(f => { if (isBrother(f) && !ORIGINAL_ART[f.id]) ORIGINAL_ART[f.id] = JSON.parse(JSON.stringify(f.art)); });
+}
+function restoreOriginalArt(bid) {
+  const f = FIGHTERS.find(x => x.id === bid);
+  if (f && ORIGINAL_ART[bid]) f.art = JSON.parse(JSON.stringify(ORIGINAL_ART[bid]));
+}
 function isBrother(f) { return f && !f.cpu && !f.custom; }
 function brotherByName(name) {
-  const n = (name || '').trim().toUpperCase();
+  const n = (name || '').trim().toUpperCase();   // case-insensitive: "aaron", "Aaron", "AARON" all match
   if (!n) return null;
   return FIGHTERS.find(f => isBrother(f) && f.name.toUpperCase() === n) || null;
 }
-// apply each profile's saved look onto its brother's art (called on load + after edits)
+function isClaimed(bid) { const p = save.profiles && save.profiles[bid]; return !!(p && p.pin); }   // a real PIN-locked claim (admin-only looks carry no pin)
+// apply each profile's saved look onto its brother's art — UNIVERSAL + persistent (called on load + after every edit)
 function applyProfileLooks() {
   for (const bid in (save.profiles || {})) {
     const look = save.profiles[bid].look; if (!look) continue;
@@ -2116,12 +2153,13 @@ function applyProfileLooks() {
 }
 let profileEditing = null;   // brotherId whose look is being edited
 function renderProfile() {
+  if (save.activeProfile === ADMIN_KEY) return renderAdmin();
   profileEditing = null;
   const body = document.getElementById('profile-body');
   const active = save.activeProfile, prof = active && save.profiles[active];
-  const claimed = Object.keys(save.profiles || {});
+  const claimed = Object.keys(save.profiles || {}).filter(isClaimed);
   const claimedList = claimed.length
-    ? `<div class="prof-claimed">CLAIMED · ${claimed.map(id => { const f = FIGHTERS.find(x => x.id === id); return f ? f.name : id; }).join(' · ')}</div>`
+    ? `<div class="prof-claimed">🔒 CLAIMED · ${claimed.map(id => { const f = FIGHTERS.find(x => x.id === id); return f ? f.name : id; }).join(' · ')}</div>`
     : `<div class="prof-claimed">no brothers claimed yet</div>`;
   if (prof) {
     const f = FIGHTERS.find(x => x.id === active);
@@ -2134,8 +2172,8 @@ function renderProfile() {
       + claimedList;
   } else {
     body.innerHTML =
-        `<div class="prof-intro">Sign in as your brother. Type a crew name — if it's you, claim it with a PIN and you can customize your fighter. <b>One profile per brother.</b></div>`
-      + `<div class="cr-row"><div class="cr-label">YOUR NAME</div><input id="prof-name" class="roster-search" maxlength="14" placeholder="e.g. AARON" autocomplete="off"></div>`
+        `<div class="prof-intro">Sign in as your brother. Type your crew name — <b>caps or lowercase, doesn't matter</b> — and claim it with a PIN. Then customize your fighter and the new look shows up <b>everywhere, for everyone</b>. <b>One profile per brother — once claimed it locks.</b></div>`
+      + `<div class="cr-row"><div class="cr-label">YOUR NAME</div><input id="prof-name" class="roster-search" maxlength="14" placeholder="e.g. aaron" autocomplete="off"></div>`
       + `<div class="cr-row"><div class="cr-label">PIN (4+ digits)</div><input id="prof-pin" class="roster-search" type="password" inputmode="numeric" maxlength="8" placeholder="••••" autocomplete="off"></div>`
       + `<div id="prof-msg" class="prof-msg"></div>`
       + `<button class="btn" type="button" onclick="profileSignIn()">SIGN IN / CLAIM</button>`
@@ -2144,28 +2182,96 @@ function renderProfile() {
 }
 function profileMsg(t, ok) { const m = document.getElementById('prof-msg'); if (m) { m.textContent = t; m.style.color = ok ? '#4ad06a' : 'var(--red-bright)'; } }
 function profileSignIn() {
-  const name = (document.getElementById('prof-name').value || '').trim();
+  const rawName = (document.getElementById('prof-name').value || '').trim();
   const pin = (document.getElementById('prof-pin').value || '').trim();
-  const bro = brotherByName(name);
-  if (!bro) { profileMsg('No brother named "' + (name || '—') + '" in the crew.', false); return; }
   if (!/^\d{4,8}$/.test(pin)) { profileMsg('PIN must be 4–8 digits.', false); return; }
-  const existing = save.profiles[bro.id];
-  if (existing) {
-    if (existing.pin !== pin) { profileMsg('Wrong PIN for ' + bro.name + '.', false); return; }
-    save.activeProfile = bro.id; persistSave(); renderProfile();
-    setStatus && setStatus('WELCOME BACK, ' + existing.name.toUpperCase(), 'var(--gold)', 900);
-  } else {
-    // CLAIM — first to sign in as this brother owns the profile (one per brother)
-    save.profiles[bro.id] = { name: name, pin: pin, look: null };
-    save.activeProfile = bro.id; persistSave(); renderProfile();
-    setStatus && setStatus('CLAIMED ' + bro.name + '!', 'var(--gold)', 1000);
+  // ===== ADMIN PATH — "Old Man Eli" (case-insensitive) =====
+  if (rawName.toUpperCase() === ADMIN_NAME) {
+    if (save.admin && save.admin.pin) {
+      if (save.admin.pin !== pin) { profileMsg('Wrong admin PIN.', false); return; }
+    } else {
+      save.admin = { pin: pin };   // first sign-in claims the throne + sets the master PIN
+    }
+    save.activeProfile = ADMIN_KEY; persistSave(); renderProfile();
+    setStatus && setStatus('👑 ADMIN · OLD MAN ELI', 'var(--gold)', 1100);
+    return;
   }
+  // ===== BROTHER PATH =====
+  const bro = brotherByName(rawName);
+  if (!bro) { profileMsg('No brother named "' + (rawName || '—') + '" in the crew.', false); return; }
+  if (isClaimed(bro.id)) {   // HARD LOCK — once claimed, no re-sign-in; admin must reset
+    profileMsg('🔒 ' + bro.name + ' is already claimed & locked. Only Old Man Eli (admin) can reset it.', false);
+    return;
+  }
+  // CLAIM — first to sign in owns it. Keep any look an admin pre-set for this brother.
+  const prior = save.profiles[bro.id];
+  save.profiles[bro.id] = { name: rawName, pin: pin, look: prior ? prior.look : null };
+  save.activeProfile = bro.id; persistSave(); renderProfile();
+  setStatus && setStatus('CLAIMED ' + bro.name + '!', 'var(--gold)', 1000);
 }
 function profileSignOut() { save.activeProfile = null; persistSave(); renderProfile(); }
-// look editor — scoped swatches that write to the active profile's brother
+
+/* ---------- ADMIN PANEL · "Old Man Eli" — master control over the whole crew ---------- */
+function adminGuard() { return save.activeProfile === ADMIN_KEY; }
+function renderAdmin() {
+  profileEditing = null;
+  const body = document.getElementById('profile-body');
+  const brothers = FIGHTERS.filter(isBrother);
+  const customs  = FIGHTERS.filter(f => f.custom);
+  let html =
+      `<div class="adm-crown">👑</div>`
+    + `<div class="adm-hero"><div class="adm-hi">ADMIN · THE ARCHITECT</div><div class="adm-name">OLD MAN ELI</div><div class="adm-sub">master key to the whole crew</div></div>`;
+  html += `<div class="adm-sec-label">CREW · ${brothers.length} BROTHERS</div>`;
+  html += brothers.map(f => {
+    const claimed = isClaimed(f.id);
+    const status = claimed ? `<span class="adm-lock">🔒 ${(save.profiles[f.id].name || '').toUpperCase()}</span>` : `<span class="adm-open">🔓 open</span>`;
+    return `<div class="adm-row"><span class="adm-rname">${f.name}</span>${status}`
+      + `<span class="adm-acts"><button class="adm-mini" type="button" onclick="adminEditBrother('${f.id}')">🎨</button>`
+      + (claimed ? `<button class="adm-mini danger" type="button" onclick="adminResetBrother('${f.id}')">RESET</button>` : '')
+      + `</span></div>`;
+  }).join('');
+  if (customs.length) {
+    html += `<div class="adm-sec-label">CUSTOM FIGHTERS · ${customs.length}</div>`;
+    html += customs.map(f => `<div class="adm-row"><span class="adm-rname">${f.name}</span><span class="adm-acts"><button class="adm-mini danger" type="button" onclick="adminDeleteCustom('${f.id}')">🗑 DELETE</button></span></div>`).join('');
+  }
+  html += `<div class="adm-sec-label danger-label">⚠ MASTER CONTROLS</div>`
+    + `<button class="btn btn-secondary adm-danger" type="button" onclick="adminResetAllLooks()">🎨 RESET ALL LOOKS TO DEFAULT</button>`
+    + `<button class="btn btn-secondary adm-danger" type="button" onclick="adminResetAllProfiles()">♻ UNCLAIM EVERY BROTHER</button>`
+    + `<button class="btn btn-secondary" type="button" style="border-color:var(--gold);color:var(--gold)" onclick="profileSignOut()">SIGN OUT OF ADMIN</button>`;
+  body.innerHTML = html;
+}
+function adminEditBrother(bid) { if (!adminGuard()) return; profileEditLook(bid); }
+function adminResetBrother(bid) {
+  if (!adminGuard()) return;
+  const f = FIGHTERS.find(x => x.id === bid); if (!f) return;
+  if (!confirm('Reset ' + f.name + '? Unclaims his profile + restores his default look.')) return;
+  delete save.profiles[bid];
+  restoreOriginalArt(bid);
+  persistSave(); renderAdmin();
+  setStatus && setStatus(f.name + ' RESET', 'var(--gold)', 800);
+}
+function adminDeleteCustom(id) { if (!adminGuard()) return; deleteCustomFighter(id); }   // shared deleter (confirms, then → roster)
+function adminResetAllLooks() {
+  if (!adminGuard()) return;
+  if (!confirm('Restore EVERY brother to his default look? (Claims stay — only looks reset.)')) return;
+  for (const bid in (save.profiles || {})) { save.profiles[bid].look = null; restoreOriginalArt(bid); }
+  persistSave(); renderAdmin();
+  setStatus && setStatus('ALL LOOKS RESET', 'var(--gold)', 800);
+}
+function adminResetAllProfiles() {
+  if (!adminGuard()) return;
+  if (!confirm('UNCLAIM every brother + wipe all looks? This frees every profile.')) return;
+  for (const bid in (save.profiles || {})) restoreOriginalArt(bid);
+  save.profiles = {};
+  persistSave(); renderAdmin();
+  setStatus && setStatus('ALL PROFILES CLEARED', 'var(--red-bright)', 900);
+}
+
+// look editor — scoped swatches that write to the active brother's profile (brother owner OR admin)
 function profileEditLook(bid) {
   profileEditing = bid;
   const f = FIGHTERS.find(x => x.id === bid); if (!f) return;
+  if (!save.profiles[bid]) save.profiles[bid] = { name: '⚙ admin look', pin: null, look: {} };   // admin editing an unclaimed brother
   const prof = save.profiles[bid]; const look = prof.look || {};
   const curSkin = look.skin || matchKey(SKIN, f.art.skin, 'skin') || 'white';
   const curHairC = look.hairColor || matchKey(HAIRC, f.art.hair, 'hair') || 'black';
@@ -3445,7 +3551,8 @@ document.addEventListener('pointerdown', (e) => {
   if (b && !b.disabled) { ensureCtx(); playClickSound(); }
 }, true);
 loadCustomFighters();   // restore created fighters into the roster
-applyProfileLooks();    // restore each profile's custom look onto its brother
+snapshotOriginalArt();  // capture pristine brother art BEFORE any look applies (admin RESET relies on this)
+applyProfileLooks();    // restore each profile's custom look onto its brother (universal)
 applyReducedMotion();
 applyPlatform();
 refreshSplash();
