@@ -916,7 +916,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v4.8 · build 2026-05-24·1150 · ⤴ GET UP button — mash off the mat when you’re knocked down · deeper down animation (you writhe + struggle, then a real rise-to-stance) · read-aloud reads at a clearer speed · for AARON</div>
+  <div class="splash-foot">v4.9 · build 2026-05-24·1200 · 🔄 REVERSALS — time REVERSE as a hit lands to counter + stun them · 🔥 TAUNT (tap the FINISH button while it’s locked) builds HYPE · both with their own animations · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -1218,7 +1218,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v4.8</div>
+    <div class="load-skip">tap to skip · v4.9</div>
   </div>
 </div>
 
@@ -2079,7 +2079,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '4.8';
+const GAME_VERSION = '4.9';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -2113,6 +2113,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['4.9',  'Combat depth (built on the creative green-light): 🔄 REVERSALS — tap REVERSE right as the opponent’s attack is about to land and you COUNTER it, negating the hit and stunning them wide open · 🔥 TAUNT — the FINISH button becomes a TAUNT while your finisher is locked; call them on to pump your HYPE meter (leaves you briefly open, so pick your moment) · both moves have their own 3D animations + on-screen callouts'],
   ['4.8',  'Knocked down? A big ⤴ GET UP button now appears — MASH it to climb off the mat faster (you’re never just stuck waiting) · the downed state is fully animated now: you writhe, roll, and struggle on the mat, then play a real push-up rise back to your stance instead of snapping upright · the read-aloud voice now speaks at a clearer, easier-to-follow pace'],
   ['4.7',  'DEEP animations — fighters now hold a real stance and throw with their whole body: punches drive from a hip + torso twist with weight transfer (not just a lean), the rear-hand straight + a 1-2, grapples drop level → grab → LIFT into the slam, and getting hit snaps you back with a stagger · the STALL + instant-pinfall is fixed everywhere — when you’re pinned you MASH ⟳/STRIKE to KICK OUT (real agency, pins build instead of ending instantly) · every Bible verse in the game now shows ONE WAY TO LIVE IT and WHAT IT MEANS — framed humbly as one read (others may differ; go to the Word yourself)'],
   ['4.6',  'Roster + cards now render the REAL 3D model (a snapshot of the same fighter you see in the ring — they finally MATCH) · CPU fights are livelier — fighters keep moving with real footwork instead of freezing then a sudden pin · a 🎲 RANDOM button on the fighter-select if you don’t know who to pick · NEW 🏟️ CPU TOURNAMENT — an 8-fighter single-elim bracket you spectate to a champion · cinematic "news" beats when a Career/Survival/Gauntlet/Tournament bout starts · the browser tab title now always shows the live version'],
@@ -3379,8 +3380,8 @@ function updateButtons() {
   const finLocked = match.oHP > FIN_UNLOCK;
   const finMove = moveOf(match.player, 'finisher');
   const finBtn = document.getElementById('btn-fin');
-  finBtn.classList.toggle('locked', finLocked || match.pST < finMove.cost);
-  finBtn.textContent = finLocked ? '✝ LOCK' : '✝ FINISH';
+  finBtn.classList.toggle('locked', finLocked && false);   // when locked it becomes the TAUNT button (still tappable)
+  finBtn.textContent = finLocked ? '🔥 TAUNT' : '✝ FINISH';
   document.getElementById('btn-jab').classList.toggle('dim', match.pST < moveOf(match.player, 'strike').cost);
   document.getElementById('btn-power').classList.toggle('dim', match.pST < moveOf(match.player, 'grapple').cost);
   // PIN lights up when the opponent is down (or gassed for a submission)
@@ -3599,11 +3600,42 @@ function applyKnockback(isPlayerAttacking, amt) {
 function setBlock(on) {
   if (!match) return;
   if (on && tryKickMash()) return;   // REVERSE taps also feed the kick-out
+  if (on && tryReverse()) return;    // a TIMED reverse counters an incoming attack
   match.pBlock = !!on;
   const g = document.getElementById('left-guard');
   if (g) g.classList.toggle('on', !!on);
   const b = document.getElementById('btn-block');
   if (b) b.classList.toggle('held', !!on);
+}
+// REVERSAL — press REVERSE just as the opponent's attack is about to land → negate it + stun them (a counter)
+function tryReverse() {
+  if (!match || match.over || match.pAI || match.pStun > 0 || match.pDowned > 0 || match.pinning) return false;
+  const a = match.oAtk;
+  if (!a || a.resolved) return false;
+  const tLeft = a.hitAt - performance.now();
+  const gap = Math.abs(match.oX - match.pX);
+  if (tLeft > -50 && tLeft < 230 && gap < fighterW() * 1.4) {   // tight timing window
+    match.oAtk = null; match.oStun = 750; match.oCool = 650; match.pInvuln = 220;
+    addMomentum(true, 20);
+    if (SC3D.ok && SC3D.started) { set3DAnim('left', 'grapple', 360); set3DAnim('right', 'hit', 420); }
+    triggerHitReact('right', false); flash('right', false);
+    flashSig('REVERSED!', false); setStatus('🔄 REVERSED!', 'var(--gold)', 950);
+    caption(match.player.name + ' REVERSES ' + match.opponent.name + '!', 'player');
+    if (typeof playHitSound === 'function') playHitSound('jab');
+    return true;
+  }
+  return false;
+}
+// TAUNT — call them on to build HYPE (brief vulnerability). Fires from the FINISH button while a finisher is LOCKED.
+function playerTaunt() {
+  if (!match || match.over || match.pAI) return;
+  if (match.pStun > 0 || match.pAtk || match.pinning || match.subbing || match.pDowned > 0) return;
+  if (match.pTaunt && performance.now() < match.pTaunt) return;
+  match.pTaunt = performance.now() + 1400; match.pLockMove = 320;   // cooldown + brief commit
+  addMomentum(true, 26);                                            // builds toward a HYPE surge
+  if (SC3D.ok && SC3D.started) set3DAnim('left', 'taunt', 720);
+  flashSig('🔥 ' + match.player.name + ' CALLS IT', false);
+  setStatus('🔥 TAUNT — HYPE building', 'var(--gold)', 800);
 }
 
 function pulseGuard(side) {
@@ -4036,7 +4068,7 @@ function bindControls() {
 
   bindBtn('btn-jab', () => playerAttack('strike'));      // STRIKE (light, 10%)
   bindBtn('btn-power', () => playerAttack('grapple'));   // GRAPPLE → slam (primary)
-  bindBtn('btn-fin', () => playerAttack('finisher'));    // signature finisher slam
+  bindBtn('btn-fin', () => { if (match && match.oHP > FIN_UNLOCK) playerTaunt(); else playerAttack('finisher'); });   // FINISH when ready, else TAUNT (build hype)
   bindBtn('btn-dodge', () => playerPin());               // PIN / SUBMIT (contextual)
   bindBtn('btn-getup', () => playerGetUp());             // GET UP off the mat (mash)
 
@@ -4639,7 +4671,7 @@ function jointTo(joint, key, rx, ry, rz, dt, rate) {
 function poseFighter(f, dt, now, moving) {
   const P = f.parts, A = f.anim;
   const prog = A.dur ? Math.min(1, (now - A.t0) / A.dur) : 1;
-  const active = prog < 1 && ['strike', 'combo', 'grapple', 'finisher', 'hit', 'getup'].includes(A.name);
+  const active = prog < 1 && ['strike', 'combo', 'grapple', 'finisher', 'hit', 'getup', 'taunt'].includes(A.name);
   const rate = 18;
   // ---- DOWNED: on your back, but STILL animating — writhing + struggling to rise ----
   if (f.downed) {
@@ -4710,6 +4742,11 @@ function poseFighter(f, dt, now, moving) {
       const r = 1 - prog;                                  // 1 = just off the mat, 0 = standing
       shLx = -0.5 - r * 0.4; shRx = shLx; elLx = -0.7; elRx = -0.7;
       torsoX = 0.05 + r * 0.5; kneeLx = 0.3 + r * 0.7; kneeRx = 0.3 + r * 0.5; hipLx = 0.22 + r * 0.3; rootY = -r * 0.06;
+    } else if (A.name === 'taunt') {
+      // chest-out call-out: arms flung wide/up, torso opens, a confident bounce
+      const e = Math.sin(prog * Math.PI), b = Math.sin(prog * Math.PI * 3) * 0.06;
+      shLx = -1.0 - e * 1.2; shRx = -1.0 - e * 1.2; shLy = 0.25 + e * 0.6; shRy = -0.25 - e * 0.6;
+      elLx = -1.3 + e * 0.9; elRx = -1.3 + e * 0.9; torsoX = -e * 0.22; torsoY = 0.18; rootY = b + e * 0.04;
     }
   }
   jointTo(P.armL.shoulder, 0, shLx, shLy, shLz, dt, rate); jointTo(P.armR.shoulder, 0, shRx, shRy, shRz, dt, rate);
