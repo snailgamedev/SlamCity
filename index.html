@@ -956,7 +956,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v4.13 · build 2026-05-24·1244 · 🎵 WALKOUT THEMES (a riff per fighter) · 🎆 PYRO jets on the ring walk-in · for AARON</div>
+  <div class="splash-foot">v4.14 · build 2026-05-24·1252 · 🧔 FACE CUSTOMIZATION — beard (4 styles) + eye color (7) in create-a-fighter AND the look editor · live 3D preview · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -1264,7 +1264,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v4.13</div>
+    <div class="load-skip">tap to skip · v4.14</div>
   </div>
 </div>
 
@@ -2136,7 +2136,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '4.13';
+const GAME_VERSION = '4.14';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -2170,6 +2170,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['4.14', 'FACE CUSTOMIZATION (cooking the list): now that every fighter has a face, you can shape it — 🧔 BEARD (none · stubble · goatee · full) and 👁 EYE COLOR (dark · brown · hazel · amber · blue · green · ruby), both in the CREATE-A-FIGHTER screen AND the per-fighter look editor, so you can give anyone in the crew a beard. Eyes now have pupils so the color reads. Live 3D preview updates instantly and it saves with the fighter.'],
   ['4.13', 'ENTRANCES go big (cooking the list): 🎵 WALKOUT THEMES — every fighter gets a short synth walkout riff that plays on the pre-fight card, seeded from who they are so the crew sounds a little different from each other · 🎆 PYRO — gold pyro jets blast up from the corners (with a sizzle) the moment the bell rings and the fighters stride into the ring. Pairs with the v4.10 walk-in entrances for a real big-stage feel. All audio respects your Sound Effects + Volume settings.'],
   ['4.12', 'Make wins feel EARNED (cooking the idea list): ⭐ SIGNATURE FINISHERS — land your finisher and a comic-book stamp announces it BY NAME (RKO · Phoenix Splash · Last Ride · Suplex City · Ancient Landmark…) with your name under it · 🔢 COMBO COUNTER — chain hits and a “COMBO ×N” pops on screen, your top combo is tracked · 📊 TALE OF THE TAPE — the result screen now breaks down how the fight actually went: strikes, slams, big hits, blocks, reversals, top combo, biggest hit, and whether you hit the finisher'],
   ['4.11', 'NEW MODE — 🔔 ROYAL RUMBLE: the whole crew, drawn in random order, one at a time against the clock. No pins here — you WIN by tossing them OVER THE TOP ROPE, but a toss only sticks once you’ve worn them down (otherwise they “skin the cat” and hang on). Your wear CARRIES between entrants (only a small breather, never a full heal), and every fighter you dump makes the next one a touch meaner. Outlast the entire field to be the LAST ONE STANDING. They can dump you too — get knocked down while worn and you’re gone.'],
@@ -2356,11 +2357,13 @@ function buildRoster() {
 const ARCH_BY_DISC = { wrestling: ['BRAWLER', 'POWERHOUSE', 'WRESTLER'], boxing: ['BOXER', 'STRIKER', 'KICKBOXER'] };
 const HAIR_STYLES = ['short', 'buzz', 'fade', 'short-afro', 'curly-afro', 'perm', 'waves', 'straight', 'spiky', 'mohawk', 'dreads', 'manbun', 'long', 'bald'];
 const GEAR_COLORS = ['#c8a060', '#e04050', '#4aa0c8', '#5ac84a', '#a04ac8', '#e0a020', '#e6dcb4', '#202028'];   // accent / trunk options
-const creator = { name: 'MY FIGHTER', skin: 'white', hairColor: 'black', hairStyle: 'short', disc: 'wrestling', arch: 'BRAWLER', weightClass: 'auto', striking: 80, grappling: 80, stamina: 80, heart: 80, charisma: 80, finisher: 'Custom Bomb', mJab: 'Jab', mCombo: 'Combo', mSig: 'Signature', accent: '#c8a060', trunks: '#26262e' };
+const BEARDS = ['none', 'stubble', 'goatee', 'full'];                                                          // facial hair (3D face)
+const EYE_COLORS = ['#14141c', '#3a2a18', '#5a3a1a', '#6a4a1a', '#2a5278', '#2a6a44', '#7a3a3a'];               // iris: dark · brown · hazel · amber · blue · green · ruby
+const creator = { name: 'MY FIGHTER', skin: 'white', hairColor: 'black', hairStyle: 'short', beard: 'none', eyeColor: '#14141c', disc: 'wrestling', arch: 'BRAWLER', weightClass: 'auto', striking: 80, grappling: 80, stamina: 80, heart: 80, charisma: 80, finisher: 'Custom Bomb', mJab: 'Jab', mCombo: 'Combo', mSig: 'Signature', accent: '#c8a060', trunks: '#26262e' };
 const FIN_SCRIPT = { text: 'I can do all things through Christ which strengtheneth me.', ref: 'Philippians 4:13' };
 
 function creatorArt() {
-  return Object.assign({ hoodie: '#1d1d24', hoodieDark: '#0a0a0d', accent: creator.accent || '#c8a060', shorts: creator.trunks || '#26262e', logo: ((creator.name || 'MY').replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase() || 'MY'), build: 1.0, scriptureFinisher: FIN_SCRIPT, hairStyle: creator.hairStyle }, SKIN[creator.skin], HAIRC[creator.hairColor]);
+  return Object.assign({ hoodie: '#1d1d24', hoodieDark: '#0a0a0d', accent: creator.accent || '#c8a060', shorts: creator.trunks || '#26262e', logo: ((creator.name || 'MY').replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase() || 'MY'), build: 1.0, scriptureFinisher: FIN_SCRIPT, hairStyle: creator.hairStyle, beard: creator.beard, eyeColor: creator.eyeColor }, SKIN[creator.skin], HAIRC[creator.hairColor]);
 }
 function crSwatch(label, opts, cur, setter, colorOf) {
   return `<div class="cr-row"><div class="cr-label">${label}</div><div class="cr-opts">` + opts.map(o => `<button class="cr-sw ${o === cur ? 'on' : ''}" style="background:${colorOf(o)}" onclick="setCreator('${setter}','${o}')" title="${o}"></button>`).join('') + `</div></div>`;
@@ -2380,6 +2383,8 @@ function renderCreate() {
     + crSwatch('SKIN', Object.keys(SKIN), creator.skin, 'skin', k => SKIN[k].skin)
     + crSwatch('HAIR COLOR', Object.keys(HAIRC), creator.hairColor, 'hairColor', k => HAIRC[k].hair)
     + crChips('HAIRSTYLE', HAIR_STYLES, creator.hairStyle, 'hairStyle')
+    + crChips('BEARD', BEARDS, creator.beard, 'beard')
+    + crSwatch('EYE COLOR', EYE_COLORS, creator.eyeColor, 'eyeColor', k => k)
     + crSwatch('GEAR ACCENT', GEAR_COLORS, creator.accent, 'accent', k => k)
     + crSwatch('TRUNKS', GEAR_COLORS, creator.trunks, 'trunks', k => k)
     + `<div class="cr-secLabel">RATINGS · 1–99 (drives your full OVR)</div>`
@@ -2412,7 +2417,7 @@ function customSpecToFighter(spec) {
     stats: spec.stats, finishers: [spec.finisher], vibe: 'your created fighter',
     walkout: { text: FIN_SCRIPT.text, ref: FIN_SCRIPT.ref + ' · KJV', label: 'Walkout' },
     moves: [ { name: spec.mJab || 'Jab', type: 'jab', dmg: [8, 14], cost: 7, acc: 0.9 }, { name: spec.mCombo || 'Combo', type: 'cross', dmg: [15, 22], cost: 17, acc: 0.85 }, { name: spec.mSig || 'Signature', type: 'power', dmg: [24, 34], cost: 31, acc: 0.77, sig: true }, { name: spec.finisher, type: 'finisher', dmg: [56, 72], cost: 56, acc: 0.9, fin: true } ],
-    art: Object.assign({ hoodie: '#1d1d24', hoodieDark: '#0a0a0d', accent: spec.accent || '#c8a060', shorts: spec.trunks || '#26262e', logo: ((spec.name || 'MY').replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase() || 'MY'), build: 1.0, scriptureFinisher: FIN_SCRIPT, hairStyle: spec.hairStyle }, SKIN[spec.skin], HAIRC[spec.hairColor])
+    art: Object.assign({ hoodie: '#1d1d24', hoodieDark: '#0a0a0d', accent: spec.accent || '#c8a060', shorts: spec.trunks || '#26262e', logo: ((spec.name || 'MY').replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase() || 'MY'), build: 1.0, scriptureFinisher: FIN_SCRIPT, hairStyle: spec.hairStyle, beard: spec.beard || 'none', eyeColor: spec.eyeColor || '#14141c' }, SKIN[spec.skin], HAIRC[spec.hairColor])
   };
 }
 function addCustomToRoster(spec) {
@@ -2427,7 +2432,7 @@ function saveCustomFighter() {
   const nm = (creator.name || 'MY FIGHTER').trim();
   const cn = cleanName(nm); if (!cn.ok) { setStatus && setStatus(cn.why.toUpperCase(), 'var(--red-bright)', 1400); return; }
   const id = 'custom_' + Date.now();
-  const spec = { id, name: nm.toUpperCase().slice(0, 14), arch: creator.arch, skin: creator.skin, hairColor: creator.hairColor, hairStyle: creator.hairStyle, accent: creator.accent, trunks: creator.trunks, stats: { striking: creator.striking, grappling: creator.grappling, stamina: creator.stamina, heart: creator.heart, charisma: creator.charisma }, finisher: (creator.finisher || 'Custom Finish'), mJab: creator.mJab, mCombo: creator.mCombo, mSig: creator.mSig };
+  const spec = { id, name: nm.toUpperCase().slice(0, 14), arch: creator.arch, skin: creator.skin, hairColor: creator.hairColor, hairStyle: creator.hairStyle, beard: creator.beard, eyeColor: creator.eyeColor, accent: creator.accent, trunks: creator.trunks, stats: { striking: creator.striking, grappling: creator.grappling, stamina: creator.stamina, heart: creator.heart, charisma: creator.charisma }, finisher: (creator.finisher || 'Custom Finish'), mJab: creator.mJab, mCombo: creator.mCombo, mSig: creator.mSig };
   save.customFighters.push(spec);
   if (creator.weightClass && creator.weightClass !== 'auto') save.wcOverride[id] = creator.weightClass;   // chosen weight class
   persistSave();
@@ -2519,6 +2524,8 @@ function applyProfileLooks() {
     const f = FIGHTERS.find(x => x.id === bid); if (!f) continue;
     Object.assign(f.art, SKIN[look.skin] || {}, HAIRC[look.hairColor] || {},
       { hairStyle: look.hairStyle || f.art.hairStyle, accent: look.accent || f.art.accent, shorts: look.trunks || f.art.shorts });
+    if (look.beard) f.art.beard = look.beard;
+    if (look.eyeColor) f.art.eyeColor = look.eyeColor;
   }
 }
 let profileEditing = null;   // brotherId whose look is being edited
@@ -3114,6 +3121,8 @@ function profileEditLook(bid) {
     + crSwatch('SKIN', Object.keys(SKIN), curSkin, '__skin', k => SKIN[k].skin).replace(/setCreator/g, 'setProfileLook')
     + crSwatch('HAIR COLOR', Object.keys(HAIRC), curHairC, '__hairColor', k => HAIRC[k].hair).replace(/setCreator/g, 'setProfileLook')
     + crChips('HAIRSTYLE', HAIR_STYLES, look.hairStyle || f.art.hairStyle, '__hairStyle').replace(/setCreator/g, 'setProfileLook')
+    + crChips('BEARD', BEARDS, look.beard || f.art.beard || 'none', '__beard').replace(/setCreator/g, 'setProfileLook')
+    + crSwatch('EYE COLOR', EYE_COLORS, look.eyeColor || f.art.eyeColor || '#14141c', '__eyeColor', k => k).replace(/setCreator/g, 'setProfileLook')
     + crSwatch('GEAR ACCENT', GEAR_COLORS, look.accent || f.art.accent, '__accent', k => k).replace(/setCreator/g, 'setProfileLook')
     + crSwatch('TRUNKS', GEAR_COLORS, look.trunks || f.art.shorts, '__trunks', k => k).replace(/setCreator/g, 'setProfileLook')
     + `<button class="btn" type="button" onclick="renderProfile()">✓ DONE</button>`;
@@ -4795,13 +4804,30 @@ function build3DFighter(art) {
   const neck = mkCyl(0.058, 0.07, 0.12, skin); neck.position.y = 1.55; grp.add(neck);
   const head = mkBall(0.15, skin); head.position.y = 1.71; head.scale.z = 0.94; grp.add(head); P.head = head;
   // FACE (children of head so they turn with it) — eyes, brows, nose → fighters aren't faceless
-  const eyeMat = new THREE.MeshStandardMaterial({ color: 0x14141c, roughness: 0.35 });
+  const eyeColor = art.eyeColor || '#14141c';                  // customizable iris color
+  const eyeMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(eyeColor), roughness: 0.35 });
+  const pupilMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0e, roughness: 0.3 });
   const browMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(hair), roughness: 0.9 });
   [-0.055, 0.055].forEach(x => {
     const e = new THREE.Mesh(new THREE.SphereGeometry(0.027, 8, 8), eyeMat); e.position.set(x, 0.025, 0.135); head.add(e);
+    const pu = new THREE.Mesh(new THREE.SphereGeometry(0.013, 6, 6), pupilMat); pu.position.set(x, 0.025, 0.158); head.add(pu);   // pupil pops the iris color
     const br = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.018, 0.03), browMat); br.position.set(x, 0.085, 0.13); head.add(br);
   });
   const nose = new THREE.Mesh(new THREE.SphereGeometry(0.025, 8, 8), new THREE.MeshStandardMaterial({ color: new THREE.Color(skin), roughness: 0.6 })); nose.position.set(0, -0.01, 0.152); nose.scale.set(0.8, 1.1, 0.9); head.add(nose);
+  // BEARD — facial hair, customizable (none / stubble / goatee / full)
+  const beard = art.beard || 'none';
+  if (beard !== 'none') {
+    const bMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(hair), roughness: 0.97 });
+    if (beard === 'stubble') { bMat.transparent = true; bMat.opacity = 0.5; }
+    const stache = () => { const s = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.022, 0.04), bMat); s.position.set(0, -0.052, 0.142); head.add(s); };
+    const chin = () => { const c = new THREE.Mesh(new THREE.BoxGeometry(0.085, 0.07, 0.07), bMat); c.position.set(0, -0.125, 0.115); head.add(c); };
+    if (beard === 'goatee') { stache(); chin(); }
+    else {                                                     // stubble + full wrap the jaw
+      [-1, 1].forEach(s => { const j = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.13, 0.1), bMat); j.position.set(s * 0.1, -0.085, 0.085); j.rotation.z = s * 0.2; head.add(j); });
+      const jb = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.07, 0.09), bMat); jb.position.set(0, -0.125, 0.1); head.add(jb);
+      if (beard === 'full') stache();
+    }
+  }
   const hairObj = buildHair3D(art.hairStyle || 'short', hair); if (hairObj) { hairObj.position.y = 1.73; grp.add(hairObj); }   // distinct per style
   // arms — cylinders w/ sphere shoulders, elbows, and glove hands (accent)
   function arm(side) {
@@ -5096,7 +5122,7 @@ function stopPortrait() { SC3DP.started = false; if (SC3DP.raf) cancelAnimationF
 /* ---- 3D THUMBNAILS — snapshot each fighter from the SAME 3D model so roster/cards MATCH the ring ---- */
 const SC3DT = { ok: false };
 const THUMB_CACHE = {};
-function artSig(a) { return [a.skin, a.skinDark, a.hoodie, a.shorts, a.hair, a.accent, a.hairStyle, a.build].join('|'); }
+function artSig(a) { return [a.skin, a.skinDark, a.hoodie, a.shorts, a.hair, a.accent, a.hairStyle, a.build, a.beard, a.eyeColor].join('|'); }
 function ensureThumbRenderer() {
   if (SC3DT.ok) return true; if (!has3D()) return false;
   const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 320;
