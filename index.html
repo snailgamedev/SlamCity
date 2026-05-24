@@ -183,6 +183,8 @@
   .roster-card:active { transform: scale(0.97); border-color: var(--red-bright); box-shadow: 0 2px 10px rgba(200,64,74,0.32); transition-duration: 0.06s; }
   .roster-card .portrait { width: 100%; aspect-ratio: 1; margin-bottom: 6px; position: relative; }
   .roster-card .portrait svg { width: 100%; height: 100%; }
+  .roster-card .portrait .rc-thumb, .rc-thumb { width: 100%; height: 100%; object-fit: contain; display: block; }
+  #detail-svg-mount canvas, .detail-stage canvas { width: 100%; height: 100%; display: block; }
   .roster-card .rc-name { font-size: 13px; font-weight: 900; color: var(--cream); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 2px; }
   .roster-card .rc-arch { font-size: 9px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; }
   .roster-card .rc-ovr { position: absolute; top: 6px; right: 8px; font-size: 16px; font-weight: 900; color: var(--cream); text-shadow: 0 1px 0 #000; }
@@ -904,7 +906,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v4.5 · build 2026-05-24·1057 · RESPONSIVE — fills the whole screen on desktop (big immersive ring) + tablet/phone · MODES now play DIFFERENTLY — Career ladder, Survival scales foes + wears you down, Gauntlet full-heal escalation, Training dummy · grouped main menu · for AARON</div>
+  <div class="splash-foot">v4.6 · build 2026-05-24·1116 · roster/cards now show the REAL 3D model (matches the ring) · livelier CPU fights (no more freeze→sudden pin) · 🎲 RANDOM fighter button · 🏟️ CPU TOURNAMENT (8-fighter bracket) · cinematic mode intros · tab title tracks the version · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -949,6 +951,7 @@
   <div class="hub-modes">
     <button class="mode-card" onclick="startMode('training')"><span class="mode-ic">🥊</span><span class="mode-txt"><b>TRAINING</b><i>dummy opponent · gains-only practice</i></span></button>
     <button class="mode-card" onclick="startMode('watch')"><span class="mode-ic">👁</span><span class="mode-txt"><b>WATCH</b><i>CPU vs CPU · pick both</i></span></button>
+    <button class="mode-card" onclick="startMode('tournament')"><span class="mode-ic">🏟️</span><span class="mode-txt"><b>CPU TOURNAMENT</b><i>8-fighter bracket · spectate to a champ</i></span></button>
   </div>
   <button class="btn btn-secondary" type="button" onclick="goto('create')" style="margin-top:12px">＋ CREATE A FIGHTER</button>
 </div>
@@ -982,6 +985,7 @@
   </div>
   <div class="roster-filter">
     <input id="roster-search" class="roster-search" placeholder="🔎 search fighter…" oninput="buildRoster()" autocomplete="off">
+    <button class="btn" type="button" id="roster-random" onclick="pickRandomFighter()" style="margin:8px 0 2px">🎲 RANDOM — surprise me</button>
     <div class="roster-chips" id="roster-chips">
       <button class="rchip on" data-f="all" onclick="setRosterFilter('all')">ALL</button>
       <button class="rchip" data-f="wrestling" onclick="setRosterFilter('wrestling')">WRESTLING</button>
@@ -1202,7 +1206,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v4.5</div>
+    <div class="load-skip">tap to skip · v4.6</div>
   </div>
 </div>
 
@@ -1797,7 +1801,7 @@ function goto(id) {
   // Leaving the ring stops the real-time loop so it can't run against a hidden screen.
   if (id !== 'fight' && typeof rafId !== 'undefined' && rafId) { cancelAnimationFrame(rafId); rafId = null; if (match && !parkFight) match.over = true; }   // parkFight = visiting settings mid-fight, keep match alive
   if (id !== 'fight' && typeof stop3DLoop === 'function' && !parkFight) stop3DLoop();   // pause the WebGL render loop when leaving the ring
-  if (id !== 'create' && id !== 'profile' && id !== 'result' && typeof stopPortrait === 'function') stopPortrait();   // pause the customization/result 3D preview
+  if (id !== 'create' && id !== 'profile' && id !== 'result' && id !== 'detail' && typeof stopPortrait === 'function') stopPortrait();   // pause the customization/result/detail 3D preview
   if (id === 'hub') parkFight = false;
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -1877,15 +1881,40 @@ function changeFeedHTML() {
 }
 
 let gameMode = 'quick';
-const MODE_LABEL = { quick:'QUICK FIGHT', career:'CAREER', gauntlet:'GAUNTLET', survival:'SURVIVAL', versus:'VERSUS', training:'TRAINING', franchise:'FRANCHISE', watch:'WATCH' };
+const MODE_LABEL = { quick:'QUICK FIGHT', career:'CAREER', gauntlet:'GAUNTLET', survival:'SURVIVAL', versus:'VERSUS', training:'TRAINING', franchise:'FRANCHISE', watch:'WATCH', tournament:'CPU TOURNAMENT' };
 const modeCtx = { queue: [], idx: 0, streak: 0, playerId: null, pickingOpponent: false, season: null };
 function shuffled(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
 function startMode(m) {
   gameMode = m;
   modeCtx.queue = []; modeCtx.idx = 0; modeCtx.streak = 0; modeCtx.playerId = null; modeCtx.pickingOpponent = false; modeCtx.season = null;
+  if (m === 'tournament') { startTournament(); return; }   // 8-fighter CPU bracket you spectate
   setRosterLabel(false);   // WATCH now lets you pick BOTH CPUs (fighter 1, then fighter 2)
   goto('roster');
+}
+// pick a random fighter from the roster (handy if you don't know who to choose)
+function pickRandomFighter() {
+  const pool = FIGHTERS.filter(f => !f.cpu);
+  const exclude = ((gameMode === 'versus' || gameMode === 'watch') && modeCtx.pickingOpponent) ? modeCtx.playerId : null;
+  const p = pool.filter(f => f.id !== exclude); const list = p.length ? p : pool;
+  beginMode(list[Math.floor(Math.random() * list.length)].id);
+}
+/* ===== CPU TOURNAMENT — an 8-fighter single-elim bracket you watch play out ===== */
+function startTournament() {
+  gameMode = 'tournament';
+  const ids = shuffled(FIGHTERS.filter(f => !f.cpu).map(f => f.id)).slice(0, 8);
+  modeCtx.tourn = { alive: ids, idx: 0, winners: [], roundNum: 1, lastWinner: null };
+  launchTournBout();
+}
+function launchTournBout() {
+  const t = modeCtx.tourn; if (!t) return;
+  launchFight(t.alive[t.idx], t.alive[t.idx + 1]);   // CPU vs CPU (pAI set by mode)
+}
+function nameOf(id) { const f = FIGHTERS.find(x => x.id === id); return f ? f.name : id; }
+function tournProgress() {
+  const t = modeCtx.tourn; if (!t) return '';
+  const sizeName = { 8: 'QUARTERFINAL', 4: 'SEMIFINAL', 2: 'FINAL' }[t.alive.length] || 'ROUND ' + t.roundNum;
+  return sizeName + ' · bout ' + (t.idx / 2 + 1) + '/' + (t.alive.length / 2);
 }
 function setRosterLabel(pickingOpp) {
   modeCtx.pickingOpponent = pickingOpp;
@@ -1948,9 +1977,21 @@ function nextInMode() {
     launchFight(modeCtx.playerId, modeCtx.queue[modeCtx.season.idx % modeCtx.queue.length]);
   } else if (gameMode === 'watch') {
     startMode('watch');                                         // watch another
+  } else if (gameMode === 'tournament') {
+    advanceTournament();
   } else {
     launchFight(modeCtx.playerId);                              // training: keep going
   }
+}
+function advanceTournament() {
+  const t = modeCtx.tourn; if (!t) { goto('hub'); return; }
+  t.winners.push(t.lastWinner || t.alive[t.idx]);              // record this bout's winner
+  t.idx += 2;
+  if (t.idx >= t.alive.length) {                              // round complete
+    if (t.winners.length === 1) { crownChampion(t.winners[0]); setStatus && setStatus('🏆 ' + nameOf(t.winners[0]) + ' WINS THE TOURNAMENT!', 'var(--gold)', 2000); goto('hub'); return; }
+    t.alive = t.winners; t.winners = []; t.idx = 0; t.roundNum++;
+  }
+  launchTournBout();
 }
 
 /* ========== SETTINGS (all controls wired to real behavior) ========== */
@@ -2026,7 +2067,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '4.5';
+const GAME_VERSION = '4.6';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -2060,6 +2101,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['4.6',  'Roster + cards now render the REAL 3D model (a snapshot of the same fighter you see in the ring — they finally MATCH) · CPU fights are livelier — fighters keep moving with real footwork instead of freezing then a sudden pin · a 🎲 RANDOM button on the fighter-select if you don’t know who to pick · NEW 🏟️ CPU TOURNAMENT — an 8-fighter single-elim bracket you spectate to a champion · cinematic "news" beats when a Career/Survival/Gauntlet/Tournament bout starts · the browser tab title now always shows the live version'],
   ['4.5',  'RESPONSIVE — the game now fills your whole screen (a big immersive ring on desktop, wider menus + more roster columns) instead of a phone-width strip; still clean on mobile · MODES finally play DIFFERENTLY: CAREER is a ranked ladder you climb to a title, SURVIVAL scales the opponents up each round AND leaves you worn down, GAUNTLET keeps full-heal escalation, TRAINING gives you a passive dummy to practice on · the main menu is grouped (Quick Play · Run the Gauntlet · Practice & Spectate)'],
   ['4.4',  'Movement upgrade — push the stick to SPRINT, and change depth (W/S) to circle BEHIND your opponent (bodies only collide on the same plane) · PAUSE and HOW-TO-PLAY now truly freeze the action · EVERY mode builds your overall now (Training counts as gains-only practice; Watch evolves both CPUs) · CPU-vs-CPU lets you pick BOTH fighters · ADMIN: undo ANY past action (not just the last) + an admin ranking list every admin can see · the game auto-checks for updates each time you open it'],
   ['4.3',  'CINEMATIC 3D progress — real cast shadows, a dramatic ring spotlight, filmic tone-mapping, and a camera that slowly drifts + punches in on big hits / hype · OVERALL now MATTERS: a higher-OVR fighter hits harder and absorbs more (up to ±18% on the gap) · all 12 ratings can rise AND fall from how you fight · your progress (ratings + record) is saved across sign-out → sign-in · every admin command — bans, timeouts, all of it — is undoable for 90 days'],
@@ -2203,7 +2245,7 @@ function buildRoster() {
       ${save.champion === f.id ? '<div class="rc-champ">🏆</div>' : ''}
       <div class="rc-ovr">${cur}</div>
       ${deltaTxt}
-      <div class="portrait">${renderFighter(f.art)}</div>
+      <div class="portrait">${avatarHTML(f.art, 'rc-thumb')}</div>
       <div class="rc-name">${f.name}</div>
       <div class="rc-arch"><span class="rc-disc ${disc.toLowerCase()}">${disc === 'BOXING' ? '🥊' : '🤼'} ${disc}</span> · ${WEIGHT_CLASSES[weightClassOf(f)].abbr}</div>
     `;
@@ -2999,7 +3041,6 @@ function openDetail(id) {
   if (!f) return;
   currentDetail = id;
   document.getElementById('detail-head-name').textContent = f.name;
-  document.getElementById('detail-svg-mount').innerHTML = renderFighter(f.art);
   const sc = document.getElementById('detail-stats');
   const cur = getCurrentOVR(f.id);
   const delta = getOVRDelta(f.id);
@@ -3027,6 +3068,8 @@ function openDetail(id) {
   const del = document.getElementById('detail-delete');
   if (del) del.style.display = f.custom ? 'block' : 'none';   // only YOUR created fighters can be deleted
   goto('detail');
+  const dm = document.getElementById('detail-svg-mount');     // live rotating 3D model (matches the ring) — after goto so it's sized + not stopped
+  if (!showPortraitIn(dm, f.art)) dm.innerHTML = renderFighter(f.art);
 }
 function deleteCustomFighter(id) {
   const f = FIGHTERS.find(x => x.id === id);
@@ -3125,7 +3168,7 @@ function startMatchWith(playerId, oppId) {
     started: false,
     mode: gameMode,
     training: gameMode === 'training',
-    pAI: gameMode === 'watch',
+    pAI: gameMode === 'watch' || gameMode === 'tournament',
     watchT: 0,
     pMo: 0, oMo: 0,          // momentum meters (0-100)
     pHype: 0, oHype: 0,      // HYPE-state timers (ms) when a meter fills
@@ -3750,18 +3793,21 @@ function aiTaunt() {
 function updateWatchAI(dt, dtms, fW) {
   if (match.pStun > 0 || match.pAtk || match.pinning || match.subbing || match.pDowned > 0) { match.joy = 0; return; }
   const zg = match.oZ - match.pZ;   // track depth toward opponent
-  if (Math.abs(zg) > 0.06) match.pZ = Math.max(0, Math.min(1, match.pZ + Math.sign(zg) * 0.55 * dt));
-  const gap = match.oX - match.pX;
+  if (Math.abs(zg) > 0.06) match.pZ = Math.max(0, Math.min(1, match.pZ + Math.sign(zg) * 0.6 * dt));
+  const gap = match.oX - match.pX, absGap = Math.abs(gap);
   match.watchT = (match.watchT || 0) - dtms;
-  if (match.oDowned > 0 && gap <= fW * 1.15) { match.joy = 0; if (match.pCool <= 0) playerPin(); return; }
-  if (gap > fW * 0.95) { match.joy = 1; return; }     // close in on the opponent
-  match.joy = 0;
-  if (match.pCool <= 0 && match.watchT <= 0) {
-    const r = Math.random();
-    if (match.oHP <= FIN_UNLOCK && r < 0.4) playerAttack('finisher');
-    else if (r < 0.15) playerAttack('strike');
+  // opponent down → close + go for the pin
+  if (match.oDowned > 0 && absGap <= fW * 1.15) { match.joy = 0; if (match.pCool <= 0) playerPin(); return; }
+  // ALWAYS keep moving so it reads as a live fight (never the dead "frozen then sudden pin")
+  if (absGap > fW * 0.98) { match.joy = Math.sign(gap) || 1; }              // approach
+  else { match.pWatchDir = match.pWatchDir || 1; if (Math.random() < 0.025) match.pWatchDir *= -1; match.joy = match.pWatchDir * 0.55; }  // footwork in range
+  // act often + mix it up (per-fighter tendency biases the choice)
+  if (match.pCool <= 0 && match.watchT <= 0 && absGap <= fW * 1.15) {
+    const r = Math.random(), aggr = (match.pAb.striking / 99);
+    if (match.oHP <= FIN_UNLOCK && r < 0.42) playerAttack('finisher');
+    else if (r < 0.18 + aggr * 0.3) playerAttack('strike');
     else playerAttack('grapple');
-    match.watchT = 380 + Math.random() * 520;
+    match.watchT = 240 + Math.random() * 360;     // act ~2x more often than before
   }
 }
 
@@ -4033,6 +4079,12 @@ function endPrefight() {
   match.paused = false;
   match.lastT = performance.now();
   setStatus('FIGHT!', 'var(--gold)', 900);
+  // cinematic "news" beat per mode
+  const m = match.mode;
+  if (m === 'career') caption('📰 TITLE RUN · Rank ' + (match.careerRung || 1) + ' — ' + match.opponent.name + ' stands in the way', 'big');
+  else if (m === 'survival') caption('💀 ROUND ' + (match.survRound || 1) + ' — they hit harder, you’re already worn', 'big');
+  else if (m === 'tournament') caption('🏟️ ' + tournProgress() + ' — ' + match.player.name + ' vs ' + match.opponent.name, 'big');
+  else if (m === 'gauntlet') caption('🏆 GAUNTLET ' + (match.gauntletNum || 1) + '/' + (modeCtx.queue ? modeCtx.queue.length : 11), 'big');
 }
 
 function flash(side, heavy) {
@@ -4224,6 +4276,7 @@ function finishMatch(result) {
       <div><strong>${save.kos}</strong>KOs</div>
       <div><strong>${save.finishers}</strong>FINISHERS</div>
     `;
+    if (match.mode === 'tournament' && modeCtx.tourn) modeCtx.tourn.lastWinner = (result === 'win' ? match.player.id : match.opponent.id);
     setResultButtons(result);
     goto('result');
     // 3D WINNER avatar — the victor stands tall on the result screen
@@ -4240,7 +4293,13 @@ function setResultButtons(result) {
   const m = match.mode;
   const won = result === 'win';
   const chainWin = (m === 'gauntlet' || m === 'survival' || m === 'career') && won;
-  if (m === 'watch') {
+  if (m === 'tournament') {
+    const t = modeCtx.tourn;
+    const last = t && t.alive.length === 2;
+    prim.textContent = last ? '🏆 CROWN THE WINNER' : 'NEXT BOUT › ' + tournProgress();
+    prim.onclick = nextInMode;
+    sec.textContent = 'END TOURNAMENT'; sec.onclick = () => goto('hub');
+  } else if (m === 'watch') {
     prim.textContent = 'WATCH ANOTHER'; prim.onclick = () => startMode('watch');
     sec.textContent = 'HOME / MODES'; sec.onclick = () => goto('hub');
   } else if (m === 'career' && won) {
@@ -4642,6 +4701,48 @@ function showPortraitIn(container, art) {
 }
 function stopPortrait() { SC3DP.started = false; if (SC3DP.raf) cancelAnimationFrame(SC3DP.raf); SC3DP.raf = null; }
 
+/* ---- 3D THUMBNAILS — snapshot each fighter from the SAME 3D model so roster/cards MATCH the ring ---- */
+const SC3DT = { ok: false };
+const THUMB_CACHE = {};
+function artSig(a) { return [a.skin, a.skinDark, a.hoodie, a.shorts, a.hair, a.accent, a.hairStyle, a.build].join('|'); }
+function ensureThumbRenderer() {
+  if (SC3DT.ok) return true; if (!has3D()) return false;
+  const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 320;
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
+  renderer.setSize(256, 320, false);
+  if (THREE.sRGBEncoding) renderer.outputEncoding = THREE.sRGBEncoding;
+  if (THREE.ACESFilmicToneMapping) { renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.15; }
+  const scene = new THREE.Scene();
+  scene.add(new THREE.HemisphereLight(0xdfe6ff, 0x20202c, 1.1));
+  const key = new THREE.DirectionalLight(0xfff2e0, 0.95); key.position.set(2.5, 4, 3.5); scene.add(key);
+  const rim = new THREE.DirectionalLight(0xff5060, 0.3); rim.position.set(-3, 2, -2); scene.add(rim);
+  const cam = new THREE.PerspectiveCamera(34, 256 / 320, 0.1, 50); cam.position.set(0, 1.02, 3.5); cam.lookAt(0, 0.92, 0);
+  SC3DT.renderer = renderer; SC3DT.scene = scene; SC3DT.camera = cam; SC3DT.ok = true;
+  return true;
+}
+// returns a PNG data-URL of the fighter's 3D model (cached by look); null if WebGL unavailable
+function fighterThumb(art) {
+  const sig = artSig(art);
+  if (THUMB_CACHE[sig]) return THUMB_CACHE[sig];
+  if (!ensureThumbRenderer()) return null;
+  let url = null;
+  try {
+    const f = build3DFighter(art);
+    f.group.rotation.y = -0.32;                         // slight 3/4 hero angle
+    SC3DT.scene.add(f.group);
+    SC3DT.renderer.render(SC3DT.scene, SC3DT.camera);
+    url = SC3DT.renderer.domElement.toDataURL('image/png');
+    SC3DT.scene.remove(f.group);
+  } catch (e) { return null; }
+  THUMB_CACHE[sig] = url;
+  return url;
+}
+// avatar markup that MATCHES the 3D model (img snapshot) with the SVG as fallback
+function avatarHTML(art, cls) {
+  const t = fighterThumb(art);
+  return t ? `<img class="${cls || ''}" src="${t}" alt="" draggable="false">` : renderFighter(art);
+}
+
 /* ========== BOOT ========== */
 fitViewport();
 // Unlock WebAudio on the very FIRST interaction (any input) so all SFX reliably play (autoplay policy).
@@ -4656,6 +4757,7 @@ snapshotOriginalArt();  // capture pristine brother art BEFORE any look applies 
 applyProfileLooks();    // restore each profile's custom look onto its brother (universal)
 applyReducedMotion();
 applyPlatform();
+document.title = 'SLAM CITY · v' + GAME_VERSION + ' · REAL 3D';   // tab title always reflects the live version
 refreshSplash();
 checkUpdate();   // show an "UPDATED" toast if the build changed since last visit
 

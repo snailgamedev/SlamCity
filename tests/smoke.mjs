@@ -48,16 +48,16 @@ try {
   const cardCount = await page.locator('.roster-card').count();
   check('roster cards rendered (expect 11)', cardCount >= 1, `${cardCount} cards`);
   // verify each card has a portrait SVG (fighters actually render, not blank)
-  const svgCount = await page.locator('.roster-card .portrait svg').count();
-  check('roster fighters have SVG art', svgCount >= 1, `${svgCount} portraits`);
+  const svgCount = await page.locator('.roster-card .portrait svg, .roster-card .portrait img').count();   // 3D thumb (img) or SVG fallback
+  check('roster fighters have art', svgCount >= 1, `${svgCount} portraits`);
   await page.screenshot({ path: `${OUT}/smoke-2-roster.png` });
 
   // SCREEN 3 · DETAIL
   await page.locator('.roster-card').first().click();
   await page.waitForTimeout(300);
   check('detail active after card click', (await page.locator('#detail.active').count()) === 1);
-  const detailStageSvg = await page.locator('#detail .detail-stage svg, #detail svg').count();
-  check('detail fighter renders', detailStageSvg >= 1, `${detailStageSvg} svg`);
+  const detailStageSvg = await page.locator('#detail .detail-stage canvas, #detail .detail-stage svg, #detail svg').count();   // live 3D model or SVG fallback
+  check('detail fighter renders', detailStageSvg >= 1, `${detailStageSvg} mounts`);
   const fightBtn = page.locator('#detail button.btn', { hasText: 'FIGHT WITH THIS ONE' });
   check('FIGHT WITH THIS ONE button present', (await fightBtn.count()) >= 1);
   await page.screenshot({ path: `${OUT}/smoke-3-detail.png` });
