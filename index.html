@@ -582,7 +582,7 @@
   .ef-slabel { width: 96px; font-size: 11px; color: var(--soft); text-transform: uppercase; letter-spacing: 0.5px; flex: 0 0 96px; }
   .ef-stat input[type=range] { flex: 1; }
   .ef-sval { width: 26px; text-align: right; font-size: 12px; font-weight: 800; color: var(--cream); flex: 0 0 26px; }
-  .adm-rank { border: 1px solid var(--bg-3); border-radius: 8px; overflow: hidden; margin-bottom: 8px; }
+  .adm-rank, .adm-activity { border: 1px solid var(--bg-3); border-radius: 8px; overflow: hidden; margin-bottom: 8px; }
   .adm-rank-row { display: flex; justify-content: space-between; gap: 10px; padding: 9px 11px; font-size: 11px; border-bottom: 1px solid rgba(255,255,255,0.05); background: var(--bg-1); }
   .adm-rank-row:last-child { border-bottom: none; }
   .adm-rank-row span:first-child { color: var(--gold); font-weight: 800; letter-spacing: 0.5px; }
@@ -672,6 +672,13 @@
   .hp-stat b { color: var(--gold); font-size: 15px; font-family: var(--font-arcade); margin-right: 4px; }
   .hub-modes-label { font-size: 10px; letter-spacing: 3px; color: var(--muted); margin-bottom: 10px; }
   .hub-grp-label { font-size: 11px; letter-spacing: 2.5px; color: var(--gold); font-weight: 800; margin: 16px 0 9px; text-transform: uppercase; }
+  /* MESSAGE OF THE DAY banner (admin-set, everyone sees) */
+  .motd-banner { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin: 10px 0 4px; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--gold); background: linear-gradient(90deg, rgba(200,160,96,0.14), rgba(200,160,96,0.05)); animation: motd-in 0.5s ease; }
+  .motd-banner .motd-ic { font-size: 15px; }
+  .motd-banner .motd-txt { font-size: 13px; font-weight: 700; color: var(--soft); flex: 1 1 auto; line-height: 1.4; }
+  .motd-banner .motd-by { font-size: 10px; letter-spacing: 1px; color: var(--gold); font-weight: 800; }
+  @keyframes motd-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+  .adm-log-by { color: var(--gold); font-size: 10px; font-weight: 700; }
   .hub-modes + .hub-grp-label { margin-top: 18px; }
   .hub-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .mode-card { display: flex; align-items: center; gap: 10px; text-align: left; padding: 14px 12px; border: 1px solid var(--bg-3); border-radius: 12px; background: linear-gradient(180deg, var(--bg-2), var(--bg-1)); color: var(--cream); cursor: pointer; transition: transform 0.08s, border-color 0.12s; min-height: 62px; }
@@ -956,7 +963,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v4.14 · build 2026-05-24·1252 · 🧔 FACE CUSTOMIZATION — beard (4 styles) + eye color (7) in create-a-fighter AND the look editor · live 3D preview · for AARON</div>
+  <div class="splash-foot">v4.15 · build 2026-05-24·1301 · 🛠 ADMIN TOOLS — 📢 Message of the Day banner · 🏆 admin activity ranking · 🔍 audit-log search (+ who did each action) · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -984,6 +991,7 @@
   </div>
 
   <div class="hub-profile" id="hub-profile"></div>
+  <div class="motd-banner" id="motd-banner" style="display:none"></div>
 
   <div class="hub-grp-label">⚡ QUICK PLAY</div>
   <div class="hub-modes">
@@ -1264,7 +1272,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v4.14</div>
+    <div class="load-skip">tap to skip · v4.15</div>
   </div>
 </div>
 
@@ -1759,7 +1767,7 @@ function loadSave() {
     }
   } catch(e) {}
   return { wins:0, losses:0, kos:0, finishers:0, scriptureStrikes:0, picks:{}, ovrDelta:{}, abilDelta:{},
-           difficulty:2, sfxOn:true, vol:0.9, captionsOn:true, platform:null, reducedMotion:false, tutorialSeen:false, seenVersion:null, customFighters:[], achievements:{}, belts:0, champion:null, profiles:{}, activeProfile:null, admin:null, adminLog:[], adminInbox:{}, changeFeed:[], bans:{}, feedback:[], adminPins:{}, undo:[], wcOverride:{} };
+           difficulty:2, sfxOn:true, vol:0.9, captionsOn:true, platform:null, reducedMotion:false, tutorialSeen:false, seenVersion:null, customFighters:[], achievements:{}, belts:0, champion:null, profiles:{}, activeProfile:null, admin:null, adminLog:[], adminInbox:{}, changeFeed:[], bans:{}, feedback:[], adminPins:{}, undo:[], wcOverride:{}, motd:null };
 }
 function persistSave() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch(e) {}
@@ -1928,6 +1936,16 @@ function renderHub() {
     + `<div class="hub-ver" onclick="openFeedback()" style="margin-left:8px">✍️ feedback</div>`
     + `<div class="hub-ver" onclick="openInstall()" style="margin-left:8px">⬇ install</div>`
     + changeFeedHTML();
+  renderMOTD();
+}
+// MESSAGE OF THE DAY — a persistent banner an admin sets; everyone sees it on the hub
+function renderMOTD() {
+  const el = document.getElementById('motd-banner'); if (!el) return;
+  const m = save.motd;
+  if (m && m.text) {
+    el.style.display = '';
+    el.innerHTML = `<span class="motd-ic">📢</span><span class="motd-txt">${escapeHTML(m.text)}</span><span class="motd-by">— ${escapeHTML(m.by || 'admin')}</span>`;
+  } else el.style.display = 'none';
 }
 // PUBLIC changes feed — everyone sees who created/claimed/recolored a fighter (universal-changes visibility)
 function changeFeedHTML() {
@@ -2136,7 +2154,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '4.14';
+const GAME_VERSION = '4.15';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -2170,6 +2188,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['4.15', 'ADMIN TOOLS cluster (cooking the list · you flagged this one): 📢 MESSAGE OF THE DAY — an admin posts a banner that stays on the hub for EVERYONE until changed (separate from the one-shot announce) · 🏆 ADMIN ACTIVITY — the panel now ranks who’s been moderating, tallied from the audit log · 🔍 LOG SEARCH — filter the admin log by action or by which admin did it. Every logged action now records WHO did it.'],
   ['4.14', 'FACE CUSTOMIZATION (cooking the list): now that every fighter has a face, you can shape it — 🧔 BEARD (none · stubble · goatee · full) and 👁 EYE COLOR (dark · brown · hazel · amber · blue · green · ruby), both in the CREATE-A-FIGHTER screen AND the per-fighter look editor, so you can give anyone in the crew a beard. Eyes now have pupils so the color reads. Live 3D preview updates instantly and it saves with the fighter.'],
   ['4.13', 'ENTRANCES go big (cooking the list): 🎵 WALKOUT THEMES — every fighter gets a short synth walkout riff that plays on the pre-fight card, seeded from who they are so the crew sounds a little different from each other · 🎆 PYRO — gold pyro jets blast up from the corners (with a sizzle) the moment the bell rings and the fighters stride into the ring. Pairs with the v4.10 walk-in entrances for a real big-stage feel. All audio respects your Sound Effects + Volume settings.'],
   ['4.12', 'Make wins feel EARNED (cooking the idea list): ⭐ SIGNATURE FINISHERS — land your finisher and a comic-book stamp announces it BY NAME (RKO · Phoenix Splash · Last Ride · Suplex City · Ancient Landmark…) with your name under it · 🔢 COMBO COUNTER — chain hits and a “COMBO ×N” pops on screen, your top combo is tracked · 📊 TALE OF THE TAPE — the result screen now breaks down how the fight actually went: strikes, slams, big hits, blocks, reversals, top combo, biggest hit, and whether you hit the finisher'],
@@ -2677,14 +2696,18 @@ function renderAdmin() {
         + (curAdminTier() === 1 ? `<button class="adm-mini" type="button" style="margin-bottom:8px" onclick="adminClearFeedback()">clear feedback</button>` : '')
       : `<div class="adm-log-row" style="color:var(--muted)">no feedback yet</div>`;
   }
-  // ── admin log ──
+  // ── admin log (with a live search filter) ──
   if (can('viewlog')) {
-    const log = save.adminLog || [];
-    html += `<div class="adm-sec-label">📋 ADMIN LOG · ${log.length}</div>`;
+    const q = (adminLogQuery || '').toLowerCase();
+    const log = (save.adminLog || []).filter(e => !q || (e.text || '').toLowerCase().includes(q) || (e.by || '').toLowerCase().includes(q));
+    html += `<div class="adm-sec-label">📋 ADMIN LOG · ${log.length}${q ? ' (filtered)' : ''}</div>`;
+    html += `<input id="adm-log-search" class="roster-search" placeholder="🔍 search the log (action or admin)…" value="${escapeHTML(adminLogQuery)}" oninput="adminLogSearch(this.value)" autocomplete="off" style="margin-bottom:8px">`;
     html += log.length
-      ? `<div class="adm-log">` + log.slice(0, 12).map(e => `<div class="adm-log-row"><span class="adm-log-t">${adminTimeAgo(e.t)}</span> ${e.text}</div>`).join('') + `</div>`
+      ? `<div class="adm-log">` + log.slice(0, 14).map(e => `<div class="adm-log-row"><span class="adm-log-t">${adminTimeAgo(e.t)}</span> ${e.text}${e.by ? ` <span class="adm-log-by">· ${escapeHTML(e.by)}</span>` : ''}</div>`).join('') + `</div>`
         + (tier === 1 ? `<button class="adm-mini" type="button" style="margin-bottom:8px" onclick="adminClearLog()">clear log</button>` : '')
-      : `<div class="adm-log-row" style="color:var(--muted)">no actions yet</div>`;
+      : `<div class="adm-log-row" style="color:var(--muted)">${q ? 'no matches' : 'no actions yet'}</div>`;
+    // ── admin activity leaderboard (who's been moderating) ──
+    html += adminActivityHTML();
   }
   // ── 90-day UNDO · undo ANY point (each row has its own ↩) ──
   pruneUndo();
@@ -2703,6 +2726,8 @@ function renderAdmin() {
   html += `<div class="adm-sec-label">🛠 ADMIN TOOLS</div>`;
   html += `<button class="btn" type="button" style="border-color:var(--gold);color:var(--gold);background:rgba(40,28,12,0.4)" onclick="openAdminFighters()">👥 MANAGE / SEARCH ALL FIGHTERS ›</button>`;
   if (can('announce')) html += `<button class="btn btn-secondary" type="button" onclick="adminAnnounce()">📣 ANNOUNCE TO EVERYONE</button>`;
+  if (can('announce')) html += `<button class="btn btn-secondary" type="button" onclick="adminSetMOTD()">📢 ${save.motd && save.motd.text ? 'EDIT' : 'SET'} MESSAGE OF THE DAY${save.motd && save.motd.text ? '' : ''}</button>`;
+  if (can('announce') && save.motd && save.motd.text) html += `<button class="adm-mini" type="button" style="margin-bottom:8px" onclick="adminClearMOTD()">clear the message of the day</button>`;
   if (can('create')) html += `<button class="btn btn-secondary" type="button" onclick="adminCreateFighter()">➕ CREATE A FIGHTER</button>`;
   // ── banlist (tier 1 only) ──
   if (tier === 1) {
@@ -2751,6 +2776,42 @@ function adminAnnounce() {
   logChange('📣 ' + adminWho() + ' announced: "' + text + '"', 'announce:' + Date.now());
   persistSave(); renderAdmin();
   setStatus && setStatus('ANNOUNCED TO ' + n, 'var(--gold)', 1000);
+}
+// MESSAGE OF THE DAY — a persistent banner everyone sees on the hub (distinct from the one-shot announce)
+function adminSetMOTD() {
+  if (!can('announce')) return;
+  const cur = (save.motd && save.motd.text) || '';
+  const text = (prompt('Message of the Day — shows on the hub for everyone until you change it:', cur) || '').trim();
+  if (!text) return;
+  save.motd = { text: text.slice(0, 140), by: adminWho(), t: Date.now() };
+  adminLogPush('📢 set the Message of the Day: "' + save.motd.text + '"');
+  logChange('📢 ' + adminWho() + ' posted a Message of the Day', 'motd:' + Date.now());
+  persistSave(); renderAdmin();
+  setStatus && setStatus('MESSAGE OF THE DAY POSTED', 'var(--gold)', 1100);
+}
+function adminClearMOTD() {
+  if (!can('announce')) return;
+  save.motd = null; adminLogPush('📢 cleared the Message of the Day'); persistSave(); renderAdmin();
+}
+// who's been moderating — tally the audit log by acting admin
+function adminActivityHTML() {
+  const log = save.adminLog || [];
+  if (!log.length) return '';
+  const tally = {};
+  log.forEach(e => { const who = e.by || ((e.text || '').replace(/^[^A-Za-z]+/, '').split(' ').slice(0, 2).join(' ')) || 'admin'; tally[who] = (tally[who] || 0) + 1; });
+  const rows = Object.entries(tally).sort((a, b) => b[1] - a[1]);
+  return `<div class="adm-sec-label">🏆 ADMIN ACTIVITY</div><div class="adm-activity">`
+    + rows.map(([who, n], i) => `<div class="adm-rank-row"><span>${['🥇', '🥈', '🥉'][i] || '•'} ${escapeHTML(who)}</span><span>${n} action${n !== 1 ? 's' : ''}</span></div>`).join('')
+    + `</div>`;
+}
+let adminLogQuery = '';
+function adminLogSearch(v) {
+  adminLogQuery = v || '';
+  // re-render in place but keep focus + caret on the search box
+  const prev = document.getElementById('adm-log-search'); const caret = prev ? prev.selectionStart : null;
+  renderAdmin();
+  const next = document.getElementById('adm-log-search');
+  if (next) { next.focus(); if (caret != null) try { next.setSelectionRange(caret, caret); } catch (e) {} }
 }
 // admin creates a fighter straight from the panel
 function adminCreateFighter() {
@@ -3033,7 +3094,7 @@ async function downloadGame() {
   } catch (e) { alert('Download blocked here — use your browser menu → “Save Page As / Download Page”.'); }
 }
 // ── admin message + log plumbing ──
-function adminLogPush(text) { save.adminLog = save.adminLog || []; save.adminLog.unshift({ t: Date.now(), text }); if (save.adminLog.length > 25) save.adminLog.length = 25; }
+function adminLogPush(text) { save.adminLog = save.adminLog || []; save.adminLog.unshift({ t: Date.now(), text, by: adminWho() }); if (save.adminLog.length > 40) save.adminLog.length = 40; }
 // PUBLIC universal-changes feed — everyone sees who changed/created a fighter. Dedupe rapid repeats of the same edit.
 function logChange(text, key) {
   save.changeFeed = save.changeFeed || [];
@@ -3045,6 +3106,7 @@ function logChange(text, key) {
 }
 function inboxPush(fid, text) { save.adminInbox = save.adminInbox || {}; (save.adminInbox[fid] = save.adminInbox[fid] || []).unshift({ t: Date.now(), text }); }
 function adminTimeAgo(t) { const s = Math.max(0, Math.round((Date.now() - t) / 1000)); if (s < 60) return s + 's'; if (s < 3600) return Math.round(s / 60) + 'm'; if (s < 86400) return Math.round(s / 3600) + 'h'; return Math.round(s / 86400) + 'd'; }
+function escapeHTML(s) { return (s == null ? '' : String(s)).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 function adminEditBrother(bid) { if (!can('edit')) return; profileEditLook(bid); }
 function adminMsgTo(bid) {
   if (!can('message')) return;
