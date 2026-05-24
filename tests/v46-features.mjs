@@ -18,8 +18,9 @@ try {
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(400);
 
-  // 1 · DYNAMIC TITLE
-  check('tab title reflects the live version', /v4\.6/.test(await page.title()), await page.title());
+  // 1 · DYNAMIC TITLE (matches the live GAME_VERSION, whatever it is)
+  const gv = await page.evaluate(() => GAME_VERSION);
+  check('tab title reflects the live version', (await page.title()).includes('v' + gv), await page.title());
 
   // 2 · ROSTER AVATARS = 3D model snapshots (img with a data URL), not flat SVG
   await page.evaluate(() => { save.tutorialSeen = true; persistSave(); goto('roster'); });

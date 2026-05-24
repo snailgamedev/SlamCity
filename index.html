@@ -130,6 +130,11 @@
   }
   @keyframes splash-verse-enter { 0% { opacity: 0; transform: translateX(-12px); } 100% { opacity: 1; transform: translateX(0); } }
   .splash-verse-text { font-style: italic; color: var(--cream); font-size: 14px; line-height: 1.6; }
+  .verse-insight { margin-top: 12px; text-align: left; display: flex; flex-direction: column; gap: 6px; }
+  .verse-insight .vi-apply, .verse-insight .vi-means { font-size: 12px; line-height: 1.55; color: var(--soft); }
+  .verse-insight b { display: block; font-size: 9px; letter-spacing: 1.5px; color: var(--gold); margin-bottom: 2px; }
+  .verse-insight .vi-means b { color: var(--soft); }
+  .verse-insight .vi-note { font-size: 10px; color: var(--muted); font-style: italic; margin-top: 2px; }
   .splash-verse-ref { display: block; color: var(--gold); font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-top: 10px; font-size: 11px; }
   /* Cross breathes in SYNC with the title: same 4.2s period + same 1.6s start → phase-locked, not drifting (audit fix: was 5s, drifted forever) */
   .splash-cross { color: var(--gold); margin-right: 6px; display: inline-block; animation: splash-cross-pulse 4.2s ease-in-out 1.3s infinite; }
@@ -903,10 +908,11 @@
   <div class="splash-verse">
     <div class="splash-verse-text" id="splash-verse-text"></div>
     <span class="splash-verse-ref" id="splash-verse-ref"></span>
+    <div id="splash-verse-insight"></div>
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v4.6 · build 2026-05-24·1116 · roster/cards now show the REAL 3D model (matches the ring) · livelier CPU fights (no more freeze→sudden pin) · 🎲 RANDOM fighter button · 🏟️ CPU TOURNAMENT (8-fighter bracket) · cinematic mode intros · tab title tracks the version · for AARON</div>
+  <div class="splash-foot">v4.7 · build 2026-05-24·1130 · DEEP per-limb animations — real fighting stance, punches w/ torso twist + weight transfer, level-change slams, hit recoils · stall + instant-pinfall fixed everywhere — MASH to kick out of pins (real agency) · every Bible verse now shows ONE way to live it + what it means (humble — one read) · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -1188,6 +1194,7 @@
   <div class="result-scripture" id="result-scripture-block" style="display:none">
     <div class="result-scripture-text" id="result-scripture-text"></div>
     <span class="result-scripture-ref" id="result-scripture-ref"></span>
+    <div id="result-verse-insight"></div>
   </div>
 
   <div class="stat-strip" id="career-strip"></div>
@@ -1206,7 +1213,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v4.6</div>
+    <div class="load-skip">tap to skip · v4.7</div>
   </div>
 </div>
 
@@ -2067,7 +2074,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '4.6';
+const GAME_VERSION = '4.7';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -2101,6 +2108,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['4.7',  'DEEP animations — fighters now hold a real stance and throw with their whole body: punches drive from a hip + torso twist with weight transfer (not just a lean), the rear-hand straight + a 1-2, grapples drop level → grab → LIFT into the slam, and getting hit snaps you back with a stagger · the STALL + instant-pinfall is fixed everywhere — when you’re pinned you MASH ⟳/STRIKE to KICK OUT (real agency, pins build instead of ending instantly) · every Bible verse in the game now shows ONE WAY TO LIVE IT and WHAT IT MEANS — framed humbly as one read (others may differ; go to the Word yourself)'],
   ['4.6',  'Roster + cards now render the REAL 3D model (a snapshot of the same fighter you see in the ring — they finally MATCH) · CPU fights are livelier — fighters keep moving with real footwork instead of freezing then a sudden pin · a 🎲 RANDOM button on the fighter-select if you don’t know who to pick · NEW 🏟️ CPU TOURNAMENT — an 8-fighter single-elim bracket you spectate to a champion · cinematic "news" beats when a Career/Survival/Gauntlet/Tournament bout starts · the browser tab title now always shows the live version'],
   ['4.5',  'RESPONSIVE — the game now fills your whole screen (a big immersive ring on desktop, wider menus + more roster columns) instead of a phone-width strip; still clean on mobile · MODES finally play DIFFERENTLY: CAREER is a ranked ladder you climb to a title, SURVIVAL scales the opponents up each round AND leaves you worn down, GAUNTLET keeps full-heal escalation, TRAINING gives you a passive dummy to practice on · the main menu is grouped (Quick Play · Run the Gauntlet · Practice & Spectate)'],
   ['4.4',  'Movement upgrade — push the stick to SPRINT, and change depth (W/S) to circle BEHIND your opponent (bodies only collide on the same plane) · PAUSE and HOW-TO-PLAY now truly freeze the action · EVERY mode builds your overall now (Training counts as gains-only practice; Watch evolves both CPUs) · CPU-vs-CPU lets you pick BOTH fighters · ADMIN: undo ANY past action (not just the last) + an admin ranking list every admin can see · the game auto-checks for updates each time you open it'],
@@ -2189,20 +2197,43 @@ function hideAchievements() { const el = document.getElementById('achievements')
 
 /* ========== SPLASH ========== */
 const SPLASH_VERSES = [
-  { text:'Iron sharpeneth iron · so a man sharpeneth the countenance of his friend.', ref:'Proverbs 27:17' },
-  { text:'I have fought a good fight · I have finished my course · I have kept the faith.', ref:'2 Timothy 4:7' },
-  { text:'Whatsoever thy hand findeth to do · do it with thy might.', ref:'Ecclesiastes 9:10' },
-  { text:'The race is not to the swift · nor the battle to the strong.', ref:'Ecclesiastes 9:11' },
-  { text:'I can do all things through Christ which strengtheneth me.', ref:'Philippians 4:13' },
-  { text:'Be strong and of a good courage · be not afraid · neither be thou dismayed.', ref:'Joshua 1:9' },
-  { text:'Let us not be weary in well doing · for in due season we shall reap.', ref:'Galatians 6:9' }
+  { text:'Iron sharpeneth iron · so a man sharpeneth the countenance of his friend.', ref:'Proverbs 27:17',
+    apply:'Keep people around you who push you to grow — and be that friend for someone else.',
+    means:'It’s about friends refining each other through honest challenge — not “beat your friends to get ahead.”' },
+  { text:'I have fought a good fight · I have finished my course · I have kept the faith.', ref:'2 Timothy 4:7',
+    apply:'Finish what you start; show up faithfully today, not just when it’s exciting.',
+    means:'Paul is looking back on a faithful life — not bragging that he beat people.' },
+  { text:'Whatsoever thy hand findeth to do · do it with thy might.', ref:'Ecclesiastes 9:10',
+    apply:'Give your full effort to whatever’s right in front of you.',
+    means:'A call to wholehearted work now — not a promise that trying hard guarantees you win.' },
+  { text:'The race is not to the swift · nor the battle to the strong.', ref:'Ecclesiastes 9:11',
+    apply:'Stay humble — talent isn’t a guarantee, so keep showing up with the right heart.',
+    means:'Outcomes aren’t always “the fastest wins” — not “your effort doesn’t matter.”' },
+  { text:'I can do all things through Christ which strengtheneth me.', ref:'Philippians 4:13',
+    apply:'Lean on God’s strength for the hard stretches instead of your own hype.',
+    means:'Paul means contentment + endurance in any circumstance — not “I can have anything I want.”' },
+  { text:'Be strong and of a good courage · be not afraid · neither be thou dismayed.', ref:'Joshua 1:9',
+    apply:'Face the thing that scares you, knowing you’re not walking in alone.',
+    means:'Courage rooted in God’s presence — not reckless fearlessness on your own steam.' },
+  { text:'Let us not be weary in well doing · for in due season we shall reap.', ref:'Galatians 6:9',
+    apply:'Keep doing good even when it’s slow to pay off — the harvest comes later.',
+    means:'Persistence in goodness over time — not a promise of an instant reward.' }
 ];
+// humble framing — one read, others may differ
+function verseInsightHTML(v) {
+  if (!v || !v.apply) return '';
+  return `<div class="verse-insight">`
+    + `<div class="vi-apply"><b>✦ ONE WAY TO LIVE IT</b> ${v.apply}</div>`
+    + `<div class="vi-means"><b>WHAT IT MEANS</b> ${v.means}</div>`
+    + `<div class="vi-note">one way to read it · others may see it differently — go to the Word for yourself 🙏</div></div>`;
+}
 function refreshSplash() {
   const d = new Date();
   const seed = d.getFullYear()*1000 + (d.getMonth()+1)*40 + d.getDate();
   const v = SPLASH_VERSES[seed % SPLASH_VERSES.length];
   document.getElementById('splash-verse-text').innerHTML = '<span class="splash-cross">✝</span>"' + v.text + '"';
   document.getElementById('splash-verse-ref').textContent = '— ' + v.ref + ' · KJV';
+  const ins = document.getElementById('splash-verse-insight'); if (ins) ins.innerHTML = verseInsightHTML(v);
 }
 
 /* ========== ROSTER ========== */
@@ -3451,8 +3482,18 @@ function gameLoop(t) {
   rafId = requestAnimationFrame(gameLoop);
 }
 
+// being pinned? every tap feeds the kick-out meter instead (agency — pins aren't instant)
+function tryKickMash() {
+  if (match && match.pinning && match.pinVictim === 'player' && !match.pAI) {
+    match.kickMash = (match.kickMash || 0) + 1;
+    if (typeof playClickSound === 'function') playClickSound();
+    return true;
+  }
+  return false;
+}
 function playerAttack(kind) {
   if (!match || match.over) return;
+  if (tryKickMash()) return;
   if (match.pAtk || match.pStun > 0 || match.pCool > 0 || match.pBlock) return;
   if (match.pDowned > 0 || match.pinning || match.subbing) return;
   if (kind === 'finisher' && match.oHP > FIN_UNLOCK) return;
@@ -3476,6 +3517,7 @@ function playerAttack(kind) {
 
 function playerDodge() {
   if (!match || match.over) return;
+  if (tryKickMash()) return;
   if (match.pStun > 0 || match.pAtk || match.pCool > 0) return;
   if (match.pST < 12) return;
   match.pST -= 12;
@@ -3536,6 +3578,7 @@ function applyKnockback(isPlayerAttacking, amt) {
 
 function setBlock(on) {
   if (!match) return;
+  if (on && tryKickMash()) return;   // REVERSE taps also feed the kick-out
   match.pBlock = !!on;
   const g = document.getElementById('left-guard');
   if (g) g.classList.toggle('on', !!on);
@@ -3591,29 +3634,36 @@ function playerPin() {
 }
 function doPin(byPlayer) {
   match.pinning = true;
+  match.pinVictim = byPlayer ? 'opp' : 'player';   // who's being pinned (drives mash-to-kickout)
+  match.kickMash = 0;
   const downedHP = byPlayer ? match.oHP : match.pHP;
   const defHeart = byPlayer ? match.oAb.heart : match.pAb.heart;
   const pinPow = byPlayer ? match.pAb.pinPower : match.oAb.pinPower;     // PIN POWER holds them down
-  // low HP + heart help the kickout; the pinner's pin-power suppresses it
-  const kicksOut = Math.random() < Math.min(0.92, Math.max(0.04, (downedHP / 100) * 0.85 + (defHeart / 99) * 0.2 - (pinPow - 80) * 0.006));
+  // base kickout odds (CPU-defended pins); a HUMAN victim mashes to kick out (agency, not instant)
+  const baseKick = Math.min(0.9, Math.max(0.05, (downedHP / 100) * 0.7 + (defHeart / 99) * 0.2 - (pinPow - 80) * 0.006));
+  const humanVictim = (match.pinVictim === 'player') && !match.pAI;   // the actual player is being pinned
+  if (humanVictim) setStatus('MASH ⟳ / STRIKE TO KICK OUT!', 'var(--gold)', 1500);
   let n = 0;
   const tick = () => {
     if (!match || match.over) { match.pinning = false; return; }
     n++;
-    setStatus('PIN · ' + n, 'var(--gold)', 1400);
-    caption('PIN COUNT … ' + n, 'big');
+    setStatus('PIN COUNT · ' + n, 'var(--gold)', 1400);
+    caption((humanVictim ? '⟳ MASH! · ' : '') + 'PIN COUNT … ' + n, 'big');
     playCountSound(false);
-    if (n >= 2 && kicksOut) {
-      match.pinning = false;
+    // kickout: human mash beats a rising threshold; CPU uses odds
+    const need = 5 + n * 5;                         // need more mash as the count climbs
+    const kicked = humanVictim ? (match.kickMash >= need) : (n >= 2 && Math.random() < baseKick);
+    if (kicked && n < 3) {
+      match.pinning = false; match.pinVictim = null;
       if (byPlayer) { match.oDowned = 0; setDowned('right', false); } else { match.pDowned = 0; setDowned('left', false); }
-      setStatus('KICKOUT!', 'var(--red-bright)', 900);
-      caption((byPlayer ? match.opponent.name : match.player.name) + ' kicks out', byPlayer ? 'enemy' : 'player');
+      setStatus('KICKOUT!', 'var(--red-bright)', 1000);
+      caption((byPlayer ? match.opponent.name : match.player.name) + ' KICKS OUT!', byPlayer ? 'enemy' : 'player');
       return;
     }
-    if (n >= 3) { if (byPlayer) unlockAch('pin'); endMatchBy(byPlayer ? 'win' : 'loss', 'PINFALL'); return; }
-    setTimeout(tick, 720);
+    if (n >= 3) { match.pinVictim = null; if (byPlayer) unlockAch('pin'); endMatchBy(byPlayer ? 'win' : 'loss', 'PINFALL'); return; }
+    setTimeout(tick, 760);
   };
-  setTimeout(tick, 200);
+  setTimeout(tick, 260);
 }
 function doSubmission(byPlayer) {
   match.subbing = true;
@@ -4262,13 +4312,12 @@ function finishMatch(result) {
 
     const sf = result === 'win' ? match.player.art.scriptureFinisher : null;
     const sb = document.getElementById('result-scripture-block');
-    if (sf) {
-      sb.style.display = 'block';
-      document.getElementById('result-scripture-text').innerHTML = '<span class="walkout-cross">✝</span>"' + sf.text + '"';
-      document.getElementById('result-scripture-ref').textContent = '— ' + sf.ref + ' · KJV';
-    } else {
-      sb.style.display = 'none';
-    }
+    sb.style.display = 'block';
+    const stx = document.getElementById('result-scripture-text'), sref = document.getElementById('result-scripture-ref');
+    if (sf) { stx.innerHTML = '<span class="walkout-cross">✝</span>"' + sf.text + '"'; sref.textContent = '— ' + sf.ref + ' · KJV'; stx.style.display = ''; sref.style.display = ''; }
+    else { stx.style.display = 'none'; sref.style.display = 'none'; }
+    // verse-of-the-match — one way to live it + what it means (humble framing)
+    document.getElementById('result-verse-insight').innerHTML = verseInsightHTML(match.verse);
 
     document.getElementById('career-strip').innerHTML = `
       <div><strong>${save.wins}</strong>WINS</div>
@@ -4564,51 +4613,98 @@ function jointTo(joint, key, rx, ry, rz, dt, rate) {
   joint.rotation.y = damp(joint.rotation.y, ry == null ? joint.rotation.y : ry, dt, rate);
   joint.rotation.z = damp(joint.rotation.z, rz == null ? joint.rotation.z : rz, dt, rate);
 }
-// pose one fighter for this frame
+// pose one fighter for this frame — full per-limb articulation (stance, punches w/ twist + weight transfer,
+// level-change grapples w/ a lift, archetype-flavored finishers, real hit reactions). v4.7
 function poseFighter(f, dt, now, moving) {
   const P = f.parts, A = f.anim;
   const prog = A.dur ? Math.min(1, (now - A.t0) / A.dur) : 1;
   const active = prog < 1 && ['strike', 'combo', 'grapple', 'finisher', 'hit'].includes(A.name);
-  const rate = 16;
-  // ---- DOWNED: lie back on the mat ----
+  const rate = 18;
+  // ---- DOWNED: lie back on the mat (limbs splay a touch) ----
   if (f.downed) {
     f.group.rotation.x = damp(f.group.rotation.x, -Math.PI / 2 * 0.92, dt, 9);
-    f.group.position.y = damp(f.group.position.y, 0.32, dt, 9);
+    f.group.position.y = damp(f.group.position.y, 0.30, dt, 9);
+    jointTo(P.armL.shoulder, 0, -0.3, 0.5, 0, dt, 8); jointTo(P.armR.shoulder, 0, -0.3, -0.5, 0, dt, 8);
+    jointTo(P.legL.hip, 0, 0.25, 0, 0, dt, 8); jointTo(P.legR.hip, 0, 0.25, 0, 0, dt, 8);
     return;
   }
   f.group.rotation.x = damp(f.group.rotation.x, 0, dt, 9);
   f.group.position.y = damp(f.group.position.y, 0, dt, 9);
-  // ---- base idle / walk targets ----
-  const bob = Math.sin(now * 0.004) * 0.04;
-  let shLx = -0.25 + bob, shRx = -0.25 - bob;      // arms hang slightly forward (guard-ish)
-  let elLx = -0.5, elRx = -0.5;                     // elbows bent
-  let hipLx = 0, hipRx = 0, kneeLx = 0.1, kneeRx = 0.1;
-  let torsoX = 0, torsoZ = Math.sin(now * 0.004) * 0.03, rootStep = 0;
-  // walking: swing legs + opposite arms
-  if (moving) { f.walk += dt * 9; const s = Math.sin(f.walk); hipLx = s * 0.5; hipRx = -s * 0.5; shLx = -0.25 - s * 0.35; shRx = -0.25 + s * 0.35; kneeLx = 0.2 + Math.max(0, -s) * 0.4; kneeRx = 0.2 + Math.max(0, s) * 0.4; }
-  // ---- block: forearms up guarding the head ----
-  if (f.block && !active) { shLx = -1.7; shRx = -1.7; elLx = -1.5; elRx = -1.5; torsoX = 0.12; }
-  // ---- transient attack/hit overlays ----
-  if (active) {
-    const ease = Math.sin(prog * Math.PI);             // 0→1→0 punch curve
-    if (A.name === 'strike') { shRx = -0.25 - ease * 1.5; elRx = -0.5 + ease * 0.45; torsoX = ease * 0.12; rootStep = ease * 0.12; }
-    else if (A.name === 'combo') { const d = Math.sin(prog * Math.PI * 2); shRx = -0.25 - Math.max(0, d) * 1.5; shLx = -0.25 - Math.max(0, -d) * 1.5; elRx = -0.5 + Math.max(0, d) * 0.45; elLx = -0.5 + Math.max(0, -d) * 0.45; rootStep = ease * 0.1; }
-    else if (A.name === 'grapple') { shLx = -0.3 - ease * 1.25; shRx = -0.3 - ease * 1.25; elLx = -0.6 + ease * 0.5; elRx = -0.6 + ease * 0.5; torsoX = ease * 0.32; rootStep = ease * 0.2; }
-    else if (A.name === 'finisher') { const wind = prog < 0.4 ? prog / 0.4 : 0; const drive = prog >= 0.4 ? (prog - 0.4) / 0.6 : 0; shLx = -0.3 - drive * 1.6 + wind * 0.6; shRx = -0.3 - drive * 1.6 + wind * 0.6; torsoX = -wind * 0.3 + drive * 0.5; rootStep = drive * 0.34; }
-    else if (A.name === 'hit') { torsoX = -ease * 0.4; rootStep = -ease * 0.18; shLx = -0.1; shRx = -0.1; }
+  // ================= FIGHTING STANCE (base) =================
+  let shLx = -0.95, shLy = 0.25, shLz = 0.15;     // lead guard (L) — hands up
+  let shRx = -0.95, shRy = -0.25, shRz = -0.15;   // rear guard (R)
+  let elLx = -1.35, elRx = -1.35;                 // elbows bent up (gloves near face)
+  let hipLx = 0.22, hipRx = -0.22, kneeLx = 0.3, kneeRx = 0.18;  // staggered stance (lead leg fwd), knees bent
+  let torsoX = 0.05 + Math.sin(now * 0.0042) * 0.02, torsoY = 0.18, torsoZ = Math.sin(now * 0.0042) * 0.025;
+  let headY = 0, rootStep = 0, rootY = 0;
+  // ---- WALK: real stride + arm counter-swing ----
+  if (moving) {
+    f.walk += dt * (f.pSprint || moving === 'sprint' ? 13 : 9); const s = Math.sin(f.walk);
+    hipLx = s * 0.55; hipRx = -s * 0.55;
+    kneeLx = 0.25 + Math.max(0, -s) * 0.55; kneeRx = 0.25 + Math.max(0, s) * 0.55;
+    shLx = -0.85 - s * 0.3; shRx = -0.85 + s * 0.3; torsoY = 0.1 + s * 0.06;
+    rootY = Math.abs(s) * 0.03;
   }
-  jointTo(P.armL.shoulder, 0, shLx, 0, 0.1, dt, rate); jointTo(P.armR.shoulder, 0, shRx, 0, -0.1, dt, rate);
+  // ---- BLOCK: tuck behind a high guard ----
+  if (f.block && !active) { shLx = -1.6; shRx = -1.6; elLx = -1.7; elRx = -1.7; torsoX = 0.2; torsoY = 0.05; headY = 0; }
+  // ================= TRANSIENT MOVES =================
+  if (active) {
+    if (A.name === 'strike') {
+      // rear-hand straight: fast extend (35%) → retract, with hip + torso twist driving it
+      const ext = prog < 0.35 ? (prog / 0.35) : 1 - (prog - 0.35) / 0.65;
+      shRx = -1.05 - ext * 0.65; shRz = -0.05; elRx = -1.35 + ext * 1.25;   // R arm fires straight forward
+      shLx = -1.2; elLx = -1.6;                                            // L stays tight guard
+      torsoY = 0.18 - ext * 0.7; hipRx = -0.22 - ext * 0.25; rootStep = ext * 0.14; headY = -ext * 0.04;
+    } else if (A.name === 'combo') {
+      // 1-2: jab (L) then cross (R)
+      const p1 = Math.min(1, prog / 0.45), p2 = Math.max(0, (prog - 0.45) / 0.55);
+      const e1 = Math.sin(p1 * Math.PI), e2 = Math.sin(p2 * Math.PI);
+      shLx = -1.0 - e1 * 0.7; elLx = -1.4 + e1 * 1.3; torsoY = 0.18 + e1 * 0.5 - e2 * 0.7;
+      shRx = -1.0 - e2 * 0.75; elRx = -1.4 + e2 * 1.3; rootStep = (e1 + e2) * 0.08;
+    } else if (A.name === 'grapple') {
+      // level change → double-grab → LIFT (the slam)
+      const grab = prog < 0.45 ? prog / 0.45 : 1, lift = prog >= 0.45 ? (prog - 0.45) / 0.55 : 0;
+      const lower = grab * (1 - lift);
+      shLx = -1.0 - grab * 0.55 + lift * 1.4; shRx = -1.0 - grab * 0.55 + lift * 1.4;   // reach low, then heave up
+      elLx = -1.0 + grab * 0.7 - lift * 0.6; elRx = elLx; shLy = 0.1; shRy = -0.1;
+      kneeLx = 0.3 + lower * 0.7; kneeRx = 0.18 + lower * 0.7; rootY = -lower * 0.14 + lift * 0.05;
+      torsoX = 0.05 + lower * 0.4 - lift * 0.5; torsoY = 0.05; rootStep = grab * 0.22;
+    } else if (A.name === 'finisher') {
+      poseFinisher(f, P, prog);   // archetype-flavored — own helper
+      shLx = P._shLx; shRx = P._shRx; elLx = P._elLx; elRx = P._elRx; torsoX = P._torsoX; torsoY = P._torsoY; rootStep = P._rootStep; rootY = P._rootY;
+    } else if (A.name === 'hit') {
+      // recoil: torso whips back, head snaps, arms fly open, stagger
+      const e = Math.sin(prog * Math.PI);
+      torsoX = 0.05 - e * 0.55; headY = e * 0.12; torsoY = 0.18 + e * 0.25;
+      shLx = -0.6 + e * 0.3; shRx = -0.6 - e * 0.3; elLx = -1.0; elRx = -1.0;
+      rootStep = -e * 0.2; kneeLx = 0.3 + e * 0.2;
+    }
+  }
+  jointTo(P.armL.shoulder, 0, shLx, shLy, shLz, dt, rate); jointTo(P.armR.shoulder, 0, shRx, shRy, shRz, dt, rate);
   jointTo(P.armL.elbow, 0, elLx, 0, 0, dt, rate); jointTo(P.armR.elbow, 0, elRx, 0, 0, dt, rate);
   jointTo(P.legL.hip, 0, hipLx, 0, 0, dt, rate); jointTo(P.legR.hip, 0, hipRx, 0, 0, dt, rate);
   jointTo(P.legL.knee, 0, kneeLx, 0, 0, dt, rate); jointTo(P.legR.knee, 0, kneeRx, 0, 0, dt, rate);
-  P.torso.rotation.x = damp(P.torso.rotation.x, torsoX, dt, rate); P.torso.rotation.z = damp(P.torso.rotation.z, torsoZ, dt, rate);
-  P.head.position.z = damp(P.head.position.z, A.name === 'hit' && active ? -0.06 : 0, dt, rate);
-  // CLEAR hit flash — body glows red on contact so you can tell what's landing
+  P.torso.rotation.x = damp(P.torso.rotation.x, torsoX, dt, rate);
+  P.torso.rotation.y = damp(P.torso.rotation.y, torsoY, dt, rate);
+  P.torso.rotation.z = damp(P.torso.rotation.z, torsoZ, dt, rate);
+  P.head.rotation.y = damp(P.head.rotation.y, headY, dt, rate);
+  P.head.position.z = damp(P.head.position.z, A.name === 'hit' && active ? -0.07 : 0, dt, rate);
+  if (P.pelvis) P.pelvis.rotation.y = damp(P.pelvis.rotation.y, torsoY * 0.4, dt, rate);
+  f.group.position.y = damp(f.group.position.y, f.downed ? 0.3 : rootY, dt, 12);
+  // CLEAR hit flash — body glows red on contact
   const flash = (f.hitFlash && now < f.hitFlash) ? Math.max(0, (f.hitFlash - now) / 200) : 0;
   if (P.torso.material && P.torso.material.emissive) { P.torso.material.emissive.setRGB(flash * 0.55, flash * 0.04, flash * 0.04); P.head.material.emissive.setRGB(flash * 0.55, flash * 0.04, flash * 0.04); }
-  // hyped: gold glow
   if (f.hyped && P.torso.material) { P.torso.material.emissive.setRGB(0.25, 0.18, 0.05); }
   f._step = rootStep;
+}
+// archetype-flavored finisher poses → write targets onto P._*
+function poseFinisher(f, P, prog) {
+  const arch = (f.art && f.art.archHint) || (f.archHint) || '';
+  const wind = prog < 0.4 ? prog / 0.4 : 1, drive = prog >= 0.4 ? (prog - 0.4) / 0.6 : 0;
+  // default: huge wind-back then explosive forward drive
+  P._shLx = -1.0 + wind * 0.9 - drive * 2.0; P._shRx = P._shLx;
+  P._elLx = -1.2 + drive * 0.9; P._elRx = P._elLx;
+  P._torsoX = -wind * 0.4 + drive * 0.7; P._torsoY = 0.05; P._rootStep = drive * 0.36; P._rootY = wind * 0.05 - drive * 0.06;
 }
 function update3D(now) {
   if (!SC3D.ok || !match) return;
