@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#0a0a0d" />
-<title>SLAM CITY · v3.5 · REALISTIC MOVEMENT</title>
+<title>SLAM CITY · v3.6 · PER-MOVE + SIGNATURE ANIMATIONS</title>
 <!-- retro arcade type: Press Start 2P for marquee, Oxanium for readable UI · safe fallback stack -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -714,14 +714,42 @@
   .ring-fighter.left .f3d { transform: rotateY(24deg); }      /* 3/4 view, facing the opponent — shows volume */
   .ring-fighter.right .f3d { transform: rotateY(-24deg); }
   @keyframes bob3d { 0% { transform: translateY(0) translateX(0); } 25% { transform: translateY(-3px) translateX(-2px); } 50% { transform: translateY(-5px) translateX(0); } 75% { transform: translateY(-3px) translateX(2px); } 100% { transform: translateY(0) translateX(0); } }
-  .ring-fighter.attack-jab .f3d-inner, .ring-fighter.attack-cross .f3d-inner { animation: lunge3dL 0.45s ease-out; }
-  .ring-fighter.attack-power .f3d-inner, .ring-fighter.attack-finisher .f3d-inner { animation: lunge3dH 0.6s ease-out; }
-  @keyframes lunge3dL { 0%,100% { transform: translateZ(0); } 45% { transform: translateZ(36px) translateY(-2px); } }
-  @keyframes lunge3dH { 0%,100% { transform: translateZ(0) rotateX(0); } 50% { transform: translateZ(58px) rotateX(-10deg); } }
+  /* ── DISTINCT PER-MOVE-TYPE animations (each move reads differently on the rig) ── */
+  .ring-fighter.attack-jab .f3d-inner     { animation: a-strike   0.40s ease-out; }   /* quick snap jab */
+  .ring-fighter.attack-cross .f3d-inner    { animation: a-combo    0.50s ease-out; }   /* one-two double push */
+  .ring-fighter.attack-power .f3d-inner    { animation: a-grapple  0.62s ease-out; }   /* lock-up heave + lift */
+  .ring-fighter.attack-finisher .f3d-inner { animation: a-finisher 0.85s ease-out; }   /* spectacular drive */
+  @keyframes a-strike   { 0%,100% { transform: translateZ(0); } 35% { transform: translateZ(32px) translateY(-2px); } }
+  @keyframes a-combo    { 0%,100% { transform: translateZ(0); } 25% { transform: translateZ(26px); } 50% { transform: translateZ(8px); } 72% { transform: translateZ(30px) translateY(-2px); } }
+  @keyframes a-grapple  { 0%,100% { transform: translateZ(0) rotateX(0) translateY(0); } 32% { transform: translateZ(40px) rotateX(-8deg); } 60% { transform: translateZ(50px) rotateX(7deg) translateY(-7px); } }
+  @keyframes a-finisher { 0%,100% { transform: translateZ(0) rotateX(0) translateY(0); } 30% { transform: translateZ(28px) rotateX(-12deg) translateY(-14px); } 55% { transform: translateZ(66px) rotateX(15deg) translateY(8px) scale(1.05); } }
+  /* ── SIGNATURE moves by class/sport — distinct flavor on each fighter's sig + finisher (override, !important wins over generic) ── */
+  .ring-fighter.sig-suplex .f3d-inner { animation: a-suplex 0.85s ease-out !important; }   /* WRESTLER: back-arch slam */
+  .ring-fighter.sig-bomb   .f3d-inner { animation: a-bomb   0.82s ease-out !important; }   /* POWERHOUSE: lift + drive down */
+  .ring-fighter.sig-aerial .f3d-inner { animation: a-aerial 0.90s ease-out !important; }   /* HIGHFLYER: leap + full spin */
+  .ring-fighter.sig-combo  .f3d-inner { animation: a-flurry 0.72s ease-out !important; }   /* BOXER: rapid 4-punch flurry */
+  .ring-fighter.sig-punch  .f3d-inner { animation: a-superman 0.62s ease-out !important; } /* STRIKER: superman lunge punch */
+  .ring-fighter.sig-kick   .f3d-inner { animation: a-spinkick 0.70s ease-out !important; } /* KICKBOXER: spinning heel kick */
+  .ring-fighter.sig-spear  .f3d-inner { animation: a-spear  0.58s ease-out !important; }   /* BRAWLER: low tackle dash */
+  .ring-fighter.sig-knee   .f3d-inner { animation: a-knee   0.66s ease-out !important; }   /* MMA: flying knee */
+  @keyframes a-suplex   { 0%,100% { transform: translateZ(0) rotateX(0) translateY(0); } 25% { transform: rotateX(-30deg) translateY(-12px) translateZ(18px); } 55% { transform: rotateX(26deg) translateZ(48px) translateY(8px); } }
+  @keyframes a-bomb     { 0%,100% { transform: translateZ(0) translateY(0) scaleY(1); } 30% { transform: translateY(-26px) translateZ(26px) scaleY(1.08); } 60% { transform: translateY(12px) translateZ(48px) rotateX(16deg); } }
+  @keyframes a-aerial   { 0% { transform: translateY(0) rotateY(0); } 35% { transform: translateY(-48px) rotateY(170deg) translateZ(18px); } 68% { transform: translateY(0) rotateY(330deg) translateZ(50px); } 100% { transform: translateY(0) rotateY(360deg) translateZ(0); } }
+  @keyframes a-flurry   { 0%,100% { transform: translateZ(0); } 15% { transform: translateZ(24px); } 32% { transform: translateZ(7px); } 49% { transform: translateZ(26px); } 66% { transform: translateZ(7px); } 82% { transform: translateZ(22px); } }
+  @keyframes a-superman { 0%,100% { transform: translateZ(0) translateY(0) rotateX(0); } 40% { transform: translateZ(58px) translateY(-12px) rotateX(-7deg); } }
+  @keyframes a-spinkick { 0% { transform: rotateY(0) translateZ(0); } 50% { transform: rotateY(210deg) translateZ(44px) translateY(-4px); } 100% { transform: rotateY(360deg) translateZ(0); } }
+  @keyframes a-spear    { 0%,100% { transform: translateZ(0) translateY(0) rotateX(0); } 45% { transform: translateZ(64px) translateY(9px) rotateX(-15deg); } }
+  @keyframes a-knee     { 0%,100% { transform: translateZ(0) translateY(0) rotateX(0); } 42% { transform: translateY(-30px) translateZ(50px) rotateX(-11deg); } }
   .ring-fighter.hit .f3d-inner, .ring-fighter.hit-heavy .f3d-inner { animation: hit3d 0.45s ease-out; }
   @keyframes hit3d { 0%,100% { transform: translateZ(0) rotateY(0); } 30% { transform: translateZ(-24px) rotateY(-12deg); } }
   .ring-fighter.downed .f3d-inner { animation: none !important; transform: rotateX(84deg) translateY(30px) !important; }
   .ring-fighter.hyped .f3d-inner { filter: drop-shadow(0 0 14px var(--gold)) drop-shadow(0 0 6px var(--warn)); }
+  #sig-flash { position: absolute; top: 12%; left: 50%; transform: translate(-50%,-6px) scale(0.8); z-index: 40; pointer-events: none;
+    font-weight: 900; font-size: clamp(15px, 4.6vw, 26px); letter-spacing: 0.06em; color: var(--warn);
+    text-shadow: 0 2px 0 #000, 0 0 16px rgba(255,180,40,0.6); opacity: 0; white-space: nowrap; }
+  #sig-flash.fin { color: var(--gold); text-shadow: 0 2px 0 #000, 0 0 22px rgba(255,210,60,0.85); }
+  #sig-flash.on { animation: sigFlash 0.95s cubic-bezier(.2,.9,.3,1); }
+  @keyframes sigFlash { 0% { opacity: 0; transform: translate(-50%,4px) scale(0.7); } 18% { opacity: 1; transform: translate(-50%,-6px) scale(1.08); } 70% { opacity: 1; transform: translate(-50%,-6px) scale(1); } 100% { opacity: 0; transform: translate(-50%,-14px) scale(1); } }
 </style>
 </head>
 <body>
@@ -739,7 +767,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v3.5 · build 2026-05-23·2136 · REALISTIC MOVEMENT (circle·angle-approach·footwork·depth-weave) · real 3D · per-move + signature animations incoming · for AARON</div>
+  <div class="splash-foot">v3.6 · build 2026-05-23·2150 · PER-MOVE + SIGNATURE ANIMATIONS — every move animates its own way · 8 archetype signatures (suplex·bomb·aerial·spin-kick·spear·knee·superman·flurry) · move-name flash · real 3D · realistic movement · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -1003,7 +1031,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v3.5</div>
+    <div class="load-skip">tap to skip · v3.6</div>
   </div>
 </div>
 
@@ -1749,7 +1777,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '3.5';
+const GAME_VERSION = '3.6';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -1782,6 +1810,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['3.6',  'Every move animates differently — jab snaps, combo doubles up, finishers drive; each fighter’s signature throws its own way (suplex, powerbomb, aerial spin, spin-kick, spear, flying knee…) and its name flashes on the hit'],
   ['3.5',  'Realistic movement — fighters circle, approach on angles, weave + footwork-bounce (roam, not stand still); AI no longer a straight-line robot'],
   ['3.4',  'REAL 3D — fighters are now actual volumetric cuboid geometry (you can see their sides/depth), browser perspective camera · not flat sprites anymore'],
   ['3.3',  "What's-New now shows real version updates (not static goals) · building toward pro 3D + realistic movement + unique move animations"],
@@ -2350,7 +2379,8 @@ function playerAttack(kind) {
   ensureCtx();
   match.pST -= move.cost;
   const cfg = ATK[kind];
-  triggerLunge('left', move.type);
+  triggerLunge('left', move.type, sigAnimClass(match.player, move));
+  if (move.sig || move.fin) flashSig(move.name, !!move.fin);
   playSwingSound(kind);
   match.pLockMove = cfg.lockMove;
   match.pCool = cfg.cool;
@@ -2374,12 +2404,30 @@ function playerDodge() {
   updateButtons();
 }
 
-function triggerLunge(side, type) {
+// each archetype throws its signature/finisher with its own animation flavor
+const SIG_ANIM = { WRESTLER:'sig-suplex', POWERHOUSE:'sig-bomb', HIGHFLYER:'sig-aerial', BOXER:'sig-combo', STRIKER:'sig-punch', KICKBOXER:'sig-kick', BRAWLER:'sig-spear', MMA:'sig-knee' };
+const SIG_CLASSES = ['sig-suplex','sig-bomb','sig-aerial','sig-combo','sig-punch','sig-kick','sig-spear','sig-knee'];
+// signature (power) move = the fighter's archetype flavor; finisher keeps the big spectacular a-finisher (kept visually distinct from the sig)
+function sigAnimClass(f, move) { return (f && move && move.sig && !move.fin) ? (SIG_ANIM[f.arch] || '') : ''; }
+
+function triggerLunge(side, type, sigClass) {
   const el = document.getElementById('ring-' + side);
-  el.classList.remove('attack-jab', 'attack-cross', 'attack-power', 'attack-finisher');
+  el.classList.remove('attack-jab', 'attack-cross', 'attack-power', 'attack-finisher', ...SIG_CLASSES);
   void el.offsetWidth;
   el.classList.add('attack-' + type);
-  setTimeout(() => el.classList.remove('attack-' + type), 700);
+  if (sigClass) el.classList.add(sigClass);
+  setTimeout(() => { el.classList.remove('attack-' + type); if (sigClass) el.classList.remove(sigClass); }, 900);
+}
+
+// brief move-name label when a signature/finisher fires (fighting-game style, not an announcer)
+function flashSig(name, isFin) {
+  let el = document.getElementById('sig-flash');
+  if (!el) { el = document.createElement('div'); el.id = 'sig-flash'; const r = document.getElementById('ring'); (r || document.body).appendChild(el); }
+  el.textContent = (isFin ? '🔥 ' : '⚡ ') + name.toUpperCase();
+  el.className = isFin ? 'fin' : '';
+  void el.offsetWidth;
+  el.classList.add('on');
+  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('on'), 950);
 }
 
 function triggerHitReact(side, heavy) {
@@ -2765,7 +2813,8 @@ function aiAttack() {
   if (match.oST < move.cost) return;
   match.oST -= move.cost;
   const cfg = ATK[kind];
-  triggerLunge('right', move.type);
+  triggerLunge('right', move.type, sigAnimClass(opp, move));
+  if (move.sig || move.fin) flashSig(move.name, !!move.fin);
   match.oCool = cfg.cool;
   const jitter = Math.random() * 90 - 30;                         // unreadable timing
   match.oAtk = { kind, move, side: 'opponent', cfg, hitAt: performance.now() + cfg.windup + jitter, resolved: false };
