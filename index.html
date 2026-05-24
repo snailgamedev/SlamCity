@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#0a0a0d" />
-<title>SLAM CITY · v2.22 · CHAMPION</title>
+<title>SLAM CITY · v2.23 · HYPE ANNOUNCER</title>
 <!-- retro arcade type: Press Start 2P for marquee, Oxanium for readable UI · safe fallback stack -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -712,7 +712,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v2.22 · build 2026-05-23·2010 · MOTTO PASS · CHAMPION belt (win Gauntlet/Franchise) + 10 ACHIEVEMENTS · HYPE meter · 8 modes · 90/10 wrestling · for AARON</div>
+  <div class="splash-foot">v2.23 · build 2026-05-23·2014 · MOTTO PASS · ANNOUNCER hype (near-falls·crowd pops·KO calls) + verse-of-the-match · champion · HYPE · 8 modes · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -976,7 +976,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v2.22</div>
+    <div class="load-skip">tap to skip · v2.23</div>
   </div>
 </div>
 
@@ -1680,7 +1680,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '2.22';
+const GAME_VERSION = '2.23';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -1982,6 +1982,7 @@ function startMatchWith(playerId, oppId) {
     pMo: 0, oMo: 0,          // momentum meters (0-100)
     pHype: 0, oHype: 0,      // HYPE-state timers (ms) when a meter fills
     hitStop: 0,              // brief freeze-frame on heavy impact
+    verse: SPLASH_VERSES[Math.floor(Math.random() * SPLASH_VERSES.length)], verseShown: false,
     killFin: false,
     ai: { decision: 0, blockCD: 0, mood: 'neutral', moodT: 0, burst: 0, feintCD: 0, jukeDir: 0 },
     lastT: 0,
@@ -2197,6 +2198,12 @@ function gameLoop(t) {
   syncBars();
   updateButtons();
 
+  // VERSE OF THE MATCH — woven in once the fight heats up (in-game, not preached)
+  if (!match.verseShown && (match.pHP < 50 || match.oHP < 50)) {
+    match.verseShown = true;
+    caption('✝ ' + match.verse.text + ' — ' + match.verse.ref, 'scripture');
+  }
+
   if (match.oHP <= 0) {
     match.over = true; cancelAnimationFrame(rafId); rafId = null; setBlock(false); match.joy = 0; match.winBy = 'KNOCKOUT';
     if (match.killFin) return showFinisherReverence(() => finishMatch('win'));
@@ -2337,8 +2344,9 @@ function doPin(byPlayer) {
     if (n >= 2 && kicksOut) {
       match.pinning = false;
       if (byPlayer) { match.oDowned = 0; setDowned('right', false); } else { match.pDowned = 0; setDowned('left', false); }
-      setStatus('KICKOUT!', 'var(--red-bright)', 900);
-      caption((byPlayer ? match.opponent.name : match.player.name) + ' KICKS OUT!', byPlayer ? 'enemy' : 'player');
+      setStatus('NEAR FALL!', 'var(--gold)', 900);
+      caption('🙌 NEAR FALL!!! ' + (byPlayer ? match.opponent.name : match.player.name) + ' KICKS OUT!', 'big');
+      shakeRing(false);
       return;
     }
     if (n >= 3) { if (byPlayer) unlockAch('pin'); endMatchBy(byPlayer ? 'win' : 'loss', 'PINFALL'); return; }
@@ -2437,7 +2445,11 @@ function resolveAttack(atk) {
     caption(defName + ' blocks ' + atkName + "'s " + move.name, isPlayer ? 'enemy' : 'player');
   } else {
     playHitSound(move.type);
-    if (heavy) { setStatus(isPlayer ? 'BIG HIT!' : 'you got rocked!', isPlayer ? 'var(--gold)' : 'var(--red-bright)', 600); caption(atkName + ' ROCKS ' + defName + '! −' + dmg, 'big'); }
+    if (heavy) {
+      setStatus(isPlayer ? 'BIG HIT!' : 'you got rocked!', isPlayer ? 'var(--gold)' : 'var(--red-bright)', 600);
+      const pops = atk.cfg.slam ? ['WHAT A SLAM!', 'THE CROWD ERUPTS!', 'OHHHH!', 'PLANTED HIM!', 'SLAM CITY!'] : ['BIG SHOT!', 'OHHH!', 'ROCKED!'];
+      caption('🗣 ' + pops[Math.floor(Math.random() * pops.length)] + ' ' + atkName + ' → ' + defName + ' −' + dmg, 'big');
+    }
     else caption(atkName + ' lands ' + move.name + ' · −' + dmg, isPlayer ? 'player' : 'enemy');
     if (move.fin) caption('✝ SCRIPTURE STRIKE', 'scripture');
   }
@@ -2840,7 +2852,9 @@ function finishMatch(result) {
   const lossSide = result === 'win' ? 'right' : 'left';
   document.getElementById('ring-' + lossSide).classList.add('ko');
   playKOSound();
-  caption((result === 'win' ? match.player.name : match.opponent.name) + ' WINS BY KO!', 'big');
+  flash(lossSide, true); shakeRing(true);   // big finish flash + shake
+  const m = match.winBy === 'PINFALL' ? '1-2-3! IT\'S OVER!' : match.winBy === 'SUBMISSION' ? 'HE TAPPED! IT\'S OVER!' : 'IT\'S ALL OVER!';
+  caption('🗣 ' + m + ' ' + (result === 'win' ? match.player.name : match.opponent.name) + ' WINS!', 'big');
   if (!match.training && !match.pAI) {                // TRAINING + WATCH don't touch your record
     if (result === 'win') { save.wins++; save.kos++; unlockAch('firstWin'); if (save.wins >= 10) unlockAch('wins10'); }
     else save.losses++;
