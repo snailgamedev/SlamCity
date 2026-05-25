@@ -1070,7 +1070,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v4.28 · build 2026-05-24·1928 · 😀 fighters got real FACES (eyes · brow · nose · mouth) · 🖥 desktop fills the screen (2-column admin) · for AARON</div>
+  <div class="splash-foot">v4.29 · build 2026-05-24·1934 · 🥊 GAMEPLAY OVERHAUL pt.1 (FEEL) — snappier movement · crisper strikes · beefier impact on big hits · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -1395,7 +1395,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v4.28</div>
+    <div class="load-skip">tap to skip · v4.29</div>
   </div>
 </div>
 
@@ -2323,7 +2323,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '4.28';
+const GAME_VERSION = '4.29';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -2357,6 +2357,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['4.29', 'GAMEPLAY OVERHAUL · pt.1 — FEEL: kicking off the combat redo with responsiveness. Movement is snappier, your jab comes out faster + crisper (shorter windup/cooldown), evade hops further, and big hits hit HARDER — beefier freeze-frame on every heavy + finisher so a slam actually lands with weight. (Next installments: deeper combat / more moves, then better-looking fighters.)'],
   ['4.28', 'FACES + DESKTOP POLISH: 😀 fighters finally have a real FACE — bigger eyes with iris/pupil/glint, an angled brow, a nose and a mouth — so they read as people in the ring instead of blank mannequins (shows everywhere: ring, roster, customizer). 🖥 DESKTOP no longer wastes the screen — the admin panel’s crew list flows into TWO columns and the menus use the width instead of a thin lonely strip down the middle. Honest note: a full “redo the whole gameplay” is a bigger build — see the splash/notes; tell me which direction to take it.'],
   ['4.27', 'FAITH CORNER — WAY DEEPER (you asked to make the G way better): now a real space with 5 tabs → 📖 VERSE OF THE DAY with a 🙏 daily blessing + 🔥 day-streak, 🧠 MEMORIZE (fill-the-blank scripture challenge), 📚 COLLECTION (every verse you read or nail gets gathered — build your set), 🕊 DEVO (5 game-tied devotionals: Courage · Brotherhood · Perseverance · Identity · Humility), and ✝ THE REAL WIN (a clear, warm, no-pressure gospel — John 3:16). Earn ⭐ Faith Stars for showing up in the Word; they ride on your hub profile. Still humble: “go to the Word for yourself.”'],
   ['4.26', 'FAITH + DEEPER ADMIN (the last drop skipped the faith — fixing that): ✝ NEW FAITH CORNER off the hub — a VERSE OF THE DAY with “one way to live it / what it means”, the heart behind the game (iron sharpening iron · John 3:16), and every brother’s walkout scripture in one place, with a humble “go to the Word for yourself” note. 🛡 ADMIN got deeper: Old Man Eli can now PROMOTE any fighter to a CREW admin (or revoke it) on the fly, and 🧊 FREEZE a fighter’s ratings so wins/losses stop moving them (perfect for a benchmark fighter).'],
@@ -3711,18 +3712,18 @@ function statRow(label, val, delta = 0) {
 /* ====================================================================== */
 const FIN_UNLOCK = 40;          // finisher unlocks once the TARGET drops to/below this HP
 const TOSS_HP = 55;             // ROYAL RUMBLE: a foe must be worn to ≤ this HP before a toss-over-the-top sticks
-const RT = { moveSpeed: 240, aiSpeed: 205, stRegen: 17, blockDrain: 24, backStep: 48 };
+const RT = { moveSpeed: 272, aiSpeed: 222, stRegen: 18, blockDrain: 24, backStep: 56 };   // FEEL (v4.29): snappier movement + crisper evade
 // ~90% WRESTLING / 10% boxing. GRAPPLE (slam) is the bread-and-butter; STRIKE is the light 10%.
 // A landed `slam` knocks the opponent DOWN → opens a PIN. Win by KO, PINFALL, or SUBMISSION.
 // v4.1: SNAPPIER — windups + cooldowns cut so taps land crisp (no "late" attacks), reach slightly extended so hits connect.
 const ATK = {
-  strike:   { windup: 55,  cool: 200,  reach: 1.18, knock: 12, lockMove: 110, heavy: false },
-  combo:    { windup: 90,  cool: 300,  reach: 1.14, knock: 18, lockMove: 160, heavy: false },   // follow-up flurry (the 'cross') — chains off a landed STRIKE
-  grapple:  { windup: 210, cool: 600,  reach: 1.05, knock: 30, lockMove: 360, heavy: true,  slam: true },
-  finisher: { windup: 300, cool: 1000, reach: 1.10, knock: 50, lockMove: 460, heavy: true,  slam: true },
+  strike:   { windup: 42,  cool: 170,  reach: 1.20, knock: 13, lockMove: 90,  heavy: false },
+  combo:    { windup: 72,  cool: 270,  reach: 1.16, knock: 19, lockMove: 140, heavy: false },   // follow-up flurry (the 'cross') — chains off a landed STRIKE
+  grapple:  { windup: 195, cool: 560,  reach: 1.06, knock: 34, lockMove: 340, heavy: true,  slam: true },
+  finisher: { windup: 285, cool: 980,  reach: 1.12, knock: 54, lockMove: 440, heavy: true,  slam: true },
   // legacy aliases (kept so any old reference still resolves)
-  jab:      { windup: 55,  cool: 200,  reach: 1.20, knock: 14, lockMove: 120, heavy: false },
-  power:    { windup: 210, cool: 600,  reach: 1.05, knock: 30, lockMove: 360, heavy: true,  slam: true }
+  jab:      { windup: 42,  cool: 170,  reach: 1.22, knock: 14, lockMove: 100, heavy: false },
+  power:    { windup: 195, cool: 560,  reach: 1.06, knock: 34, lockMove: 340, heavy: true,  slam: true }
 };
 const DOWN_MS = 1700;        // how long a slammed fighter stays down (pin window)
 let rafId = null;
@@ -4581,7 +4582,7 @@ function resolveAttack(atk) {
   if (!blocked) {
     const gain = (move.fin ? 26 : atk.cfg.slam ? 16 : 9) + (heavy ? 4 : 0);
     addMomentum(isPlayer, gain); addMomentum(!isPlayer, -7);
-    if (heavy) match.hitStop = move.fin ? 130 : 90;   // freeze-frame punch on big hits
+    if (heavy) match.hitStop = move.fin ? 175 : 115;   // freeze-frame punch on big hits (beefier = more impact)
   } else { addMomentum(!isPlayer, 6); }               // a clean block builds the defender's meter
 
   // WRESTLING: a landed SLAM puts the defender DOWN (opens a pin). A REVERSED slam downs the attacker instead.
