@@ -5971,7 +5971,10 @@ refreshSplash();
 checkUpdate();   // show an "UPDATED" toast if the build changed since last visit
 
 </script>
-<a href="https://snailgamedev.github.io/PeakArcade/" id="pa-hub" style="position:fixed;left:10px;bottom:10px;z-index:2147483600;background:rgba(7,7,15,.85);color:#fff;font:700 12px/1 -apple-system,system-ui,sans-serif;padding:8px 13px;border-radius:99px;border:1px solid #7c5cff;text-decoration:none;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);display:none">🎮 More games</a>
-<script>try{if(window.top===window.self){document.getElementById('pa-hub').style.display='inline-block';}}catch(e){}</script>
+<div id="pa-links" style="position:fixed;left:10px;bottom:10px;z-index:2147483600;display:none;gap:8px;font:700 12px/1 -apple-system,system-ui,sans-serif">
+<a href="https://snailgamedev.github.io/PeakArcade/" style="background:rgba(7,7,15,.85);color:#fff;padding:8px 13px;border-radius:99px;border:1px solid #7c5cff;text-decoration:none;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)">🎮 More games</a>
+<a href="https://snailgamedev.github.io/PeakArcade/word.html" style="background:rgba(7,7,15,.85);color:#ffe8a3;padding:8px 13px;border-radius:99px;border:1px solid #f5c542;text-decoration:none;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)">✝ The Word</a>
+</div>
+<script>try{if(window.top===window.self){document.getElementById('pa-links').style.display='flex';}}catch(e){}</script>
 </body>
 </html>
