@@ -572,6 +572,7 @@
   .adm-rname { font-weight: 900; color: var(--cream); font-size: 13px; letter-spacing: 1px; flex: 1; text-transform: uppercase; }
   .adm-lock { font-size: 10px; color: var(--gold); font-weight: 700; letter-spacing: 0.5px; }
   .adm-open { font-size: 10px; color: var(--muted); letter-spacing: 0.5px; }
+  .adm-flair { font-size: 10px; font-weight: 700; margin-left: 5px; letter-spacing: 0.3px; }
   .adm-acts { display: flex; gap: 5px; flex: 0 0 auto; }
   .adm-mini { -webkit-appearance: none; appearance: none; min-height: 32px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--bg-3); background: var(--bg-2); color: var(--cream); font-family: inherit; font-weight: 800; font-size: 11px; letter-spacing: 0.5px; cursor: pointer; }
   .adm-mini:active { transform: scale(0.94); }
@@ -718,6 +719,14 @@
   .motd-banner .motd-txt { font-size: 13px; font-weight: 700; color: var(--soft); flex: 1 1 auto; line-height: 1.4; }
   .motd-banner .motd-by { font-size: 10px; letter-spacing: 1px; color: var(--gold); font-weight: 800; }
   @keyframes motd-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+  /* FIGHTER OF THE DAY spotlight banner (admin-set) */
+  .spot-banner { display: flex; align-items: center; gap: 10px; margin: 8px 0 4px; padding: 11px 14px; border-radius: 12px; border: 1px solid var(--gold); background: linear-gradient(90deg, rgba(200,160,96,0.22), rgba(200,160,96,0.04)); animation: motd-in 0.5s ease; }
+  .spot-banner .spot-ic { font-size: 22px; filter: drop-shadow(0 0 6px rgba(200,160,96,0.7)); animation: spot-pulse 2.2s ease-in-out infinite; }
+  .spot-banner .spot-body { flex: 1 1 auto; min-width: 0; }
+  .spot-banner .spot-lbl { font-size: 9px; letter-spacing: 2px; color: var(--gold); font-weight: 800; }
+  .spot-banner .spot-name { font-size: 15px; font-weight: 800; color: var(--cream); }
+  .spot-banner .spot-note { font-size: 11px; color: var(--soft); line-height: 1.3; }
+  @keyframes spot-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.18); } }
   .adm-log-by { color: var(--gold); font-size: 10px; font-weight: 700; }
   /* YOUR RANK · powers grid (granted vs locked) + protected marker */
   .adm-powers { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 8px; margin-bottom: 8px; }
@@ -1070,7 +1079,7 @@
   </div>
 
   <button class="btn" onclick="enterGame()">ENTER THE RING</button>
-  <div class="splash-foot">v4.29 · build 2026-05-24·1934 · 🥊 GAMEPLAY OVERHAUL pt.1 (FEEL) — snappier movement · crisper strikes · beefier impact on big hits · for AARON</div>
+  <div class="splash-foot">v4.30 · build 2026-05-26·1448 · 🥊 GAMEPLAY OVERHAUL pt.2 (DEPTH) — 7 named slams · jab→cross→HAYMAKER combo chain · ⚠ warn · ⭐ award · 🌟 Fighter of the Day · for AARON</div>
 </div>
 
 <!-- ========== PLATFORM SELECT ========== -->
@@ -1099,6 +1108,7 @@
 
   <div class="hub-profile" id="hub-profile"></div>
   <div class="motd-banner" id="motd-banner" style="display:none"></div>
+  <div class="spot-banner" id="spot-banner" style="display:none"></div>
 
   <div class="hub-grp-label">⚡ QUICK PLAY</div>
   <div class="hub-modes">
@@ -1395,7 +1405,7 @@
     <div class="load-title" id="load-title">LOADING</div>
     <div class="load-bar"><i id="load-fill"></i></div>
     <div class="load-tip" id="load-tip"></div>
-    <div class="load-skip">tap to skip · v4.29</div>
+    <div class="load-skip">tap to skip · v4.30</div>
   </div>
 </div>
 
@@ -2081,6 +2091,7 @@ function renderHub() {
     + `<div class="hub-ver" onclick="openInstall()" style="margin-left:8px">⬇ install</div>`
     + changeFeedHTML();
   renderMOTD();
+  renderSpotlight();
 }
 // MESSAGE OF THE DAY — a persistent banner an admin sets; everyone sees it on the hub
 function renderMOTD() {
@@ -2089,6 +2100,17 @@ function renderMOTD() {
   if (m && m.text) {
     el.style.display = '';
     el.innerHTML = `<span class="motd-ic">📢</span><span class="motd-txt">${escapeHTML(m.text)}</span><span class="motd-by">— ${escapeHTML(m.by || 'admin')}</span>`;
+  } else el.style.display = 'none';
+}
+// FIGHTER OF THE DAY — admin-set spotlight, everyone sees it on the hub
+function renderSpotlight() {
+  const el = document.getElementById('spot-banner'); if (!el) return;
+  const s = save.spotlight;
+  const f = s && FIGHTERS.find(x => x.id === s.id);
+  if (s && f) {
+    const nm = s.name || ((isClaimed(s.id) ? save.profiles[s.id].name : f.name) || f.name);
+    el.style.display = '';
+    el.innerHTML = `<span class="spot-ic">🌟</span><div class="spot-body"><div class="spot-lbl">FIGHTER OF THE DAY · by ${escapeHTML(s.by || 'admin')}</div><div class="spot-name">${escapeHTML(nm)}</div>${s.note ? `<div class="spot-note">${escapeHTML(s.note)}</div>` : ''}</div>`;
   } else el.style.display = 'none';
 }
 // PUBLIC changes feed — everyone sees who created/claimed/recolored a fighter (universal-changes visibility)
@@ -2323,7 +2345,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '4.29';
+const GAME_VERSION = '4.30';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -2357,7 +2379,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
-  ['4.29', 'GAMEPLAY OVERHAUL · pt.1 — FEEL: kicking off the combat redo with responsiveness. Movement is snappier, your jab comes out faster + crisper (shorter windup/cooldown), evade hops further, and big hits hit HARDER — beefier freeze-frame on every heavy + finisher so a slam actually lands with weight. (Next installments: deeper combat / more moves, then better-looking fighters.)'],
+  ['4.30', 'GAMEPLAY OVERHAUL · pt.2 — DEPTH + MORE MOVES: combat got deeper. 🤼 SLAM VARIETY — your grapple now lands one of 7 named throws (Powerbomb · Vertical Suplex · Spinebuster · Belly-to-Belly · Gutwrench · Fireman’s Carry · Body Slam), each with its OWN damage + knockback, and the caption calls the move by name. 👊 COMBO CHAIN — land a strike and a COMBO window opens: tap STRIKE again for the cross, then a THIRD time to unload a 💥 HAYMAKER ender (get hit and your chain breaks). 🛡 ADMIN got deeper too: ⚠ issue formal WARNINGS (they stack — 3+ flags escalation), ⭐ AWARD a Faith Star to reward good sportsmanship, and 🌟 SPOTLIGHT a FIGHTER OF THE DAY right on everyone’s hub. (Next: better-looking fighters.)'],
   ['4.28', 'FACES + DESKTOP POLISH: 😀 fighters finally have a real FACE — bigger eyes with iris/pupil/glint, an angled brow, a nose and a mouth — so they read as people in the ring instead of blank mannequins (shows everywhere: ring, roster, customizer). 🖥 DESKTOP no longer wastes the screen — the admin panel’s crew list flows into TWO columns and the menus use the width instead of a thin lonely strip down the middle. Honest note: a full “redo the whole gameplay” is a bigger build — see the splash/notes; tell me which direction to take it.'],
   ['4.27', 'FAITH CORNER — WAY DEEPER (you asked to make the G way better): now a real space with 5 tabs → 📖 VERSE OF THE DAY with a 🙏 daily blessing + 🔥 day-streak, 🧠 MEMORIZE (fill-the-blank scripture challenge), 📚 COLLECTION (every verse you read or nail gets gathered — build your set), 🕊 DEVO (5 game-tied devotionals: Courage · Brotherhood · Perseverance · Identity · Humility), and ✝ THE REAL WIN (a clear, warm, no-pressure gospel — John 3:16). Earn ⭐ Faith Stars for showing up in the Word; they ride on your hub profile. Still humble: “go to the Word for yourself.”'],
   ['4.26', 'FAITH + DEEPER ADMIN (the last drop skipped the faith — fixing that): ✝ NEW FAITH CORNER off the hub — a VERSE OF THE DAY with “one way to live it / what it means”, the heart behind the game (iron sharpening iron · John 3:16), and every brother’s walkout scripture in one place, with a humble “go to the Word for yourself” note. 🛡 ADMIN got deeper: Old Man Eli can now PROMOTE any fighter to a CREW admin (or revoke it) on the fly, and 🧊 FREEZE a fighter’s ratings so wins/losses stop moving them (perfect for a benchmark fighter).'],
@@ -2793,8 +2815,8 @@ function curAdminTier() { return adminTierOf(save.activeProfile); }
 const TIER_NAME = { 1: 'SUPREME ADMIN', 2: 'SENIOR ADMIN', 3: 'CREW ADMIN' };
 // per-action permission. Tier 1 = everything. Tier 2 (Aaron) = strong mod powers. Tier 3 (OG) = light.
 const PERM = {
-  2: ['edit', 'message', 'announce', 'create', 'crown', 'kick', 'signout', 'timeout', 'reset', 'feedback', 'viewfeed', 'viewlog'],
-  3: ['message', 'kick', 'feedback', 'viewfeed']
+  2: ['edit', 'message', 'announce', 'create', 'crown', 'kick', 'signout', 'timeout', 'reset', 'feedback', 'viewfeed', 'viewlog', 'warn', 'award', 'spotlight'],
+  3: ['message', 'kick', 'feedback', 'viewfeed', 'warn']
 };
 function can(action) {
   const t = curAdminTier();
@@ -2811,9 +2833,10 @@ function canActOn(targetId) {
 }
 // a plain-language list of what the CURRENT rank can + can't do (so every tier's powers are explicit)
 const POWER_LIST = [
-  ['message', '✉ Message a fighter'], ['kick', '⏏ Kick / sign out a fighter'], ['feedback', '✍ Read player feedback'],
+  ['message', '✉ Message a fighter'], ['warn', '⚠ Issue a formal warning'], ['kick', '⏏ Kick / sign out a fighter'], ['feedback', '✍ Read player feedback'],
   ['timeout', '⏳ Time out a fighter'], ['crown', '👑 Crown a champion'], ['create', '➕ Create a fighter'],
-  ['edit', '🎨 Restyle any fighter'], ['announce', '📣 Announce + Message of the Day'], ['viewlog', '📋 See the audit log'],
+  ['edit', '🎨 Restyle any fighter'], ['award', '⭐ Award a Faith Star'], ['spotlight', '🌟 Spotlight Fighter of the Day'],
+  ['announce', '📣 Announce + Message of the Day'], ['viewlog', '📋 See the audit log'],
   ['reset', '♻ Reset / delete fighters'], ['ban', '⛔ Ban a fighter'], ['managepins', '🔑 Hold the master key (PIN + master resets)']
 ];
 function adminPowersHTML() {
@@ -3095,17 +3118,28 @@ function adminCrewRow(f) {
   const claimed = isClaimed(f.id);
   const isChamp = save.champion === f.id;
   const ban = banStatus(claimed ? save.profiles[f.id].name : f.name);
-  const status = ban ? `<span class="adm-open" style="color:var(--red-bright)">${ban.type === 'ban' ? '⛔' : '⏳'}</span>`
-    : claimed ? `<span class="adm-lock">🔒 ${(save.profiles[f.id].name || '').toUpperCase()}</span>` : `<span class="adm-open">🔓 open</span>`;
+  const warnN = (save.warnings || {})[f.id] || 0;
+  const stars = (claimed && save.profiles[f.id].stars) || 0;
+  const flair = (save.spotlight && save.spotlight.id === f.id ? `<span class="adm-flair" style="color:var(--gold)">🌟</span>` : '')
+    + (stars ? `<span class="adm-flair" style="color:var(--gold)">⭐${stars}</span>` : '')
+    + (warnN ? `<span class="adm-flair" style="color:var(--red-bright)">⚠${warnN}</span>` : '');
+  const status = (ban ? `<span class="adm-open" style="color:var(--red-bright)">${ban.type === 'ban' ? '⛔' : '⏳'}</span>`
+    : claimed ? `<span class="adm-lock">🔒 ${(save.profiles[f.id].name || '').toUpperCase()}</span>` : `<span class="adm-open">🔓 open</span>`) + flair;
   const og = adminTierOf(f.id);
   const mod = canActOn(f.id);               // am I allowed to moderate this fighter? (rank hierarchy)
   const note = (save.adminNotes || {})[f.id];
   let acts = '';
   acts += `<button class="adm-mini${note ? ' has-note' : ''}" type="button" title="${note ? 'note: ' + note.replace(/"/g, '') : 'add a staff note'}" onclick="adminNote('${f.id}')">📝</button>`;   // notes = collaborative memory, any admin
   if (can('crown')) acts += `<button class="adm-mini" type="button" title="crown champion" onclick="adminCrown('${f.id}')">👑</button>`;   // crowning isn't moderation → always allowed
+  const isSpot = save.spotlight && save.spotlight.id === f.id;
+  if (can('spotlight')) acts += `<button class="adm-mini${isSpot ? ' has-note' : ''}" type="button" title="${isSpot ? 'clear spotlight' : 'spotlight Fighter of the Day'}" onclick="adminSpotlight('${f.id}')">🌟</button>`;
+  const warns = (save.warnings || {})[f.id] || 0;
   if (mod) {                                // moderation buttons ONLY for fighters you outrank
     if (can('edit')) acts += `<button class="adm-mini" type="button" title="customize" onclick="adminEditBrother('${f.id}')">🎨</button>`;
     if (claimed && can('message')) acts += `<button class="adm-mini" type="button" title="message (claimed only)" onclick="adminMsgTo('${f.id}')">✉</button>`;
+    if (claimed && can('award')) acts += `<button class="adm-mini" type="button" title="award a Faith Star" onclick="adminAwardStar('${f.id}')">⭐</button>`;
+    if (can('warn')) acts += `<button class="adm-mini${warns ? ' has-note' : ''}" type="button" title="${warns ? warns + ' warning' + (warns > 1 ? 's' : '') + ' — warn again' : 'issue a warning'}" onclick="adminWarn('${f.id}')">⚠${warns ? '<sup>' + warns + '</sup>' : ''}</button>`;
+    if (warns && can('warn')) acts += `<button class="adm-mini" type="button" title="clear warnings" onclick="adminClearWarnings('${f.id}')">⚠✕</button>`;
     if (claimed && can('kick')) acts += `<button class="adm-mini" type="button" title="kick (sign out)" onclick="adminSignOutBrother('${f.id}')">⏏</button>`;
     if (can('timeout')) acts += `<button class="adm-mini" type="button" title="timeout" onclick="adminTimeout('${f.id}')">⏳</button>`;
     if (can('ban') && !og) acts += `<button class="adm-mini danger" type="button" title="ban" onclick="adminBan('${f.id}')">⛔</button>`;
@@ -3322,6 +3356,64 @@ function adminFreeze(id) {
   else { save.frozen[id] = true; adminLogPush('🧊 froze ' + f.name + "'s ratings (no more drift)"); }
   persistSave(); renderAdmin();
   setStatus && setStatus((save.frozen[id] ? 'FROZE ' : 'UNFROZE ') + f.name, 'var(--gold)', 1000);
+}
+// WARN — a formal, logged warning short of a timeout. Stacks; 3+ flags the fighter for escalation.
+function adminWarn(bid) {
+  if (!can('warn') || !canActOn(bid)) return;
+  const f = FIGHTERS.find(x => x.id === bid); if (!f) return;
+  const name = (isClaimed(bid) ? save.profiles[bid].name : f.name) || f.name;
+  const reason = (prompt('Warn ' + name + ' — reason?', 'unsportsmanlike conduct') || '').trim();
+  if (!reason) return;
+  save.warnings = save.warnings || {};
+  const n = (save.warnings[bid] = (save.warnings[bid] || 0) + 1);
+  snapshotForUndo('warn ' + name);
+  inboxPush(bid, '⚠ WARNING #' + n + ' from ' + adminWho() + ': ' + reason + (n >= 3 ? ' — next step is a timeout.' : ''));
+  adminLogPush('⚠ ' + adminWho() + ' warned ' + name + ' (#' + n + (n >= 3 ? ', ESCALATION' : '') + ') · ' + reason);
+  logChange('⚠ ' + name + ' was warned by ' + adminWho() + ' (#' + n + ')', 'mod:' + bid);
+  persistSave(); renderAdmin();
+  setStatus && setStatus('WARNED ' + name + ' · #' + n + (n >= 3 ? ' ⚠ ESCALATION' : ''), n >= 3 ? 'var(--red-bright)' : 'var(--gold)', 1300);
+}
+function adminClearWarnings(bid) {
+  if (!can('warn') || !canActOn(bid)) return;
+  const f = FIGHTERS.find(x => x.id === bid); if (!f || !(save.warnings && save.warnings[bid])) return;
+  const name = (isClaimed(bid) ? save.profiles[bid].name : f.name) || f.name;
+  snapshotForUndo('clear warnings on ' + name);
+  delete save.warnings[bid];
+  adminLogPush('✅ ' + adminWho() + ' cleared ' + name + "'s warnings");
+  inboxPush(bid, '✅ ' + adminWho() + ' wiped your warning record — clean slate. 🙏');
+  persistSave(); renderAdmin();
+  setStatus && setStatus('CLEARED ' + name + "'S WARNINGS", 'var(--gold)', 1000);
+}
+// AWARD A FAITH STAR — admin can bless a fighter with a ⭐ (ties the faith layer into moderation: catch good sportsmanship, reward it)
+function adminAwardStar(bid) {
+  if (!can('award')) return;
+  const f = FIGHTERS.find(x => x.id === bid); if (!f) return;
+  if (!isClaimed(bid)) { setStatus && setStatus('ONLY A CLAIMED FIGHTER CAN BE BLESSED', 'var(--muted)', 1300); return; }
+  const name = save.profiles[bid].name || f.name;
+  const why = (prompt('Award a Faith Star ⭐ to ' + name + ' — what for?', 'great sportsmanship') || '').trim();
+  if (!why) return;
+  save.profiles[bid].stars = (save.profiles[bid].stars || 0) + 1;
+  inboxPush(bid, '⭐ ' + adminWho() + ' awarded you a FAITH STAR for ' + why + '! "Well done, good and faithful servant." 🙏');
+  adminLogPush('⭐ ' + adminWho() + ' awarded ' + name + ' a Faith Star · ' + why);
+  persistSave(); renderAdmin();
+  setStatus && setStatus('⭐ BLESSED ' + name + ' (now ' + save.profiles[bid].stars + ')', 'var(--gold)', 1400);
+}
+// SPOTLIGHT — feature a fighter as FIGHTER OF THE DAY (shows on the hub). Toggle off by spotlighting again.
+function adminSpotlight(bid) {
+  if (!can('spotlight')) return;
+  const f = FIGHTERS.find(x => x.id === bid); if (!f) return;
+  const name = (isClaimed(bid) ? save.profiles[bid].name : f.name) || f.name;
+  if (save.spotlight && save.spotlight.id === bid) {
+    save.spotlight = null; adminLogPush('🌟✕ ' + adminWho() + ' cleared the spotlight');
+    setStatus && setStatus('SPOTLIGHT CLEARED', 'var(--gold)', 1000);
+  } else {
+    const note = (prompt('Spotlight ' + name + ' as FIGHTER OF THE DAY — tagline?', 'putting in the work 💪') || '').trim();
+    save.spotlight = { id: bid, name, by: adminWho(), note, t: Date.now() };
+    adminLogPush('🌟 ' + adminWho() + ' spotlighted ' + name + (note ? ' · ' + note : ''));
+    inboxPush(bid, '🌟 ' + adminWho() + ' made you FIGHTER OF THE DAY! You’re on the hub. 🔥');
+    setStatus && setStatus('🌟 ' + name + ' IS FIGHTER OF THE DAY', 'var(--gold)', 1400);
+  }
+  persistSave(); renderAdmin();
 }
 function adminClearFeedback() { if (curAdminTier() !== 1) return; save.feedback = []; persistSave(); renderAdmin(); }
 
@@ -3723,8 +3815,19 @@ const ATK = {
   finisher: { windup: 285, cool: 980,  reach: 1.12, knock: 54, lockMove: 440, heavy: true,  slam: true },
   // legacy aliases (kept so any old reference still resolves)
   jab:      { windup: 42,  cool: 170,  reach: 1.22, knock: 14, lockMove: 100, heavy: false },
-  power:    { windup: 195, cool: 560,  reach: 1.06, knock: 34, lockMove: 340, heavy: true,  slam: true }
+  power:    { windup: 195, cool: 560,  reach: 1.06, knock: 34, lockMove: 340, heavy: true,  slam: true },
+  haymaker: { windup: 95,  cool: 380,  reach: 1.16, knock: 30, lockMove: 210, heavy: true }    // 3rd hit of a strike combo — the finisher of the flurry
 };
+// SLAM VARIETY — a grapple randomly becomes one of these named throws (varied damage/knock), so wrestling never looks samey
+const SLAMS = [
+  { name: 'Body Slam',       dmg: 1.00, knock: 1.00 },
+  { name: 'Vertical Suplex', dmg: 1.10, knock: 0.92 },
+  { name: 'Powerbomb',       dmg: 1.26, knock: 1.22 },
+  { name: 'Spinebuster',     dmg: 1.12, knock: 1.10 },
+  { name: 'Belly-to-Belly',  dmg: 1.05, knock: 1.04 },
+  { name: 'Gutwrench Slam',  dmg: 1.16, knock: 0.96 },
+  { name: 'Fireman’s Carry', dmg: 1.08, knock: 1.06 }
+];
 const DOWN_MS = 1700;        // how long a slammed fighter stays down (pin window)
 let rafId = null;
 let controlsBound = false;
@@ -3806,7 +3909,7 @@ function startMatchWith(playerId, oppId) {
     tally: { strikesLanded:0, strikesWhiff:0, heavyLanded:0, blocked:0, dodgedClean:0,
              finisherLanded:false, dmgDealt:0, dmgTaken:0, gassed:false, grappleLanded:0, winMethod:null,
              biggestHit:0, reversals:0, comboMax:0 },   // feed the post-match breakdown + combo HUD
-    comboCount: 0, comboUntil: 0, comboHitUntil: 0, biggestHit: 0, lastActionT: 0
+    comboCount: 0, comboUntil: 0, comboHitUntil: 0, comboStep: 0, biggestHit: 0, lastActionT: 0
   };
   applyModeRules(match);                 // per-mode feel: scaling, worn HP, training dummy
   pendingStip = null;                    // consumed — don't leak the stipulation into the next fight
@@ -3979,6 +4082,7 @@ function caption(text, cls) {
 
 function moveOf(fighter, kind) {
   const ms = fighter.moves;
+  if (kind === 'haymaker') return { name: 'Haymaker', type: 'cross', dmg: [20, 28], cost: 16 };   // combo-ender (synthetic — not in the fighter's list)
   if (kind === 'finisher') return ms.find(m => m.fin) || ms[ms.length - 1];
   // COMBO → the fighter's 'cross' (the doubled-up follow-up after a landed strike)
   if (kind === 'combo') return ms.find(m => m.type === 'cross') || ms.find(m => m.type === 'jab') || ms[0];
@@ -4165,9 +4269,12 @@ function playerAttack(kind) {
   if (match.pAtk || match.pStun > 0 || match.pCool > 0 || match.pBlock) return;
   if (match.pDowned > 0 || match.pinning || match.subbing) return;
   if (kind === 'finisher' && match.oHP > FIN_UNLOCK) return;
-  // COMBO CHAIN: a STRIKE that lands opens a brief window — tap STRIKE again to throw the bigger follow-up.
+  // COMBO CHAIN: JAB → CROSS → HAYMAKER. Each landed strike opens a brief window; tap STRIKE in it to advance the flurry.
   let combo = false;
-  if (kind === 'strike' && match.comboUntil && performance.now() < match.comboUntil) { kind = 'combo'; combo = true; match.comboUntil = 0; }
+  if (kind === 'strike' && match.comboUntil && performance.now() < match.comboUntil) {
+    kind = (match.comboStep >= 2) ? 'haymaker' : 'combo';   // 3rd in the chain = the haymaker ender
+    combo = true; match.comboUntil = 0;
+  }
   const move = moveOf(match.player, kind);
   if (match.pST < move.cost) { setStatus('LOW STAMINA', 'var(--red-bright)', 600); return; }
   ensureCtx();
@@ -4475,6 +4582,9 @@ function resolveAttack(atk) {
   const reachPx = fW * atk.cfg.reach;
   const move = atk.move;
   const defSide = isPlayer ? 'right' : 'left';
+  // SLAM VARIETY — a non-finisher slam locks one named throw (varied damage + knock) the first time it resolves
+  if (atk.cfg.slam && !move.fin && !atk._slam) atk._slam = SLAMS[Math.floor(Math.random() * SLAMS.length)];
+  const slamName = atk._slam ? atk._slam.name : move.name;
 
   if (gap > reachPx) {
     if (isPlayer) match.tally.strikesWhiff++;
@@ -4507,6 +4617,7 @@ function resolveAttack(atk) {
   dmg *= Math.max(0.7, Math.min(1.25, 80 / defAb.chin));             // CHIN = damage/KO resistance
   if (isPlayer ? match.pHype > 0 : match.oHype > 0) dmg *= 1.18;     // HYPE surge — momentum-fueled damage
   dmg *= stipDmgMult(atkHP);                                         // STIPULATIONS (hardcore/glass/comeback) bend the damage
+  if (atk._slam) dmg *= atk._slam.dmg;                              // SLAM VARIETY — powerbomb hits harder than a body slam, etc.
   if (isPlayer) dmg /= curDiff().oTough;                             // harder = opponent tankier
   else          dmg *= curDiff().oDmg;                               // harder = opponent hits harder
   // OVERALL MATTERS — the higher-OVR fighter hits a touch harder; the gap swings damage up to ±18%
@@ -4522,7 +4633,7 @@ function resolveAttack(atk) {
   else          match.pHP = Math.max(0, match.pHP - dmg);
 
   const heavy = atk.cfg.heavy && !blocked;
-  const knock = atk.cfg.knock * (atkAb.power / 80) * WEIGHT_CLASSES[atkWC].knock; // POWER + weight drive knockback
+  const knock = atk.cfg.knock * (atkAb.power / 80) * WEIGHT_CLASSES[atkWC].knock * (atk._slam ? atk._slam.knock : 1); // POWER + weight (+ slam type) drive knockback
   applyKnockback(isPlayer, blocked ? knock * 0.3 : knock);
   flash(defSide, heavy);
   burst(defSide, dmg);
@@ -4550,15 +4661,16 @@ function resolveAttack(atk) {
     }
     // SIGNATURE FINISHER cut-in — announce the named move with a comic stamp
     if (move.fin && !blocked) signatureCutIn(match.player.name, move.name, 'left');
-    // COMBO-ATTACK window: a landed STRIKE opens a quick 1-2 follow-up; a thrown combo closes the chain
-    if (atk.kind === 'strike' && !blocked) { match.comboUntil = performance.now() + 700; setStatus('COMBO READY — tap STRIKE', 'var(--gold)', 600); }
-    else if (atk.kind === 'combo') match.comboUntil = 0;
+    // COMBO-ATTACK chain: JAB → CROSS → HAYMAKER. Each landed strike opens the next window.
+    if (!blocked && atk.kind === 'strike') { match.comboUntil = performance.now() + 700; match.comboStep = 1; setStatus('COMBO! tap STRIKE ×2', 'var(--gold)', 600); }
+    else if (!blocked && atk.kind === 'combo') { match.comboUntil = performance.now() + 650; match.comboStep = 2; setStatus('COMBO! tap STRIKE for the HAYMAKER', 'var(--gold)', 600); }
+    else if (atk.kind === 'haymaker') { match.comboUntil = 0; match.comboStep = 0; flashSig('💥 HAYMAKER!', false); }
+    else { match.comboUntil = 0; match.comboStep = 0; }
   } else {
     if (move.fin && !blocked) signatureCutIn(match.opponent.name, move.name, 'right');
-    if (!blocked) match.comboCount = 0;                              // your chain breaks when YOU get hit
+    if (!blocked) { match.comboCount = 0; match.comboUntil = 0; match.comboStep = 0; }  // your chain breaks when YOU get hit
     match.tally.dmgTaken += dmg;
     if (blocked) match.tally.blocked++;
-    if (!blocked) match.comboUntil = 0;                              // getting hit breaks your combo chain
   }
 
   const atkName = isPlayer ? match.player.name : match.opponent.name;
@@ -4570,7 +4682,12 @@ function resolveAttack(atk) {
     caption(defName + ' blocks ' + atkName + "'s " + move.name, isPlayer ? 'enemy' : 'player');
   } else {
     playHitSound(move.type);
-    if (heavy) { setStatus(isPlayer ? 'BIG HIT!' : 'you got rocked!', isPlayer ? 'var(--gold)' : 'var(--red-bright)', 600); caption(atkName + ' ' + (atk.cfg.slam ? 'SLAMS' : 'rocks') + ' ' + defName + ' · −' + dmg, 'big'); }
+    if (heavy) {
+      setStatus(isPlayer ? (atk._slam ? slamName.toUpperCase() + '!' : 'BIG HIT!') : 'you got rocked!', isPlayer ? 'var(--gold)' : 'var(--red-bright)', 600);
+      // SLAM VARIETY surfaces the named throw ("Powerbomb!") instead of a generic "SLAMS"
+      const verb = atk._slam ? ('hits the ' + slamName + ' on') : (atk.cfg.slam ? 'SLAMS' : 'rocks');
+      caption(atkName + ' ' + verb + ' ' + defName + ' · −' + dmg, 'big');
+    }
     else caption(atkName + ' lands ' + move.name + ' · −' + dmg, isPlayer ? 'player' : 'enemy');
     if (move.fin) caption('✝ SCRIPTURE STRIKE', 'scripture');
   }
