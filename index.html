@@ -1062,6 +1062,15 @@
   #sig-flash.on { animation: sigFlash 0.95s cubic-bezier(.2,.9,.3,1); }
   @keyframes sigFlash { 0% { opacity: 0; transform: translate(-50%,4px) scale(0.7); } 18% { opacity: 1; transform: translate(-50%,-6px) scale(1.08); } 70% { opacity: 1; transform: translate(-50%,-6px) scale(1); } 100% { opacity: 0; transform: translate(-50%,-14px) scale(1); } }
 </style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#c0392b">
+<script>
+if('serviceWorker' in navigator){const had=!!navigator.serviceWorker.controller;let r=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{if(r)return;r=true;if(had)location.reload();});
+  addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').then(reg=>{reg.update();setInterval(()=>reg.update(),60000);}).catch(()=>{});});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)navigator.serviceWorker.getRegistration().then(r=>r&&r.update()).catch(()=>{});});
+}
+</script>
 </head>
 <body>
 
