@@ -1460,6 +1460,14 @@
     <button class="btn" type="button" onclick="hideAchievements()">CLOSE</button>
   </div>
 </div>
+<!-- 🏆 HALL OF FAME — your records, medals, faith + legacy in one place -->
+<div class="tutorial" id="hallOfFame" aria-hidden="true">
+  <div class="tut-card" style="max-width:500px">
+    <div class="tut-title">🏆 HALL OF FAME <span style="color:var(--muted);font-size:11px">your records · the legacy</span></div>
+    <div id="hof-body" style="text-align:left;font-size:13px;line-height:1.6;max-height:65vh;overflow-y:auto;padding-right:6px"></div>
+    <button class="btn" type="button" onclick="hideHallOfFame()" style="margin-top:14px">CLOSE</button>
+  </div>
+</div>
 
 <script>
 'use strict';
@@ -2087,6 +2095,7 @@ function renderHub() {
     + `<div class="hub-ver" onclick="goto('rankings')" style="margin-left:8px">🏆 titles &amp; rankings</div>`
     + `<div class="hub-ver" onclick="goto('faith')" style="margin-left:8px">✝ faith corner</div>`
     + `<div class="hub-ver" onclick="showAchievements()" style="margin-left:8px">⭐ ${ACHIEVEMENTS.filter(a=>save.achievements[a[0]]).length}/${ACHIEVEMENTS.length}</div>`
+    + `<div class="hub-ver" onclick="showHallOfFame()" style="margin-left:8px">🏆 hall of fame</div>`
     + `<div class="hub-ver" onclick="openFeedback()" style="margin-left:8px">✍️ feedback</div>`
     + `<div class="hub-ver" onclick="openInstall()" style="margin-left:8px">⬇ install</div>`
     + changeFeedHTML();
@@ -2345,7 +2354,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '4.30';
+const GAME_VERSION = '4.31';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -2614,6 +2623,52 @@ function renderAchievements() {
 }
 function showAchievements() { renderAchievements(); const el = document.getElementById('achievements'); el.classList.add('on'); el.setAttribute('aria-hidden', 'false'); }
 function hideAchievements() { const el = document.getElementById('achievements'); el.classList.remove('on'); el.setAttribute('aria-hidden', 'true'); }
+
+/* 🏆 HALL OF FAME — career records w/ 🥉🥈🥇 medal tiers (port of CoinKingdom pattern) */
+const HOF_TIERS = {
+  wins:        [10, 50, 200],
+  kos:         [5, 25, 75],
+  finishers:   [3, 15, 50],
+  scripture:   [5, 25, 75],
+  belts:       [1, 3, 7],
+  faithStars:  [10, 50, 150]
+};
+function medalFor(val, t){ if(val>=t[2]) return '🥇'; if(val>=t[1]) return '🥈'; if(val>=t[0]) return '🥉'; if(val>0) return '🎖️'; return '—'; }
+function nextTarget(val, t){ if(val>=t[2]) return 'maxed 👑'; if(val>=t[1]) return 'next 🥇 '+t[2]; if(val>=t[0]) return 'next 🥈 '+t[1]; return 'next 🥉 '+t[0]; }
+function renderHallOfFame(){
+  const wins=save.wins||0, losses=save.losses||0, kos=save.kos||0, fin=save.finishers||0, ss=save.scriptureStrikes||0, belts=save.belts||0, fs=save.faithStars||0, bs=save.blessStreak||0, bl=save.blessings||0;
+  const total=wins+losses, winPct=total?Math.round(wins/total*100):0;
+  let mainId=null,mostPicks=-1; for(const id in (save.picks||{})){ if(save.picks[id]>mostPicks){mostPicks=save.picks[id];mainId=id;} }
+  const main=mainId?FIGHTERS.find(f=>f.id===mainId):null;
+  const achGot=ACHIEVEMENTS.filter(a=>save.achievements&&save.achievements[a[0]]).length;
+  const titles=(save.titleHistory||[]).length, def=save.titleDefenses||0;
+  const verses=Object.keys(save.versesRead||{}).length;
+  const row=(ic,lbl,val,tier)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);margin-bottom:6px">
+    <div><div style="font-size:13px;font-weight:800">${ic} ${lbl}</div><div style="font-size:10px;color:var(--muted)">${tier?nextTarget(val,tier):''}</div></div>
+    <div style="text-align:right"><div style="font-weight:800;color:var(--gold);font-size:15px">${val}</div><div style="font-size:16px">${tier?medalFor(val,tier):''}</div></div></div>`;
+  document.getElementById('hof-body').innerHTML =
+      `<div style="background:linear-gradient(120deg,#3a2d0a,#1a1402);border:1px solid var(--gold);border-radius:12px;padding:12px 14px;margin-bottom:12px">
+        <div style="font-family:Impact,sans-serif;font-size:18px;color:var(--gold);letter-spacing:1px">${main?main.name+' · OVR '+getCurrentOVR(main.id):'no main yet'}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px">${wins}W · ${losses}L · ${winPct}% win rate · ${belts}🏆 belts · ${titles} title runs · ${def} defenses</div></div>
+      <div style="font-size:11px;letter-spacing:2px;color:var(--muted);margin:8px 2px">🥊 RECORDS · climb the medals</div>
+      ${row('🏆','Wins',wins,HOF_TIERS.wins)}
+      ${row('💥','KOs',kos,HOF_TIERS.kos)}
+      ${row('🔒','Finishers (pin/sub)',fin,HOF_TIERS.finishers)}
+      ${row('✝️','Scripture Strikes',ss,HOF_TIERS.scripture)}
+      ${row('👑','Belts won',belts,HOF_TIERS.belts)}
+      <div style="font-size:11px;letter-spacing:2px;color:var(--muted);margin:14px 2px 8px">✝️ FAITH</div>
+      ${row('⭐','Faith Stars',fs,HOF_TIERS.faithStars)}
+      ${row('🙏','Blessing Streak',bs,null)}
+      ${row('📖','Verses Read',verses,null)}
+      ${row('🌟','Blessings Claimed',bl,null)}
+      <div style="font-size:11px;letter-spacing:2px;color:var(--muted);margin:14px 2px 8px">🏅 ACHIEVEMENTS</div>
+      ${row('⭐','Unlocked',achGot+' / '+ACHIEVEMENTS.length,null)}
+      <div style="text-align:center;color:var(--muted);font-size:11px;font-style:italic;margin-top:14px;line-height:1.5">
+        "So the last shall be first, and the first last." — Matthew 20:16 🙏<br>the realest Hall of Fame isn't kept here.</div>`;
+}
+function showHallOfFame(){ renderHallOfFame(); const el=document.getElementById('hallOfFame'); el.classList.add('on'); el.setAttribute('aria-hidden','false'); }
+function hideHallOfFame(){ const el=document.getElementById('hallOfFame'); el.classList.remove('on'); el.setAttribute('aria-hidden','true'); }
+window.showHallOfFame=showHallOfFame; window.hideHallOfFame=hideHallOfFame;
 
 /* ========== SPLASH ========== */
 const SPLASH_VERSES = [
