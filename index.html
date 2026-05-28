@@ -326,6 +326,16 @@
   /* Heavy recoil for power/finisher hits */
   .ring-fighter.hit-heavy svg { animation: anim-hit-heavy 0.55s ease-out !important; }
   .ring-fighter.right.hit-heavy svg { animation: anim-hit-heavy-R 0.55s ease-out !important; }
+  /* v4.32 DEPTH PACK — ROCKED state: knees buckling visual (the warning frame before downed) */
+  .ring-fighter.rocked { filter: drop-shadow(0 0 12px rgba(255,60,60,0.85)) brightness(0.92); }
+  .ring-fighter.rocked svg { animation: rockedWobble 0.55s ease-in-out infinite; transform-origin: 50% 100%; }
+  @keyframes rockedWobble {
+    0%   { transform: translate(0,0)    rotate(-3deg); }
+    25%  { transform: translate(2px,1px) rotate(2deg); }
+    50%  { transform: translate(-1px,0)  rotate(-2deg); }
+    75%  { transform: translate(1px,1px) rotate(3deg); }
+    100% { transform: translate(0,0)    rotate(-3deg); }
+  }
   @keyframes anim-hit-heavy { 0% { transform: translateX(0); } 18% { transform: translateX(-42px) rotate(18deg); filter: brightness(1.9) drop-shadow(0 0 22px var(--gold)); } 45% { transform: translateX(-30px) rotate(8deg); } 75% { transform: translateX(-10px) rotate(2deg); } 100% { transform: translateX(0); } }
   @keyframes anim-hit-heavy-R { 0% { transform: scaleX(-1); } 18% { transform: scaleX(-1) translateX(-42px) rotate(18deg); filter: brightness(1.9) drop-shadow(0 0 22px var(--gold)); } 45% { transform: scaleX(-1) translateX(-30px) rotate(8deg); } 75% { transform: scaleX(-1) translateX(-10px) rotate(2deg); } 100% { transform: scaleX(-1); } }
   @keyframes anim-ko { 0% { transform: rotate(0); } 100% { transform: rotate(-85deg) translateY(40px); opacity: 0.5; } }
@@ -2363,7 +2373,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '4.31';
+const GAME_VERSION = '4.32';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
@@ -2397,6 +2407,7 @@ function hideWhatsNew() { const el = document.getElementById('whatsnew'); if (el
 
 /* ========== UPDATE LOG (full version history · newest first · always moves forward) ========== */
 const CHANGELOG = [
+  ['4.32', 'FIGHT RESTRUCTURE · DEPTH PACK — same buttons, way more depth. 👊 CONTEXTUAL STRIKE: the STRIKE button now reads the joystick — tilt UP for an ✊ UPPERCUT (heavy, big damage), tilt DOWN for a 👊 BODY SHOT (fast, eats block easier), or hit STRIKE while the opponent is DOWNED for a 🦶 STOMP (extends their downed timer, sets up the pin). 😵 ROCKED STATE — a heavy clean hit at low HP now buckles the knees (1.5s wobble visual, defense cracks, +15% damage taken) — the finisher feels EARNED. 📲 INSTALL AS APP — Slam City is now a full PWA (sw + manifest); install on phone/desktop and it auto-updates every visit (no tap-to-update).'],
   ['4.30', 'GAMEPLAY OVERHAUL · pt.2 — DEPTH + MORE MOVES: combat got deeper. 🤼 SLAM VARIETY — your grapple now lands one of 7 named throws (Powerbomb · Vertical Suplex · Spinebuster · Belly-to-Belly · Gutwrench · Fireman’s Carry · Body Slam), each with its OWN damage + knockback, and the caption calls the move by name. 👊 COMBO CHAIN — land a strike and a COMBO window opens: tap STRIKE again for the cross, then a THIRD time to unload a 💥 HAYMAKER ender (get hit and your chain breaks). 🛡 ADMIN got deeper too: ⚠ issue formal WARNINGS (they stack — 3+ flags escalation), ⭐ AWARD a Faith Star to reward good sportsmanship, and 🌟 SPOTLIGHT a FIGHTER OF THE DAY right on everyone’s hub. (Next: better-looking fighters.)'],
   ['4.28', 'FACES + DESKTOP POLISH: 😀 fighters finally have a real FACE — bigger eyes with iris/pupil/glint, an angled brow, a nose and a mouth — so they read as people in the ring instead of blank mannequins (shows everywhere: ring, roster, customizer). 🖥 DESKTOP no longer wastes the screen — the admin panel’s crew list flows into TWO columns and the menus use the width instead of a thin lonely strip down the middle. Honest note: a full “redo the whole gameplay” is a bigger build — see the splash/notes; tell me which direction to take it.'],
   ['4.27', 'FAITH CORNER — WAY DEEPER (you asked to make the G way better): now a real space with 5 tabs → 📖 VERSE OF THE DAY with a 🙏 daily blessing + 🔥 day-streak, 🧠 MEMORIZE (fill-the-blank scripture challenge), 📚 COLLECTION (every verse you read or nail gets gathered — build your set), 🕊 DEVO (5 game-tied devotionals: Courage · Brotherhood · Perseverance · Identity · Humility), and ✝ THE REAL WIN (a clear, warm, no-pressure gospel — John 3:16). Earn ⭐ Faith Stars for showing up in the Word; they ride on your hub profile. Still humble: “go to the Word for yourself.”'],
@@ -3880,7 +3891,11 @@ const ATK = {
   // legacy aliases (kept so any old reference still resolves)
   jab:      { windup: 42,  cool: 170,  reach: 1.22, knock: 14, lockMove: 100, heavy: false },
   power:    { windup: 195, cool: 560,  reach: 1.06, knock: 34, lockMove: 340, heavy: true,  slam: true },
-  haymaker: { windup: 95,  cool: 380,  reach: 1.16, knock: 30, lockMove: 210, heavy: true }    // 3rd hit of a strike combo — the finisher of the flurry
+  haymaker: { windup: 95,  cool: 380,  reach: 1.16, knock: 30, lockMove: 210, heavy: true },   // 3rd hit of a strike combo — the finisher of the flurry
+  // v4.32 DEPTH PACK — contextual strikes: joystick + opponent-state picks the variant on the same STRIKE button
+  uppercut: { windup: 110, cool: 320,  reach: 1.10, knock: 24, lockMove: 200, heavy: true },   // STRIKE + joy UP — high-arc heavy
+  body:     { windup: 38,  cool: 140,  reach: 1.14, knock: 8,  lockMove: 80,  heavy: false },  // STRIKE + joy DOWN — fast, eats block harder
+  stomp:    { windup: 55,  cool: 220,  reach: 0.95, knock: 6,  lockMove: 140, heavy: false }   // STRIKE on a DOWNED foe — adds to their downed timer
 };
 // SLAM VARIETY — a grapple randomly becomes one of these named throws (varied damage/knock), so wrestling never looks samey
 const SLAMS = [
@@ -3961,6 +3976,7 @@ function startMatchWith(playerId, oppId) {
     watchT: 0,
     pMo: 0, oMo: 0,          // momentum meters (0-100)
     pHype: 0, oHype: 0,      // HYPE-state timers (ms) when a meter fills
+    pRocked: 0, oRocked: 0,  // v4.32: ROCKED state — knees buckling after a heavy hit at low HP (defense reduced, finisher feels earned)
     hitStop: 0,              // brief freeze-frame on heavy impact
     verse: SPLASH_VERSES[Math.floor(Math.random() * SPLASH_VERSES.length)], verseShown: false,
     killFin: false,
@@ -4152,6 +4168,10 @@ function moveOf(fighter, kind) {
   if (kind === 'combo') return ms.find(m => m.type === 'cross') || ms.find(m => m.type === 'jab') || ms[0];
   // GRAPPLE / power → the fighter's signature slam (powerbomb/suplex/F5/spear…)
   if (kind === 'grapple' || kind === 'power') return ms.find(m => m.type === 'power') || ms.find(m => m.sig) || ms.find(m => m.type === 'cross') || ms[0];
+  // v4.32 DEPTH PACK — contextual STRIKE variants share the fighter's jab as the base "shape" but get their own name/numbers from ATK[kind]
+  if (kind === 'uppercut') return { name: 'Uppercut', type: 'jab', dmg: [14, 22], cost: 13 };
+  if (kind === 'body')     return { name: 'Body Shot', type: 'jab', dmg: [6, 10],  cost: 7  };
+  if (kind === 'stomp')    return { name: 'Stomp',     type: 'jab', dmg: [5, 9],   cost: 6  };
   // STRIKE / jab → the light hit (the 10% boxing)
   return ms.find(m => m.type === 'jab') || ms[0];
 }
@@ -4228,10 +4248,18 @@ function gameLoop(t) {
   match.oHype = Math.max(0, match.oHype - dtms);
   match.pMo = Math.max(0, match.pMo - dtms * 0.004);   // momentum slowly bleeds — use it
   match.oMo = Math.max(0, match.oMo - dtms * 0.004);
+  match.pRocked = Math.max(0, match.pRocked - dtms);   // v4.32: ROCKED state decays back to normal
+  match.oRocked = Math.max(0, match.oRocked - dtms);
   match.pDowned = Math.max(0, match.pDowned - dtms);
   match.oDowned = Math.max(0, match.oDowned - dtms);
   if (match.pDowned <= 0) setDowned('left', false);
   if (match.oDowned <= 0) setDowned('right', false);
+  // v4.32: keep .rocked class in sync with the timer (cheap dirty-check)
+  {
+    const lf = document.getElementById('ring-left'); const rf = document.getElementById('ring-right');
+    if (lf) lf.classList.toggle('rocked', match.pRocked > 0);
+    if (rf) rf.classList.toggle('rocked', match.oRocked > 0);
+  }
 
   const frozen = match.pinning || match.subbing;   // a pin/submission sequence owns the moment
 
@@ -4338,6 +4366,14 @@ function playerAttack(kind) {
   if (kind === 'strike' && match.comboUntil && performance.now() < match.comboUntil) {
     kind = (match.comboStep >= 2) ? 'haymaker' : 'combo';   // 3rd in the chain = the haymaker ender
     combo = true; match.comboUntil = 0;
+  }
+  // v4.32 DEPTH PACK — contextual STRIKE: tilt-up = uppercut, tilt-down = body shot, foe DOWNED + close = stomp. No combo running.
+  if (kind === 'strike' && !combo) {
+    const fW = fighterW();
+    const close = Math.abs(match.oX - match.pX) < fW * 1.35;
+    if (match.oDowned > 0 && close) { kind = 'stomp';    setStatus('🦶 STOMP', 'var(--gold)', 500); }
+    else if (match.joyZ <= -0.55)   { kind = 'uppercut'; setStatus('✊ UPPERCUT', 'var(--gold)', 500); }
+    else if (match.joyZ >=  0.55)   { kind = 'body';     setStatus('👊 BODY SHOT', 'var(--cream)', 500); }
   }
   const move = moveOf(match.player, kind);
   if (match.pST < move.cost) { setStatus('LOW STAMINA', 'var(--red-bright)', 600); return; }
@@ -4690,13 +4726,35 @@ function resolveAttack(atk) {
   dmg *= 1 + Math.max(-0.18, Math.min(0.18, (atkOVR - defOVR) / 300));
   let blocked = false;
   const defBlock = isPlayer ? match.oBlock : match.pBlock;
-  if (defBlock) { dmg *= Math.max(0.08, Math.min(0.34, 0.34 - defAb.blocking * 0.0022)); blocked = true; } // BLOCKING = absorb%
+  const defRocked = isPlayer ? match.oRocked > 0 : match.pRocked > 0;     // v4.32: ROCKED defenders block half as effectively + take 15% more
+  if (defBlock) {
+    let absorb = Math.max(0.08, Math.min(0.34, 0.34 - defAb.blocking * 0.0022));
+    if (defRocked) absorb = Math.min(0.55, absorb + 0.18);   // ROCKED guard cracks easier (less is absorbed)
+    if (atk.kind === 'body') absorb = Math.min(0.6, absorb + 0.14);   // BODY SHOT eats block harder
+    dmg *= absorb; blocked = true;
+  }
+  if (defRocked) dmg *= 1.15;
+  if (atk.kind === 'stomp' && (isPlayer ? match.oDowned > 0 : match.pDowned > 0)) dmg *= 1.25;   // STOMP on a downed foe lands clean
   dmg = Math.max(2, Math.round(dmg));
 
   if (isPlayer) match.oHP = Math.max(0, match.oHP - dmg);
   else          match.pHP = Math.max(0, match.pHP - dmg);
 
   const heavy = atk.cfg.heavy && !blocked;
+  // v4.32 DEPTH PACK — ROCKED state: a heavy clean hit at low HP buckles the knees (defense crack, 1.5s)
+  if (heavy && !blocked) {
+    const defHP = isPlayer ? match.oHP : match.pHP;
+    if (defHP > 0 && defHP < 32) {
+      if (isPlayer) { match.oRocked = 1500; }
+      else          { match.pRocked = 1500; }
+      caption((isPlayer ? match.opponent.name : match.player.name) + ' is ROCKED!', isPlayer ? 'big' : 'enemy');
+    }
+  }
+  // STOMP extends the defender's downed timer + builds attacker hype a touch
+  if (atk.kind === 'stomp' && !blocked) {
+    if (isPlayer && match.oDowned > 0) match.oDowned = Math.min(DOWN_MS * 1.6, match.oDowned + 420);
+    else if (!isPlayer && match.pDowned > 0) match.pDowned = Math.min(DOWN_MS * 1.6, match.pDowned + 420);
+  }
   const knock = atk.cfg.knock * (atkAb.power / 80) * WEIGHT_CLASSES[atkWC].knock * (atk._slam ? atk._slam.knock : 1); // POWER + weight (+ slam type) drive knockback
   applyKnockback(isPlayer, blocked ? knock * 0.3 : knock);
   flash(defSide, heavy);
