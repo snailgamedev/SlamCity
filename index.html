@@ -193,7 +193,9 @@
 
   /* ===== ROSTER ===== */
   #roster .roster-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-  #roster .roster-head .back { background: none; border: 1px solid var(--bg-3); color: var(--cream); padding: 8px 14px; border-radius: 4px; font-size: 11px; letter-spacing: 1px; min-height: 44px; cursor: pointer; }
+  #roster .roster-head .back { background: linear-gradient(180deg,#2a1216,#160a0c); border: 1.5px solid var(--gold); color: var(--gold); padding: 9px 16px; border-radius: 6px; font-size: 12px; letter-spacing: 1px; min-height: 44px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 14px -6px rgba(200,160,96,.45); transition: filter .15s, transform .12s; }
+  #roster .roster-head .back:hover { filter: brightness(1.18); }
+  #roster .roster-head .back:active { transform: scale(.95); }
   #roster .roster-head .head-title { font-size: 12px; letter-spacing: 4px; color: var(--red); font-weight: 700; text-transform: uppercase; }
   .roster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; padding-bottom: 80px; }
   .roster-card {
@@ -221,7 +223,11 @@
 
   /* ===== DETAIL ===== */
   #detail .detail-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-  #detail .back-btn { background: none; border: 1px solid var(--bg-3); color: var(--cream); padding: 8px 14px; border-radius: 4px; font-size: 11px; min-height: 44px; cursor: pointer; }
+  #detail .back-btn { background: linear-gradient(180deg,#2a1216,#160a0c); border: 1.5px solid var(--gold); color: var(--gold); padding: 9px 16px; border-radius: 6px; font-size: 12px; min-height: 44px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 14px -6px rgba(200,160,96,.45); transition: filter .15s, transform .12s; }
+  /* base back-button (catches every other screen's '‹ Hub' / back-btn so none stay invisible) */
+  .back-btn { background: linear-gradient(180deg,#2a1216,#160a0c); border: 1.5px solid var(--gold); color: var(--gold); padding: 9px 16px; border-radius: 6px; font-size: 12px; letter-spacing: 1px; min-height: 44px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 14px -6px rgba(200,160,96,.45); transition: filter .15s, transform .12s; }
+  .back-btn:hover, #detail .back-btn:hover { filter: brightness(1.18); }
+  .back-btn:active, #detail .back-btn:active { transform: scale(.95); }
   .detail-stage { position: relative; width: 100%; max-width: 380px; aspect-ratio: 3/4; margin: 0 auto; }
   .detail-stage .floor-shadow { position: absolute; bottom: 4%; left: 50%; transform: translateX(-50%); width: 60%; height: 4%; background: radial-gradient(ellipse, rgba(0,0,0,0.7), transparent 70%); z-index: 0; }
   .detail-stage .spotlight { position: absolute; top: -8%; left: 50%; transform: translateX(-50%); width: 80%; height: 110%; background: radial-gradient(ellipse at 50% 10%, rgba(255,220,180,0.08), transparent 60%); z-index: 0; pointer-events: none; }
@@ -1163,7 +1169,7 @@ if('serviceWorker' in navigator){const had=!!navigator.serviceWorker.controller;
 <!-- ========== SETTINGS ========== -->
 <div id="settings" class="screen">
   <div class="hub-head">
-    <button class="back-btn" id="settings-back" onclick="settingsBack()">‹ Hub</button>
+    <button class="back-btn" id="settings-back" onclick="settingsBack()">← Hub</button>
     <div class="set-title">SETTINGS</div>
     <span style="width:60px"></span>
   </div>
@@ -1173,7 +1179,7 @@ if('serviceWorker' in navigator){const had=!!navigator.serviceWorker.controller;
 <!-- ========== TITLES & RANKINGS (champion · contender ladder · Hall of Fame) ========== -->
 <div id="rankings" class="screen">
   <div class="hub-head">
-    <button class="back-btn" onclick="goto('hub')">‹ Hub</button>
+    <button class="back-btn" onclick="goto('hub')">← Hub</button>
     <div class="set-title">🏆 TITLES &amp; RANKINGS</div>
     <span style="width:60px"></span>
   </div>
@@ -1183,7 +1189,7 @@ if('serviceWorker' in navigator){const had=!!navigator.serviceWorker.controller;
 <!-- ========== FAITH CORNER (verse of the day · the crew's anchors · go to the Word) ========== -->
 <div id="faith" class="screen">
   <div class="hub-head">
-    <button class="back-btn" onclick="goto('hub')">‹ Hub</button>
+    <button class="back-btn" onclick="goto('hub')">← Hub</button>
     <div class="set-title">✝ FAITH CORNER</div>
     <span style="width:60px"></span>
   </div>
@@ -1193,7 +1199,7 @@ if('serviceWorker' in navigator){const had=!!navigator.serviceWorker.controller;
 <!-- ========== PROFILE (sign in as a brother) ========== -->
 <div id="profile" class="screen">
   <div class="hub-head">
-    <button class="back-btn" onclick="goto('hub')">‹ Hub</button>
+    <button class="back-btn" onclick="goto('hub')">← Hub</button>
     <div class="set-title">PROFILE</div>
     <span style="width:60px"></span>
   </div>
@@ -1203,7 +1209,7 @@ if('serviceWorker' in navigator){const had=!!navigator.serviceWorker.controller;
 <!-- ========== ROSTER ========== -->
 <div id="roster" class="screen">
   <div class="roster-head">
-    <button class="back" onclick="goto('hub')">‹ Hub</button>
+    <button class="back" onclick="goto('hub')">← Hub</button>
     <div class="head-title" id="roster-mode-label">PICK YOUR FIGHTER</div>
     <div style="width:60px"></div>
   </div>
@@ -1226,7 +1232,7 @@ if('serviceWorker' in navigator){const had=!!navigator.serviceWorker.controller;
 <!-- ========== CREATE A FIGHTER ========== -->
 <div id="create" class="screen">
   <div class="hub-head">
-    <button class="back-btn" onclick="goto('hub')">‹ Hub</button>
+    <button class="back-btn" onclick="goto('hub')">← Hub</button>
     <div class="set-title">CREATE A FIGHTER</div>
     <span style="width:60px"></span>
   </div>
@@ -2373,7 +2379,7 @@ function skipLoading() { const el = document.getElementById('loading'); if (el &
 function launchFight(pid, oid) { showLoading('ENTERING THE RING', () => startMatchWith(pid, oid)); }
 
 /* ========== VERSION · WHAT'S NEW · UPDATE DETECTION ========== */
-const GAME_VERSION = '4.32';
+const GAME_VERSION = '4.33';
 const GAME_DESC = 'A brother-crew wrestling game — 90% mat, 10% gloves. Grapple, slam, pin, and submit your way through real-time matches. Live ratings that climb and slip, 3D ring, and the whole crew in your corner. Built for AARON.';
 const WHATS_NEW = [
   ['90/10 WRESTLING', 'Grapple → slam → knockdown → PIN (with kickouts) or SUBMISSION. Striking is the light 10%.'],
