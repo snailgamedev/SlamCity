@@ -19,14 +19,10 @@
   // capture the install prompt (Android / desktop Chrome) for the in-game INSTALL button
   window.__installPrompt = null;
   window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); window.__installPrompt = e; });
-  // register the service worker + AUTO-UPDATE: check for a new build every open, apply it as soon as it's ready
+  // SINGLE service worker (sw.js) is registered further below; here we just wire the
+  // auto-reload when a fresh build takes control. (Removed the old sc-sw.js registration
+  // that fought sw.js for scope and thrashed each other's caches every visit.)
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function () {
-      navigator.serviceWorker.register('sc-sw.js').then(function (reg) {
-        reg.update();                                   // check for a fresh build on every open
-        setInterval(function () { reg.update(); }, 60000); // and periodically while open
-      }).catch(function () {});
-    });
     var __swReloaded = false;
     navigator.serviceWorker.addEventListener('controllerchange', function () {
       if (__swReloaded) return; __swReloaded = true; location.reload();   // a new build activated → refresh into it
