@@ -127,10 +127,12 @@ const CFG = {
 
 /* ---------- SCENE MANAGER ---------- */
 const canvas = document.getElementById('c');
-const renderer = new T.WebGLRenderer({canvas, antialias:true, powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+const IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+let QUALITY = IS_MOBILE ? 1.25 : 1.6;   // pixel-ratio cap — adaptively lowered if FPS tanks (see perf scaler)
+const renderer = new T.WebGLRenderer({canvas, antialias:!IS_MOBILE, powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, QUALITY));
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = T.PCFSoftShadowMap;
+renderer.shadowMap.type = IS_MOBILE ? T.PCFShadowMap : T.PCFSoftShadowMap;   // soft shadows are pricey on phones
 renderer.outputEncoding = T.sRGBEncoding;
 
 const scene = new T.Scene();
@@ -144,7 +146,7 @@ camera.position.set(0,4,-7);
 const hemi = new T.HemisphereLight(0xbfcfff, 0x1a1410, 0.55); scene.add(hemi);
 const key = new T.DirectionalLight(0xfff2d8, 1.15);
 key.position.set(6,12,4); key.castShadow = true;
-key.shadow.mapSize.set(1024,1024);
+key.shadow.mapSize.set(IS_MOBILE?512:1024, IS_MOBILE?512:1024);
 key.shadow.camera.near=1; key.shadow.camera.far=40;
 key.shadow.camera.left=-10; key.shadow.camera.right=10; key.shadow.camera.top=10; key.shadow.camera.bottom=-10;
 key.shadow.bias=-0.0008;
@@ -471,14 +473,17 @@ let pStats={strikes:0,slams:0,blocks:0,biggest:0}, koByType=null;   // feeds SC'
 // 🎚️ DYNAMIC DIFFICULTY — rubber-bands to how you're doing + ramps if you keep winning (persists across rematches)
 let winStreak=0, diffBase=0.45;
 function effDiff(){ return Math.max(0.18, Math.min(1, diffBase + (pHP-oHP)/220)); }   // winning → AI tightens; losing → it eases
-/* ---------- HIT SPARKS (impact particle burst) ---------- */
+/* ---------- HIT SPARKS (impact particle burst) — shared geo/mat + no per-frame allocs (perf) ---------- */
 const sparkPool=[];
+const _SPARKGEO=new T.SphereGeometry(0.045,6,5);
+const _sparkMats={};
+function sparkMat(c){ c=(c!=null)?c:0xffe2a0; return _sparkMats[c]||(_sparkMats[c]=new T.MeshBasicMaterial({color:c})); }
 function spark(pos, scale, color){
-  scale=scale||1;
+  scale=scale||1; const n=IS_MOBILE?6:9;
   const g=new T.Group(); g.position.copy(pos);
-  const mat=new T.MeshBasicMaterial({color:color!=null?color:0xffe2a0});
-  for(let i=0;i<9;i++){
-    const s=new T.Mesh(new T.SphereGeometry(0.045*scale,6,5), mat);
+  const mat=sparkMat(color);
+  for(let i=0;i<n;i++){
+    const s=new T.Mesh(_SPARKGEO, mat); s.scale.setScalar(scale);
     const a=Math.random()*Math.PI*2, e=Math.random()*Math.PI;
     s._v=new T.Vector3(Math.cos(a)*Math.sin(e), Math.abs(Math.cos(e))+0.5, Math.sin(a)*Math.sin(e)).multiplyScalar((0.8+Math.random())*scale*3.2);
     g.add(s);
@@ -488,7 +493,8 @@ function spark(pos, scale, color){
 function updateSparks(dt){
   for(let i=sparkPool.length-1;i>=0;i--){ const g=sparkPool[i]; g._life-=dt;
     if(g._life<=0){ scene.remove(g); sparkPool.splice(i,1); continue; }
-    g.children.forEach(s=>{ s.position.add(s._v.clone().multiplyScalar(dt)); s._v.y-=dt*7; s.scale.multiplyScalar(Math.max(0.001,1-dt*3)); });
+    const sh=1-dt*3;
+    for(const s of g.children){ s.position.addScaledVector(s._v, dt); s._v.y-=dt*7; const k=Math.max(0.001,s.scale.x*sh); s.scale.setScalar(k); }
   }
 }
 /* ---------- HIT CALLOUTS (personality — each fighter's REAL signature shouts on a slam) ---------- */
@@ -884,8 +890,8 @@ let last=performance.now()/1000, acc=0, fpsT=0, fpsN=0;
 const STEP=1/60;
 const fpsEl=document.getElementById('fps');
 let elapsed=0;
-function frame(){ if(window.__SCRT_RUNNING===false) return;
-  requestAnimationFrame(frame);
+function frame(){
+  requestAnimationFrame(frame); if(window.__SCRT_RUNNING===false) return;
   const now=performance.now()/1000; let dt=now-last; last=now;
   if(dt>0.1)dt=0.1;
   if(koSlow>0){ koSlow-=dt; dt*=0.4; }     // 🎬 KO slow-mo drama
@@ -906,13 +912,29 @@ function frame(){ if(window.__SCRT_RUNNING===false) return;
   updateSparks(dt);
   updateCamera(dt);
   renderer.render(scene,camera);
-  // fps
+  // fps + ADAPTIVE PERF SCALER — if the device is struggling, shed quality so it stays smooth
   fpsN++; fpsT+=dt;
-  if(fpsT>=0.5){ fpsEl.textContent=Math.round(fpsN/fpsT)+' fps'; fpsN=0; fpsT=0; }
+  if(fpsT>=0.5){
+    const fps=fpsN/fpsT; fpsEl.textContent=Math.round(fps)+' fps'; fpsN=0; fpsT=0;
+    if(elapsed>2.5){                                    // ignore the first couple seconds (warm-up)
+      if(fps<26 && perfStep<3){ perfStep++; applyPerf(); }
+      else if(fps>52 && perfStep>0 && elapsed-_lastPerfT>6){ perfStep--; applyPerf(); }  // device recovered → step back up
+    }
+  }
+}
+let perfStep=0, _lastPerfT=0;
+function applyPerf(){
+  _lastPerfT=elapsed;
+  const ratios=[QUALITY, Math.min(QUALITY,1.0), 0.8, 0.66];
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, ratios[perfStep]));
+  renderer.setSize(innerWidth, innerHeight, false);
+  renderer.shadowMap.enabled = perfStep<2;             // globally drop the shadow pass at step 2+ (reversible, per-mesh flags untouched)
+  renderer.shadowMap.needsUpdate = true;
+  scene.fog.far = perfStep>=3 ? 30 : 42;               // tighter fog = less to draw on the weakest devices
 }
 
 /* ---------- RESIZE + BOOT ---------- */
-function resize(){ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight,false); renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2)); }
+function resize(){ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight,false); const r=[QUALITY,Math.min(QUALITY,1.0),0.8,0.66]; renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, r[perfStep]||QUALITY)); }
 addEventListener('resize',resize); resize();
 setTimeout(()=>document.getElementById('boot').classList.add('gone'),500);
 setTimeout(()=>{ const h=document.getElementById('hint'); if(h) h.classList.add('fade'); },7000);   // controls hint fades after you've read it
