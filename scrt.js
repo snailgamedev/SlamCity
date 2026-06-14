@@ -355,14 +355,17 @@ function animateFighter(f, dt, t, speed){
     j.armR.el.rotation.x = -0.4-Math.abs(Math.sin(phase+Math.PI))*0.3;
     j.pelvis.rotation.y = Math.sin(phase)*0.08*amp;
   } else {
-    // ease back to neutral fighting stance
+    // FIGHTING STANCE — fists up in a real guard + a live bounce on the balls of the feet (not a mannequin)
     const k=1-Math.exp(-8*dt);
-    ['legL','legR'].forEach(L=>{ j[L].hip.rotation.x+=( -0.05 - j[L].hip.rotation.x)*k; j[L].kn.rotation.x+=(0.12 - j[L].kn.rotation.x)*k; });
-    j.armL.sh.rotation.x += (-0.25 - j.armL.sh.rotation.x)*k;
-    j.armR.sh.rotation.x += (-0.25 - j.armR.sh.rotation.x)*k;
-    j.armL.el.rotation.x += (-0.6 - j.armL.el.rotation.x)*k;
-    j.armR.el.rotation.x += (-0.6 - j.armR.el.rotation.x)*k;
-    j.armL.sh.rotation.z = 0.15; j.armR.sh.rotation.z = -0.15;
+    const bob=Math.sin(t*5.5)*0.5+0.5;                                  // light up-down bounce
+    ['legL','legR'].forEach(L=>{ j[L].hip.rotation.x+=( -0.08 - j[L].hip.rotation.x)*k; j[L].kn.rotation.x+=(0.22 - j[L].kn.rotation.x)*k; });   // knees bent = athletic base
+    j.armL.sh.rotation.x += (-0.55 - j.armL.sh.rotation.x)*k;           // hands up
+    j.armR.sh.rotation.x += (-0.5 - j.armR.sh.rotation.x)*k;            // lead hand slightly lower
+    j.armL.el.rotation.x += (-1.45 - j.armL.el.rotation.x)*k;           // forearms up guarding the chin
+    j.armR.el.rotation.x += (-1.3 - j.armR.el.rotation.x)*k;
+    j.armL.sh.rotation.z = 0.32; j.armR.sh.rotation.z = -0.32;
+    j.pelvis.position.y = f.hipY + breathe*0.5 + bob*0.02;              // the bounce
+    j.chest.rotation.x = 0.06 + breathe*0.5;                            // slight forward lean (ready)
     j.pelvis.rotation.y += (0 - j.pelvis.rotation.y)*k;
   }
   // --- STRIKE pose override (procedural punch · startup→active→recovery) ---

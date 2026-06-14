@@ -1,7 +1,7 @@
 /* Slam City service worker — THE ONE SW (replaced the old sc-sw.js dual-SW war).
    force auto-update (skipWaiting + claim) so installed PWAs always run the latest.
    Precaches the 3D engine (three.min.js) + icons so the ring still loads fully offline. */
-const CACHE='sc-v6';
+const CACHE='sc-v7';
 const NET_TIMEOUT=2200;  // ms a page-fetch may race before serving cache (offline = instant)
 const SHELL=['./index.html','./scrt.js','./manifest.json','./icon.svg','./three.min.js','./icon-180.png','./icon-192.png','./icon-512.png'];
 self.addEventListener('install', e => { self.skipWaiting(); e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).catch(()=>{})); });

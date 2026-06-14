@@ -4031,11 +4031,10 @@ function startRTFight(){
         if (match && !match.over) endMatchBy(winner === 'player' ? 'win' : 'loss', (winner === 'player' && info && info.stats && info.stats.finisher) ? 'FINISHER' : 'KO');
       }
     };
-    // 🙏 WALKOUT — the faith pregame: player's walkout scripture, then the foe's, then the bell + fight
+    // 🙏 WALKOUT — quick faith pregame: your walkout scripture, then the bell + fight (snappy for grinding)
     var hadWalkout = false;
     try { if (typeof showWalkout === 'function' && match.player.walkout) { showWalkout(match.player); hadWalkout = true; } } catch(e){}
-    try { if (typeof showWalkout === 'function' && match.opponent.walkout) setTimeout(function(){ if (match && !match.over) showWalkout(match.opponent); }, 1750); } catch(e){}
-    var delay = hadWalkout ? 3500 : 0;
+    var delay = hadWalkout ? 2300 : 0;
     setTimeout(function(){ if (!match || match.over) return; try { SCRT.start(opts); } catch(e){ initFightVisuals(); } }, delay);
   } catch(e){ console.warn('SCRT start failed, falling back', e); initFightVisuals(); }
 }
