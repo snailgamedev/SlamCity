@@ -31,6 +31,7 @@
 </script>
 <!-- Three.js (r128, vendored local · global THREE) powers the real-3D ring + jointed fighters (v4.0). Falls back to the CSS renderer if it fails to load. -->
 <script src="three.min.js"></script>
+<script src="scrt.js"></script>
 <!-- retro arcade type: Press Start 2P for marquee, Oxanium for readable UI · safe fallback stack -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1021,7 +1022,7 @@
   #ring3d { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; display: none; }
   .ring.r3d #ring3d { display: block; }
   .ring.r3d .ring-post, .ring.r3d .ring-rope, .ring.r3d .arena-floor3d, .ring.r3d .floor-horizon { display: none; }   /* WebGL draws these */
-  .ring.r3d #ring-left-svg, .ring.r3d #ring-right-svg, .ring.r3d .guard-ring, .ring.r3d .impact-flash, .ring.r3d .impact-burst { display: none; }
+  .ring.r3d #ring-left-svg, .ring.r3d #ring-right-svg, .ring.r3d .guard-ring, .ring.r3d .ring-fighter .impact-flash, .ring.r3d .ring-fighter .impact-burst { display: none; }   /* hide only the 2D-wrapper VFX; 3D gets its own #ring-anchored flash/numbers (see r3dFlash/r3dBurst) */
   /* ===== CSS-cuboid fighters (fallback when WebGL is unavailable) ===== */
   .ring { perspective: 1100px; perspective-origin: 50% 26%; }
   .ring-fighter { transform-style: preserve-3d; }
@@ -3699,6 +3700,7 @@ async function downloadGame() {
   try {
     let html = await (await fetch(location.href.split('?')[0], { cache: 'no-store' })).text();
     try { const three = await (await fetch('three.min.js', { cache: 'no-store' })).text(); html = html.replace(/<script src="three\.min\.js"><\/script>/, '<script>/* three.js inlined for offline */\n' + three + '\n<\/script>'); } catch (e) {}
+    try { const scrt = await (await fetch('scrt.js', { cache: 'no-store' })).text(); html = html.replace(/<script src="scrt\.js"><\/script>/, '<script>/* real-time combat inlined for offline */\n' + scrt + '\n<\/script>'); } catch (e) {}
     const blob = new Blob([html], { type: 'text/html' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'SlamCity.html'; document.body.appendChild(a); a.click(); a.remove();
     setStatus && setStatus('DOWNLOADED · SlamCity.html', 'var(--gold)', 1500);
@@ -3998,7 +4000,44 @@ function startMatchWith(playerId, oppId) {
   save.picks[playerId] = (save.picks[playerId] || 0) + 1;
   persistSave();
   goto('fight');
+  if (USE_RT()) { startRTFight(); return; }   // 🥊 NEW real-time 3D combat (SCRT) — skips the old button engine
   initFightVisuals();
+}
+// 🥊 SCRT bridge — real-time combat is the default for 1v1 modes; legacy engine keeps the modes RT can't do yet:
+//   ROYAL RUMBLE (multi-man toss + wear-carries) and WATCH/TOURNAMENT (CPU-vs-CPU spectate). ?old=1 forces legacy.
+function USE_RT(){ return !!window.SCRT && location.search.indexOf('old=1') < 0 && !(match && (match.pAI || match.mode === 'rumble')); }
+function startRTFight(){
+  try {
+    var opts = {
+      playerName: match.player.name, playerArt: match.player.art,
+      oppName: match.opponent.name, oppArt: match.opponent.art,
+      onResult: function(winner, info){
+        try {
+          if (info) {
+            match.pHP = info.pHP; match.oHP = info.oHP;
+            if (info.stats && match.tally) {
+              var s = info.stats;
+              match.tally.strikesLanded = s.strikes || 0;
+              match.tally.grappleLanded = s.slams || 0;
+              match.tally.heavyLanded = Math.round((s.strikes || 0) * 0.4);
+              match.tally.blocked = s.blocks || 0;
+              match.tally.biggestHit = s.biggest || 0;
+              match.tally.finisherLanded = !!s.finisher;
+              match.biggestHit = s.biggest || 0;
+            }
+          }
+        } catch(e){}
+        if (window.SCRT) SCRT.stop();
+        if (match && !match.over) endMatchBy(winner === 'player' ? 'win' : 'loss', (winner === 'player' && info && info.stats && info.stats.finisher) ? 'FINISHER' : 'KO');
+      }
+    };
+    // 🙏 WALKOUT — the faith pregame: player's walkout scripture, then the foe's, then the bell + fight
+    var hadWalkout = false;
+    try { if (typeof showWalkout === 'function' && match.player.walkout) { showWalkout(match.player); hadWalkout = true; } } catch(e){}
+    try { if (typeof showWalkout === 'function' && match.opponent.walkout) setTimeout(function(){ if (match && !match.over) showWalkout(match.opponent); }, 1750); } catch(e){}
+    var delay = hadWalkout ? 3500 : 0;
+    setTimeout(function(){ if (!match || match.over) return; try { SCRT.start(opts); } catch(e){ initFightVisuals(); } }, delay);
+  } catch(e){ console.warn('SCRT start failed, falling back', e); initFightVisuals(); }
 }
 
 function showWalkout(fighter) {
@@ -5190,13 +5229,45 @@ function endPrefight() {
   if (match.stip && STIPS[match.stip]) caption(STIPS[match.stip].ic + ' ' + STIPS[match.stip].name + ' — ' + STIPS[match.stip].desc, 'big');   // stipulation call-out
 }
 
+// ── 3D-aware hit VFX (peak Wave 1) — the DOM flash/burst live inside the 2D fighter wrappers,
+//    so in 3D mode we project the STRUCK fighter to screen and float the flash + damage number
+//    there instead. Restores the hit-confirmation that was getting suppressed in 3D. ──
+function projectFighter(side) {
+  const f = side === 'left' ? (SC3D.fighters && SC3D.fighters.left) : (SC3D.fighters && SC3D.fighters.right);
+  if (!f || !f.group || !SC3D.camera || typeof THREE === 'undefined') return null;
+  const v = new THREE.Vector3(); f.group.getWorldPosition(v); v.y += 1.45;     // upper chest / head height
+  v.project(SC3D.camera);
+  if (v.z > 1) return null;                                                     // behind the camera
+  return { x: (v.x * 0.5 + 0.5) * 100, y: (-v.y * 0.5 + 0.5) * 100 };
+}
+function r3dFlash(heavy) {
+  const ring = document.getElementById('ring'); if (!ring) return;
+  let fl = document.getElementById('r3d-flash');
+  if (!fl) { fl = document.createElement('div'); fl.id = 'r3d-flash'; fl.className = 'impact-flash'; fl.style.zIndex = 6; ring.appendChild(fl); }
+  fl.classList.remove('fire', 'fire-heavy'); void fl.offsetWidth; fl.classList.add(heavy ? 'fire-heavy' : 'fire');
+}
+function r3dBurst(side, dmg) {
+  const ring = document.getElementById('ring'); if (!ring) return;
+  const b = document.createElement('div'); b.className = 'impact-burst'; b.textContent = '-' + dmg;
+  if (dmg >= 45) b.classList.add('dmg-huge'); else if (dmg >= 20) b.classList.add('dmg-big');
+  const pt = projectFighter(side);
+  b.style.zIndex = 7;
+  b.style.left = (pt ? Math.max(6, Math.min(94, pt.x)) : (side === 'left' ? 66 : 34)) + '%';
+  b.style.top  = (pt ? Math.max(10, Math.min(70, pt.y - 6)) : 30) + '%';
+  ring.appendChild(b); void b.offsetWidth; b.classList.add('go');
+  setTimeout(() => { if (b.parentNode) b.parentNode.removeChild(b); }, 900);
+}
 function flash(side, heavy) {
+  const ring = document.getElementById('ring');
+  if (ring && ring.classList.contains('r3d')) { r3dFlash(heavy); return; }
   const el = document.getElementById(side + '-flash');
   el.classList.remove('fire', 'fire-heavy');
   void el.offsetWidth;
   el.classList.add(heavy ? 'fire-heavy' : 'fire');
 }
 function burst(side, dmg) {
+  const ring = document.getElementById('ring');
+  if (ring && ring.classList.contains('r3d')) { r3dBurst(side, dmg); return; }
   const el = document.getElementById(side + '-burst');
   el.textContent = '-' + dmg;
   el.style.top = '38%';
